@@ -28,6 +28,7 @@ import PetauLogo from '../../components/PetauLogo';
 import PetCard from '../../components/PetCard';
 import type { PetCardData } from '../../components/PetCard';
 import TutorCard from '../../components/TutorCard';
+import RedeSolidariaCard from '../../components/RedeSolidariaCard';
 import DrawerMenu from '../../components/DrawerMenu';
 import { HubSkeleton } from '../../components/Skeleton';
 import AddPetModal from '../../components/AddPetModal';
@@ -216,6 +217,16 @@ export default function HubScreen() {
         : '';
       return (
       <>
+        {/* Rede Solidária */}
+        <RedeSolidariaCard
+          city={tutorProfile?.city ?? undefined}
+          aldeiaName={tutorProfile?.city ? t('rede.village') : undefined}
+          tutorCount={0}
+          sosCount={0}
+          newRequests={0}
+          onPress={() => toast(t('rede.comingSoon'), 'info')}
+        />
+
         {/* Tutor card */}
         <TutorCard
           name={userName}

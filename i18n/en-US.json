@@ -479,6 +479,13 @@
     "generic": "Oops, something went wrong. Try again?"
   },
   "tagline": "A unique intelligence for your pet",
+  "rede": {
+    "title": "Community Network",
+    "village": "Village",
+    "tutors": "tutors",
+    "newRequests": "new requests",
+    "comingSoon": "Coming soon"
+  },
   "network": {
     "offline": "No connection",
     "offlineHint": "The app keeps working with saved data",

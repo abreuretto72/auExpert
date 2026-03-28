@@ -479,6 +479,13 @@
     "generic": "Xi, algo deu errado. Tenta de novo?"
   },
   "tagline": "Uma inteligência única para o seu pet",
+  "rede": {
+    "title": "Rede Solidária",
+    "village": "Aldeia",
+    "tutors": "tutores",
+    "newRequests": "novos pedidos",
+    "comingSoon": "Em breve"
+  },
   "network": {
     "offline": "Sem conexão",
     "offlineHint": "O app continua funcionando com os dados salvos",
