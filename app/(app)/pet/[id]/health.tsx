@@ -14,6 +14,7 @@ import {
   Syringe,
   AlertCircle,
   Check,
+  Plus,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -31,6 +32,10 @@ import { usePet } from '../../../../hooks/usePets';
 import { useVaccines, useAllergies } from '../../../../hooks/useHealth';
 import { HealthScoreCircle } from '../../../../components/HealthScoreCircle';
 import { Skeleton } from '../../../../components/Skeleton';
+import AddVaccineModal from '../../../../components/AddVaccineModal';
+import { useToast } from '../../../../components/Toast';
+import { useAuthStore } from '../../../../stores/authStore';
+import { getErrorMessage } from '../../../../utils/errorMessages';
 import { formatAge, formatWeight, formatDate } from '../../../../utils/format';
 
 type TabId = 'general' | 'vaccines' | 'exams' | 'medications' | 'consultations' | 'surgeries';
@@ -174,8 +179,11 @@ export default function HealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: pet, isLoading: petLoading, refetch: refetchPet } = usePet(id!);
-  const { vaccines, overdueCount, isLoading: vaccinesLoading, refetch: refetchVaccines } = useVaccines(id!);
+  const { vaccines, overdueCount, isLoading: vaccinesLoading, refetch: refetchVaccines, addVaccine, isAdding } = useVaccines(id!);
   const { allergies, isLoading: allergiesLoading, refetch: refetchAllergies } = useAllergies(id!);
+  const { toast } = useToast();
+  const user = useAuthStore((s) => s.user);
+  const [showAddVaccine, setShowAddVaccine] = useState(false);
 
   const isLoading = petLoading || vaccinesLoading || allergiesLoading;
 
@@ -339,13 +347,47 @@ export default function HealthScreen() {
   // ──────────────────────────────────────
   // TAB: VACCINES
   // ──────────────────────────────────────
-  const renderVaccines = useCallback(() => {
-    if (vaccines.length === 0) {
-      return <EmptyState message={t('health.emptyVaccines')} hint={t('health.emptyHint')} />;
+  const handleAddVaccine = useCallback(async (vaccine: Record<string, unknown>) => {
+    try {
+      await addVaccine({
+        pet_id: id!,
+        user_id: user?.id ?? '',
+        name: vaccine.name as string,
+        laboratory: (vaccine.laboratory as string) || null,
+        batch_number: (vaccine.batch_number as string) || null,
+        date_administered: vaccine.date_administered as string,
+        next_due_date: (vaccine.next_due_date as string) || null,
+        dose_number: (vaccine.dose_number as string) || null,
+        veterinarian: (vaccine.veterinarian as string) || null,
+        clinic: (vaccine.clinic as string) || null,
+        status: 'up_to_date',
+        source: vaccine.source as string ?? 'manual',
+        notes: (vaccine.notes as string) || null,
+      });
+      setShowAddVaccine(false);
+      toast(t('toast.petCreated', { name: vaccine.name }), 'success');
+    } catch (err) {
+      toast(getErrorMessage(err), 'error');
     }
+  }, [addVaccine, id, user?.id, toast, t]);
 
+  const renderVaccines = useCallback(() => {
     return (
       <>
+        {/* Botão adicionar vacina */}
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setShowAddVaccine(true)}
+          activeOpacity={0.7}
+        >
+          <Syringe size={rs(18)} color="#fff" strokeWidth={2} />
+          <Text style={styles.addButtonText}>{t('health.addVaccine')}</Text>
+        </TouchableOpacity>
+
+        {vaccines.length === 0 ? (
+          <EmptyState message={t('health.emptyVaccines')} hint={t('health.emptyHint')} />
+        ) : (
+        <>
         {/* Progress */}
         <View style={styles.vaccineProgressCard}>
           <View style={styles.vaccineProgressHeader}>
@@ -424,6 +466,8 @@ export default function HealthScreen() {
             </ExpandableCard>
           );
         })}
+      </>
+        )}
       </>
     );
   }, [vaccines, overdueCount, upToDateCount, t]);
@@ -552,6 +596,15 @@ export default function HealthScreen() {
         {renderTabContent()}
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <AddVaccineModal
+        visible={showAddVaccine}
+        onClose={() => setShowAddVaccine(false)}
+        onSubmit={handleAddVaccine}
+        petId={id!}
+        userId={user?.id ?? ''}
+        isSubmitting={isAdding}
+      />
     </View>
   );
 }
@@ -593,6 +646,28 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     color: colors.accent,
+  },
+
+  // ── Add button ──
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: rs(8),
+    backgroundColor: colors.accent,
+    borderRadius: radii.xl,
+    paddingVertical: rs(14),
+    marginBottom: spacing.md,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: rs(4) },
+    shadowOpacity: 0.25,
+    shadowRadius: rs(12),
+    elevation: 4,
+  },
+  addButtonText: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(14),
+    color: '#fff',
   },
 
   // ── Content ──

@@ -1,14 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import * as api from '../lib/api';
+import type { Vaccine } from '../types/database';
 
 export function useVaccines(petId: string) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const qc = useQueryClient();
 
   const query = useQuery({
     queryKey: ['pets', petId, 'vaccines'],
     queryFn: () => api.fetchVaccines(petId),
     enabled: isAuthenticated && !!petId,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (vaccine: Omit<Vaccine, 'id' | 'created_at' | 'is_active'>) =>
+      api.createVaccine(vaccine),
+    onSuccess: (newVaccine) => {
+      qc.setQueryData<Vaccine[]>(['pets', petId, 'vaccines'], (old) =>
+        old ? [newVaccine, ...old] : [newVaccine],
+      );
+    },
   });
 
   const vaccines = query.data ?? [];
@@ -29,6 +41,8 @@ export function useVaccines(petId: string) {
     upcomingCount,
     isLoading: query.isLoading,
     refetch: query.refetch,
+    addVaccine: addMutation.mutateAsync,
+    isAdding: addMutation.isPending,
   };
 }
 

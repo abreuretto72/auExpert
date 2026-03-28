@@ -114,6 +114,23 @@ export async function fetchVaccines(petId: string): Promise<Vaccine[]> {
   return (data as Vaccine[]) ?? [];
 }
 
+export async function createVaccine(
+  vaccine: Omit<Vaccine, 'id' | 'created_at' | 'is_active'>,
+): Promise<Vaccine> {
+  console.log('[api.createVaccine] INSERT:', Object.keys(vaccine));
+  const { data, error } = await supabase
+    .from('vaccines')
+    .insert(vaccine)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[api.createVaccine] ERROR:', error.message, error.code);
+    throw error;
+  }
+  return data as Vaccine;
+}
+
 // ══════════════════════════════════════
 // ALLERGIES
 // ══════════════════════════════════════
