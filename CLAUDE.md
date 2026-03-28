@@ -523,11 +523,76 @@ const PawIcon = ({ size = 24, color = '#fff' }) => (
 - Font: Sora 700, 10-11px
 - Radius: 8
 
-### Alertas
-- Sucesso: borda + bg `successSoft`, texto + ícone `success`
-- Erro/Perigo: borda + bg `dangerSoft`, texto + ícone `danger`
-- Aviso: borda + bg `warningSoft`, texto + ícone `warning`
-- Info: borda + bg `petrolSoft`, texto + ícone `petrol`
+### Comunicacao com o Tutor — BALAO CENTRALIZADO (REGRA OBRIGATORIA)
+
+> **TODA comunicacao com o tutor DEVE ser feita via balao centralizado na tela.**
+> NUNCA usar `Alert.alert()`, NUNCA usar banners no topo, NUNCA usar snackbars.
+> O balao e o UNICO canal de comunicacao visual entre o app e o tutor.
+
+**Componente:** `components/Toast.tsx` — metodos `toast()` e `confirm()`
+**Icone:** `components/ToastPaw.tsx` — patinha branca sobre fundo colorido
+
+**4 tipos de patinha (varia APENAS a cor do fundo):**
+
+| Tipo | Cor do fundo | Hex | Quando usar |
+|------|-------------|-----|-------------|
+| **success** | Verde | `#2ECC71` | Acao concluida, pet cadastrado, senha alterada |
+| **error** | Vermelho | `#E74C3C` | Falha, erro de API, biometria falhou |
+| **warning** | Amarelo | `#F1C40F` | Atencao, permissao negada, sem internet |
+| **info** | Rosa | `#E84393` | Informacao, dica, sessao expirada |
+
+A patinha e SEMPRE branca (#FFFFFF) sobre o fundo colorido arredondado (radius 16).
+
+**Arquivos PNG das patinhas (128x128px):**
+
+| Arquivo | Cor do fundo | Tipo | Require |
+|---------|-------------|------|---------|
+| `assets/images/pata_verde.png` | Verde #2ECC71 | success | `require('../assets/images/pata_verde.png')` |
+| `assets/images/pata_vermelha.png` | Vermelho #E74C3C | error | `require('../assets/images/pata_vermelha.png')` |
+| `assets/images/pata_amarela.png` | Amarelo #F1C40F | warning | `require('../assets/images/pata_amarela.png')` |
+| `assets/images/pata_rosa.png` | Rosa #E84393 | info | `require('../assets/images/pata_rosa.png')` |
+
+As patinhas sao carregadas via `Image` + `require()` (PNG), NAO via SVG dinamico.
+Tamanho no balao: 56x56px com borderRadius 16.
+
+**Estrutura do balao:**
+```
+┌──────────────────────────┐
+│                     [X]  │  ← X vermelho (fechar)
+│                          │
+│      ┌────────────┐      │
+│      │  🐾 branca │      │  ← Patinha branca sobre fundo colorido
+│      └────────────┘      │
+│                          │
+│   Mensagem na voz do     │  ← Sora 500, 15px, center
+│   pet, simples e leve    │
+│                          │
+│  [Cancelar] [Confirmar]  │  ← So aparece no confirm()
+│                          │
+│       — seu pet          │  ← Caveat 400, italic
+└──────────────────────────┘
+```
+
+**Dois metodos:**
+
+1. **`toast(texto, tipo)`** — mensagem simples
+   - Patinha + texto + assinatura
+   - X para fechar + some em 4s + toque no backdrop fecha
+   - Uso: `toast(t('toast.petCreated', { name }), 'success')`
+
+2. **`confirm({ text, tipo })`** — pergunta com sim/nao
+   - Patinha + texto + 2 botoes (Cancelar cinza com X, Confirmar laranja com Check)
+   - Retorna `Promise<boolean>` — true se sim, false se nao
+   - NAO some sozinho — espera resposta
+   - Backdrop NAO fecha
+   - Uso: `const yes = await confirm({ text: t('settings.logoutConfirm'), type: 'warning' })`
+
+**Regras:**
+- NUNCA usar `Alert.alert()` do React Native — sempre `confirm()` do Toast
+- NUNCA mostrar mensagens no topo da tela — sempre balao centralizado
+- Todas as mensagens em i18n (chaves `toast.*` e `errors.*`)
+- Tom das mensagens: voz do pet, leve, carinhoso — nunca tecnico
+- Backdrop escuro `rgba(11, 18, 25, 0.6)` — foco total no balao
 
 ### Progress bars
 - Track: `border`
@@ -658,8 +723,25 @@ notifications_queue, media_files
 
 ## 9. PROMPTS DE IA
 
+### 9.1 Regra de Idioma — OBRIGATÓRIA
+
+> **TODA resposta da IA DEVE vir no idioma do dispositivo do usuário. SEMPRE.**
+
+O idioma é detectado via `expo-localization` (`getLocales()[0].languageTag`) e enviado
+no parâmetro `language` de toda chamada a Edge Functions que usam IA.
+
+- A IA responde diretamente no idioma do dispositivo — SEM tradução intermediária
+- Se o dispositivo está em chinês → a IA retorna em chinês
+- Se está em árabe → retorna em árabe
+- Se está em português → retorna em português
+- Isso vale para: narração do diário, análise de foto, insights, tradução de strings, qualquer output de IA
+- O parâmetro `language` NUNCA deve ser fixo (`'pt-BR'` ou `'en-US'`) — deve usar `i18n.language`
+- As Edge Functions recebem o `language` e passam para o prompt do Claude como `Respond in {idioma}`
+
+### 9.2 Regras Gerais
+
 - Narração diário: max 150 palavras, 1ª pessoa do pet, tom varia com humor
-- Análise foto: JSON, NUNCA diagnosticar, comparar via RAG
+- Análise foto: JSON completo (identificação, saúde, humor, ambiente), NUNCA diagnosticar, comparar via RAG
 - Insight semanal: max 60 palavras, específico, acionável
 - Model: `claude-sonnet-4-20250514`
 
@@ -670,13 +752,464 @@ notifications_queue, media_files
 - Componentes: PascalCase. Hooks: useXxx. Stores: xxxStore. SQL: snake_case
 - TypeScript strict, sem `any`, Zod para validação
 - Functional components only, StyleSheet.create() em produção
-- i18n obrigatório: todas strings em JSON, nunca hardcode
 - Commits: `type(scope): message` em inglês
 - **NUNCA EMOJIS** no código — sempre ícones Lucide
 
+### 10.1 PROIBIÇÃO ABSOLUTA: STRINGS HARDCODED — REGRA INVIOLÁVEL
+
+> **NENHUMA string visível ao tutor pode estar hardcoded no código. NENHUMA. ZERO. JAMAIS.**
+
+Esta regra existe porque o app opera em **múltiplos idiomas** (PT-BR, EN-US e futuramente outros).
+Uma string hardcoded em português quebra a experiência de um tutor que usa o app em inglês.
+Violar esta regra é violar a confiança do usuário.
+
+**TODA string que o tutor vê DEVE estar em `i18n/pt-BR.json` e `i18n/en-US.json`.**
+
+Isso inclui:
+- Títulos de tela, labels, placeholders
+- Mensagens de toast (sucesso, erro, aviso, info)
+- Mensagens de erro (via `utils/errorMessages.ts` + chaves i18n)
+- Textos de botões, links, badges
+- Textos de estados vazios, loading, disclaimers
+- Nomes de seções (MEUS PETS, ACOES RAPIDAS, etc.)
+- Qualquer texto que aparece na UI — SEM EXCEÇÃO
+
+**Como fazer:**
+```typescript
+// ERRADO — PROIBIDO — NUNCA FAZER
+toast('Pet cadastrado com sucesso!', 'success');
+<Text>Vacinas atrasadas</Text>
+
+// CERTO — OBRIGATÓRIO — SEMPRE FAZER
+toast(t('toast.petCreated', { name: data.name }), 'success');
+<Text>{t('pets.vaccinesOverdue')}</Text>
+```
+
+**Checklist antes de cada commit:**
+1. Buscar no código por strings entre aspas dentro de `toast(`, `<Text>`, `label=`, `placeholder=`
+2. Se encontrar texto em português ou inglês direto no código → MOVER para i18n
+3. Se for mensagem de erro → usar `getErrorMessage()` que já usa i18n
+4. Se for mensagem de toast → usar chave `toast.*` do i18n
+
+**Estrutura das chaves i18n:**
+```
+common.*     → palavras genéricas (Salvar, Cancelar, Voltar)
+auth.*       → tela de login/cadastro/reset
+pets.*       → listagem e dados de pets
+addPet.*     → modal de adicionar pet
+diary.*      → diário
+health.*     → saúde, vacinas, alergias
+ai.*         → análises de IA
+settings.*   → configurações
+toast.*      → mensagens de balão (voz do pet)
+errors.*     → mensagens de erro (voz do pet)
+```
+
+**Tom das mensagens (voz do pet):**
+- Toast e erros DEVEM ser escritos como se fosse o pet falando com o tutor
+- Tom leve, carinhoso, bem-humorado — nunca técnico, nunca frio
+- Exemplos: "Eba!", "Xi!", "Opa!", "Calma, humano!", "Te reconheci!"
+- Assinatura: "— seu pet" (PT-BR) / "— your pet" (EN-US)
+
 ---
 
-## 11. GLOSSÁRIO
+## 11. ARQUITETURA & ESTRATÉGIA DE DESENVOLVIMENTO
+
+### 11.1 Princípio Fundamental
+> **Cada arquivo tem uma única razão para mudar. Cada camada tem uma única responsabilidade.**
+
+O app VAI escalar — de 12 tabelas MVP para 37+ tabelas, de 2 telas para 25+, de 1 tutor para
+milhões. Toda decisão de código DEVE considerar esse crescimento. Código que "funciona hoje"
+mas não escala é débito técnico — evitar desde o início.
+
+### 11.2 Arquitetura em Camadas (OBRIGATÓRIA)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  TELAS (app/)                                       │
+│  Apenas layout, navegação e composição de componentes│
+│  NUNCA importa lib/ diretamente — sempre via hooks  │
+├─────────────────────────────────────────────────────┤
+│  COMPONENTES (components/)                          │
+│  ui/ = genéricos reutilizáveis (Input, Button, Card)│
+│  feature/ = específicos (PetCard, DiaryEntry)       │
+│  NUNCA lógica de negócio em components/ui/          │
+├─────────────────────────────────────────────────────┤
+│  HOOKS (hooks/)                                     │
+│  "Cola" entre UI e dados                            │
+│  Encapsulam React Query + Zustand + efeitos         │
+│  Telas SEMPRE consomem dados via hooks              │
+├─────────────────────────────────────────────────────┤
+│  STORES (stores/) — Zustand                         │
+│  APENAS estado de UI (drawer, selectedPetId, lang)  │
+│  NUNCA dados do servidor — isso é React Query       │
+├─────────────────────────────────────────────────────┤
+│  API (lib/api.ts)                                   │
+│  Funções puras de fetch — sem estado, sem side effects│
+│  Único ponto de contato com Supabase para queries   │
+├─────────────────────────────────────────────────────┤
+│  LIB (lib/)                                         │
+│  Integrações externas: supabase, auth, ai, storage  │
+├─────────────────────────────────────────────────────┤
+│  CONSTANTS + TYPES + UTILS                          │
+│  Design tokens, interfaces, helpers puros           │
+└─────────────────────────────────────────────────────┘
+```
+
+**Regra de importação (direção única — de cima para baixo, NUNCA o inverso):**
+```
+Telas → Hooks → Stores / API → Lib → Constants/Types/Utils
+```
+- `lib/` NUNCA importa `hooks/` ou `stores/`
+- `hooks/` NUNCA importa `app/` (telas)
+- `components/ui/` NUNCA importa `stores/` ou `hooks/`
+- `utils/` NUNCA importa nada do projeto — apenas libs externas
+
+### 11.3 Gestão de Estado — Separação Clara
+
+| O que | Onde | Por que |
+|-------|------|---------|
+| Dados do servidor (pets, diário, vacinas) | **React Query** | Cache automático, staleTime, retry, refetch, optimistic updates |
+| Estado de UI (drawer aberto, idioma, pet selecionado) | **Zustand** | Leve, síncrono, sem overhead de rede |
+| Estado de formulário (campos, validação) | **useState local** | Efêmero, morre com o componente |
+| Credenciais/tokens | **Expo SecureStore** | Seguro, persistente, criptografado |
+
+**Regras React Query:**
+```typescript
+// lib/queryClient.ts — defaults globais
+{
+  staleTime: 5 * 60 * 1000,    // 5 min — evita refetches desnecessários
+  gcTime: 30 * 60 * 1000,      // 30 min — cache em memória
+  retry: 2,                     // 2 retries em falha de rede
+  refetchOnWindowFocus: false,  // Mobile não tem "window focus"
+  refetchOnReconnect: true,     // Refetch ao reconectar internet
+}
+```
+
+**Regras Zustand:**
+- Stores devem ser **pequenos e focados** — 1 store por domínio de UI
+- NUNCA colocar `fetchPets()` ou qualquer chamada async de servidor dentro de um store
+- Usar selectors granulares: `useAuthStore((s) => s.isAuthenticated)` — não `useAuthStore()`
+
+### 11.4 Padrão de Hook (template obrigatório)
+
+Todo acesso a dados do servidor DEVE seguir este padrão:
+```typescript
+// hooks/useXxx.ts
+export function useXxx() {
+  const qc = useQueryClient();
+
+  // QUERY — busca dados (cache + refetch automático)
+  const query = useQuery({
+    queryKey: ['xxx'],
+    queryFn: api.fetchXxx,
+    enabled: /* condição */,
+  });
+
+  // MUTATIONS — alteram dados (optimistic update no cache)
+  const addMutation = useMutation({
+    mutationFn: api.createXxx,
+    onSuccess: (newItem) => {
+      qc.setQueryData(['xxx'], (old) => [...(old ?? []), newItem]);
+    },
+  });
+
+  return {
+    items: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+    addItem: addMutation.mutateAsync,
+    isAdding: addMutation.isPending,
+  };
+}
+```
+
+### 11.5 Performance — Regras Obrigatórias
+
+| Regra | Aplicação |
+|-------|-----------|
+| **FlatList > ScrollView** | SEMPRE que renderizar lista de itens dinâmicos (pets, diário, vacinas) |
+| **React.memo** | Em componentes de lista (PetCard, DiaryEntry) que re-renderizam em FlatList |
+| **useCallback** | Em `renderItem` e handlers passados como prop para listas |
+| **Skeleton loading** | TODA tela que busca dados DEVE mostrar skeleton, NUNCA tela branca/vazia |
+| **RefreshControl** | TODA tela com dados do servidor DEVE ter pull-to-refresh |
+| **Imagens otimizadas** | WebP, 3 tamanhos (thumb/medium/full), carregamento progressivo |
+| **Lazy loading** | Expo Router faz por padrão — não quebrar com imports dinâmicos manuais |
+| **Evitar re-renders** | Zustand selectors granulares, não desestruturar store inteiro |
+
+### 11.6 Escalabilidade — Regras para Crescimento
+
+**Quando o projeto crescer além do MVP, seguir:**
+
+1. **Colocação por feature** — quando uma tela tiver 3+ componentes exclusivos:
+```
+app/(app)/pet/[id]/
+├── diary.tsx
+├── _components/           # Prefixo _ = Expo Router ignora
+│   ├── DiaryTimeline.tsx
+│   └── DiaryEntryCard.tsx
+└── _hooks/
+    └── useDiaryEntries.ts
+```
+
+2. **Query keys organizadas** — usar factory pattern quando ultrapassar 10 queries:
+```typescript
+// lib/queryKeys.ts
+export const queryKeys = {
+  pets: {
+    all: ['pets'] as const,
+    detail: (id: string) => ['pet', id] as const,
+    diary: (petId: string) => ['pets', petId, 'diary'] as const,
+    vaccines: (petId: string) => ['pets', petId, 'vaccines'] as const,
+  },
+};
+```
+
+3. **Componentes compostos** — quando um componente tiver 5+ props de configuração:
+```typescript
+// Ao invés de <PetCard showHealth showMood showDiary variant="compact" />
+// Usar composição:
+<PetCard.Root pet={pet}>
+  <PetCard.Header />
+  <PetCard.Stats />
+  <PetCard.Actions />
+</PetCard.Root>
+```
+
+4. **Code splitting por rota** — Expo Router faz automaticamente. NUNCA importar
+   componentes pesados (gráficos, mapas, câmera) no bundle principal.
+
+5. **API layer por domínio** — quando `lib/api.ts` ultrapassar 300 linhas, dividir:
+```
+lib/api/
+├── pets.ts
+├── diary.ts
+├── vaccines.ts
+├── health.ts
+└── index.ts    # re-exporta tudo
+```
+
+---
+
+## 12. RESILIÊNCIA — APP IMUNE A FALHAS
+
+### 12.1 Filosofia: O App NUNCA Pode Quebrar na Mão do Tutor
+
+> **O tutor é uma pessoa que ama seu pet e quer cuidar dele. Ele NÃO é programador.
+> Se o app travar, congelar, fechar ou mostrar um erro técnico, perdemos a confiança
+> dessa pessoa para sempre. O app DEVE ser à prova de balas.**
+
+### 12.2 Camadas de Proteção (TODAS obrigatórias)
+
+```
+┌─────────────────────────────────────────┐
+│  1. ErrorBoundary global (root layout)  │  ← Captura crashes de render
+│  2. ErrorBoundary por seção             │  ← Isola falhas por área
+│  3. try/catch em toda operação async    │  ← Captura erros de rede/API
+│  4. React Query retry + error states    │  ← Retry automático + fallback
+│  5. Toast para feedback de ações        │  ← Tutor sempre sabe o que aconteceu
+│  6. Fallback UI em todo loading         │  ← Skeleton, NUNCA tela vazia
+│  7. Validação Zod nas bordas            │  ← Dados inválidos não passam
+└─────────────────────────────────────────┘
+```
+
+### 12.3 Mensagens de Erro — REGRA CRÍTICA
+
+> **NUNCA mostrar mensagens técnicas ao tutor. NUNCA.**
+
+O tutor não sabe o que é "Error 500", "Network timeout", "null reference",
+"PostgreSQL constraint violation" ou "JWT expired". Essas mensagens causam
+medo, frustração e abandono do app.
+
+**Toda mensagem de erro DEVE ser:**
+- Escrita em linguagem simples, como se falasse com um amigo
+- Curta (1-2 frases no máximo)
+- Orientada à ação (o que o tutor pode fazer)
+- Empática (nunca culpar o tutor)
+
+**Tabela de tradução de erros (OBRIGATÓRIA):**
+
+| Erro técnico | Mensagem para o tutor (PT-BR) | Mensagem para o tutor (EN-US) |
+|---|---|---|
+| Network error / timeout | "Sem conexão. Verifique sua internet e tente de novo." | "No connection. Check your internet and try again." |
+| 500 / Server error | "Nossos servidores estão descansando. Tente de novo em alguns minutos." | "Our servers are resting. Try again in a few minutes." |
+| 401 / 403 / JWT expired | "Sua sessão expirou. Faça login novamente." | "Your session expired. Please log in again." |
+| 404 / Not found | "Não encontramos o que você procura. Tente atualizar a tela." | "We couldn't find what you're looking for. Try refreshing." |
+| 409 / Conflict (duplicate) | "Esse registro já existe. Verifique os dados e tente de novo." | "This record already exists. Check the data and try again." |
+| 422 / Validation error | "Alguns dados precisam de ajuste. Verifique os campos marcados." | "Some data needs adjustment. Check the marked fields." |
+| Crash / render error | "Algo deu errado. Tente novamente." | "Something went wrong. Try again." |
+| Upload failed | "Não conseguimos enviar a foto. Tente com uma imagem menor." | "We couldn't upload the photo. Try a smaller image." |
+| AI analysis failed | "A análise não funcionou desta vez. Tente tirar outra foto." | "The analysis didn't work this time. Try taking another photo." |
+| Biometric failed | "Não reconhecemos você. Tente de novo ou use sua senha." | "We didn't recognize you. Try again or use your password." |
+| Storage full | "Sem espaço para salvar. Libere espaço no dispositivo." | "No space to save. Free up space on your device." |
+| Rate limited | "Muitas tentativas. Aguarde um momento e tente de novo." | "Too many attempts. Wait a moment and try again." |
+
+**Implementação obrigatória:**
+```typescript
+// utils/errorMessages.ts
+// Toda chamada de API DEVE passar pelo mapeamento antes de exibir ao tutor
+// NUNCA fazer: toast(error.message) — isso vaza erro técnico
+// SEMPRE fazer: toast(getErrorMessage(error)) — isso traduz para humano
+```
+
+**Regras adicionais de mensagens:**
+- Erros de validação de formulário: destacar o campo com borda `danger` + texto explicativo ABAIXO do campo (ex: "A senha precisa ter pelo menos 8 caracteres")
+- NUNCA usar palavras como: "erro", "falha", "inválido", "exceção", "código", "servidor" sozinhas — sempre contextualizar
+- Preferir tom positivo: "Verifique sua internet" em vez de "Erro de rede"
+- Em caso de dúvida, usar: "Algo deu errado. Tente de novo." — simples e universal
+- Todas as mensagens DEVEM estar no i18n (pt-BR.json / en-US.json), NUNCA hardcoded
+
+### 12.4 Regras Anti-Crash (seguir SEMPRE)
+
+**NUNCA:**
+- Acessar propriedade de `null`/`undefined` sem optional chaining (`?.`)
+- Renderizar dado do servidor sem fallback (`data?.name ?? '—'`)
+- Deixar Promise sem `.catch()` ou sem try/catch
+- Usar `JSON.parse()` sem try/catch
+- Confiar que a API sempre retorna o formato esperado — validar com Zod
+- Deixar uma tela sem ErrorBoundary
+- Mostrar tela completamente vazia durante loading (usar Skeleton)
+- Mostrar spinner infinito sem timeout — após 15s, exibir mensagem + botão retry
+
+**SEMPRE:**
+- Optional chaining em todo acesso a dados remotos: `pet?.name`, `user?.email`
+- Fallback em todo valor que pode ser null: `score ?? 0`, `name ?? '—'`
+- ErrorBoundary no root layout E em cada seção crítica (diário, saúde, análise IA)
+- try/catch em toda função async que interage com API/Storage/Camera
+- Loading skeleton em toda tela que busca dados
+- Pull-to-refresh (RefreshControl) em toda lista
+- Timeout em toda requisição — não deixar o tutor esperando para sempre
+- Validar dados na entrada (formulários) E na saída (respostas da API)
+- Logar erros técnicos no console (dev) e futuramente em serviço externo (prod)
+- Testar fluxos offline: o app DEVE funcionar graciosamente sem internet
+
+### 12.5 Monitoramento de Conexao (NetworkGuard)
+
+> **O tutor NUNCA deve ser surpreendido por um erro de rede.**
+> O app monitora a conexao em tempo real e avisa de forma elegante.
+
+**Componente:** `components/NetworkGuard.tsx`
+**Biblioteca:** `@react-native-community/netinfo`
+
+**Comportamento:**
+1. **Ficou offline** → banner animado aparece no topo:
+   - Icone WifiOff amarelo (warning)
+   - "Sem conexao" + "O app continua funcionando com os dados salvos"
+   - Botao retry para verificar manualmente
+   - O banner PERMANECE visivel ate reconectar
+2. **Reconectou** → banner verde aparece:
+   - Icone Wifi verde (success)
+   - "Conexao restabelecida!"
+   - Auto-desaparece em 3s
+3. **React Query integrado** → `onlineManager.setEventListener` sincroniza:
+   - Offline: queries pausam (nao disparam fetch, usam cache)
+   - Online: queries stale refetcham automaticamente
+
+**Regras:**
+- NUNCA mostrar "Network Error" ou mensagem tecnica
+- O banner nao bloqueia a tela — o tutor continua navegando com dados em cache
+- O botao retry e discreto (nao invasivo)
+- A transicao offline→online e suave (spring animation)
+- Toda tela continua funcional com dados ja carregados (React Query gcTime 30min)
+
+### 12.6 Hierarquia de Providers no Root Layout
+
+A ordem dos providers no `app/_layout.tsx` é CRÍTICA e DEVE ser mantida:
+```typescript
+<ErrorBoundary>              {/* 1. Captura TUDO — última linha de defesa */}
+  <QueryClientProvider>      {/* 2. Cache + fetch — precisa estar alto */}
+    <ToastProvider>          {/* 3. Feedback — disponível em toda a app */}
+      <NetworkGuard>         {/* 4. Monitora rede — banner sobre tudo */}
+        <Stack />           {/* 5. Navegação — as telas em si */}
+        <StatusBar />
+      </NetworkGuard>
+    </ToastProvider>
+  </QueryClientProvider>
+</ErrorBoundary>
+```
+
+---
+
+## 12.7 Estrategia Offline-First — App Funciona Sem Internet
+
+> **O app NAO pode parar de funcionar quando o tutor perde a internet.**
+> Ele continua funcionando com dados salvos e sincroniza quando a conexao voltar.
+
+### Arquitetura Offline
+
+```
+┌──────────────────────────────────────────────────────┐
+│  1. CACHE PERSISTENTE (AsyncStorage)                 │
+│     React Query cache salvo a cada 2min + ao sair   │
+│     Ao abrir o app: cache restaurado instantaneamente│
+├──────────────────────────────────────────────────────┤
+│  2. REACT QUERY (memoria)                            │
+│     staleTime 5min / gcTime 30min / retry 2          │
+│     onlineManager sincroniza com NetInfo              │
+│     Offline: queries pausam, usam cache               │
+│     Online: queries stale refetcham automaticamente   │
+├──────────────────────────────────────────────────────┤
+│  3. FILA DE MUTACOES (AsyncStorage)                  │
+│     Operacoes de escrita salvas localmente            │
+│     Sincronizadas automaticamente ao reconectar       │
+│     Max 3 retries por operacao                        │
+├──────────────────────────────────────────────────────┤
+│  4. NETWORK GUARD (UI)                               │
+│     Banner offline/online com animacao                │
+│     Contador de operacoes pendentes                   │
+│     Indicador de sincronizacao                        │
+└──────────────────────────────────────────────────────┘
+```
+
+### Classificacao de Operacoes
+
+| Operacao | Offline? | Estrategia |
+|----------|----------|------------|
+| **Ver lista de pets** | SIM | Cache persistente (AsyncStorage + React Query) |
+| **Ver perfil do pet** | SIM | Cache persistente |
+| **Ver diario** | SIM | Cache persistente |
+| **Ver vacinas/alergias** | SIM | Cache persistente |
+| **Adicionar pet** | SIM | Fila offline → pet temporario local → sync ao reconectar |
+| **Editar pet** | SIM | Fila offline → atualiza cache local → sync ao reconectar |
+| **Excluir pet** | SIM | Fila offline → remove do cache local → sync ao reconectar |
+| **Nova entrada diario** | SIM | Fila offline → salva local → sync ao reconectar |
+| **Login/cadastro** | NAO | Requer internet — mostra mensagem amigavel |
+| **Reset de senha** | NAO | Requer internet — mostra mensagem amigavel |
+| **Analise foto IA** | NAO | Requer internet — mostra "Sem conexao. Tente quando tiver internet." |
+| **Narracao IA** | NAO | Requer internet — entrada salva sem narracao, IA narra ao reconectar |
+
+### Regras de Implementacao
+
+**TODA mutacao (escrita) DEVE:**
+1. Verificar `onlineManager.isOnline()` antes de chamar a API
+2. Se offline: salvar na fila via `addToQueue()` + atualizar cache local (optimistic)
+3. Se online: chamar a API normalmente
+
+**TODA query (leitura) DEVE:**
+1. Usar React Query (cache automatico)
+2. Dados servidos do cache quando offline
+3. Refetch automatico quando reconectar
+
+**O NetworkGuard DEVE:**
+1. Mostrar banner offline com contagem de operacoes pendentes
+2. Ao reconectar: executar `processQueue()` automaticamente
+3. Mostrar "Sincronizando dados..." durante o sync
+4. Mostrar "Tudo sincronizado!" ao finalizar
+
+### Arquivos do Sistema Offline
+
+| Arquivo | Responsabilidade |
+|---------|-----------------|
+| `lib/offlineCache.ts` | Persistir/restaurar cache React Query no AsyncStorage |
+| `lib/offlineQueue.ts` | Fila de mutacoes pendentes (CRUD no AsyncStorage) |
+| `lib/offlineSync.ts` | Processar fila — executar mutacoes pendentes na API |
+| `hooks/useNetwork.ts` | Hook para verificar conexao em qualquer componente |
+| `components/NetworkGuard.tsx` | UI de monitoramento + sync automatico |
+
+---
+
+## 13. GLOSSÁRIO
 
 | Termo | Significado |
 |-------|-------------|
@@ -695,7 +1228,7 @@ notifications_queue, media_files
 
 ---
 
-## 12. REFERÊNCIA DE PROTÓTIPOS
+## 14. REFERÊNCIA DE PROTÓTIPOS
 
 Todos em `docs/prototypes/`. São referência de **layout e dados**, NÃO de cores.
 A paleta deste CLAUDE.md (laranja + azul petróleo, dark) prevalece SEMPRE.

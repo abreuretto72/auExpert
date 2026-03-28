@@ -39,12 +39,11 @@ const PetauLogo: React.FC<PetauLogoProps> = ({ size = 'normal' }) => {
       >
         <LinearGradient
           colors={[colors.accent, colors.accentDark]}
-          style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: iconRadius },
-          ]}
+          style={[StyleSheet.absoluteFill, { borderRadius: iconRadius }]}
         />
-        <PawIcon size={pawSize} color="#fff" />
+        <View style={{ position: 'absolute', zIndex: 1 }}>
+          <PawIcon size={pawSize} color="#fff" />
+        </View>
       </View>
 
       <Text style={[styles.text, { fontSize }]}>

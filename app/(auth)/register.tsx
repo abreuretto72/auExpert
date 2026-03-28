@@ -47,7 +47,7 @@ export default function RegisterScreen() {
     try {
       const { error } = await auth.signUp(email, password, name);
       if (error) throw error;
-      router.replace('/(auth)/login');
+      router.replace('/(app)');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setErrors({ general: msg });

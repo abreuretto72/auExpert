@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,68 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { ArrowRight, Fingerprint, ScanFace } from 'lucide-react-native';
+import { ArrowRight, Fingerprint, ScanFace, Mail, Lock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { Input } from '../../components/ui/Input';
 import PetauLogo from '../../components/PetauLogo';
 import { useAuthStore } from '../../stores/authStore';
+import { useToast } from '../../components/Toast';
+import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function LoginScreen() {
+  console.log('[LoginScreen] Renderizando...');
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
+  const [biometricTypes, setBiometricTypes] = useState<number[]>([]);
+  const [hasBiometric, setHasBiometric] = useState(false);
   const login = useAuthStore((s) => s.login);
+  const biometricLogin = useAuthStore((s) => s.biometricLogin);
+  const hasBioCredentials = useAuthStore((s) => s.hasBioCredentials);
+
+  const autoTriggeredRef = useRef(false);
+  const [bioReady, setBioReady] = useState(false);
+
+  // Detectar biometria disponível e credenciais salvas
+  useEffect(() => {
+    (async () => {
+      try {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        if (compatible && enrolled) {
+          setHasBiometric(true);
+          const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+          setBiometricTypes(types);
+        }
+      } catch {
+        // Dispositivo sem suporte — silencioso
+      }
+      await useAuthStore.getState().checkBioCredentials();
+      setBioReady(true);
+    })();
+  }, []);
+
+  const hasFingerprint = biometricTypes.includes(
+    LocalAuthentication.AuthenticationType.FINGERPRINT,
+  );
+  const hasFaceId = biometricTypes.includes(
+    LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+  );
 
   const handleLogin = async () => {
     if (!email.includes('@')) {
-      setError(t('auth.email') + ' ' + t('common.error').toLowerCase());
+      setError('Informe um e-mail valido');
       return;
     }
     if (password.length < 8) {
-      setError('Mínimo 8 caracteres');
+      setError('A senha precisa ter pelo menos 8 caracteres');
       return;
     }
     setError('');
@@ -42,16 +81,66 @@ export default function LoginScreen() {
       await login(email, password);
       router.replace('/(app)');
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBiometric = (_type: 'finger' | 'face') => {
-    // TODO: Implement biometric auth with expo-local-authentication
-  };
+  const handleBiometric = useCallback(async (_type: 'finger' | 'face') => {
+    if (!hasBiometric) {
+      toast(t('toast.noBiometric'), 'warning');
+      return;
+    }
+
+    // Verificar se tem credenciais salvas (login anterior)
+    if (!hasBioCredentials) {
+      toast(t('toast.loginFirst'), 'info');
+      return;
+    }
+
+    setBioLoading(true);
+    try {
+      // Solicitar autenticacao biometrica REAL (sem fallback para PIN)
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: t('auth.biometricPrompt', 'Entrar no PetauLife+'),
+        cancelLabel: t('common.cancel', 'Cancelar'),
+        disableDeviceFallback: true,
+      });
+
+      if (result.success) {
+        // Biometria OK — restaurar sessao via refresh token salvo
+        await biometricLogin();
+        toast(t('toast.biometricSuccess'), 'success');
+        router.replace('/(app)');
+      } else if (result.error === 'user_cancel') {
+        // Cancelou — nada a fazer
+      } else {
+        toast(t('toast.biometricFail'), 'error');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg === 'NO_BIO_CREDENTIALS') {
+        toast(t('toast.loginFirst'), 'info');
+      } else if (msg === 'SESSION_EXPIRED') {
+        toast(t('toast.sessionExpired'), 'info');
+      } else {
+        toast(t('toast.biometricFail'), 'error');
+      }
+    } finally {
+      setBioLoading(false);
+    }
+  }, [hasBiometric, hasBioCredentials, biometricLogin, toast, t]);
+
+  // Biometria automática: se já logou antes, dispara sem precisar tocar em nada
+  useEffect(() => {
+    if (!bioReady || autoTriggeredRef.current) return;
+    const { hasBioCredentials: hasCreds } = useAuthStore.getState();
+    if (hasCreds && hasBiometric) {
+      autoTriggeredRef.current = true;
+      setTimeout(() => handleBiometric('finger'), 400);
+    }
+  }, [bioReady, hasBiometric, handleBiometric]);
 
   return (
     <KeyboardAvoidingView
@@ -80,11 +169,7 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(v) => { setEmail(v); setError(''); }}
             type="email"
-            icon={
-              <View style={styles.iconMail}>
-                <MailIcon />
-              </View>
-            }
+            icon={<Mail size={20} color={colors.petrol} strokeWidth={1.8} />}
           />
 
           <Input
@@ -95,11 +180,7 @@ export default function LoginScreen() {
             type="password"
             showMic={false}
             error={error}
-            icon={
-              <View style={styles.iconLock}>
-                <LockIcon />
-              </View>
-            }
+            icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
           />
 
           {/* Forgot password */}
@@ -140,29 +221,69 @@ export default function LoginScreen() {
           </View>
 
           {/* Biometric buttons — with glow (v5) */}
-          <View style={styles.bioRow}>
-            {/* Fingerprint */}
-            <TouchableOpacity
-              onPress={() => handleBiometric('finger')}
-              activeOpacity={0.7}
-              style={[styles.bioBtn, styles.bioBtnFinger]}
-            >
-              <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
-              <Fingerprint size={36} color={colors.accent} strokeWidth={1.4} />
-              <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
-            </TouchableOpacity>
+          {(hasFingerprint || hasFaceId) && (
+            <View style={styles.bioRow}>
+              {/* Fingerprint */}
+              {hasFingerprint && (
+                <TouchableOpacity
+                  onPress={() => handleBiometric('finger')}
+                  activeOpacity={0.7}
+                  disabled={bioLoading}
+                  style={[styles.bioBtn, styles.bioBtnFinger, bioLoading && styles.bioBtnDisabled]}
+                >
+                  <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
+                  {bioLoading ? (
+                    <ActivityIndicator size="small" color={colors.accent} />
+                  ) : (
+                    <Fingerprint size={36} color={colors.accent} strokeWidth={1.4} />
+                  )}
+                  <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
+                </TouchableOpacity>
+              )}
 
-            {/* Face ID */}
-            <TouchableOpacity
-              onPress={() => handleBiometric('face')}
-              activeOpacity={0.7}
-              style={[styles.bioBtn, styles.bioBtnFace]}
-            >
-              <View style={[styles.bioOrb, { backgroundColor: colors.purpleSoft }]} />
-              <ScanFace size={36} color={colors.purple} strokeWidth={1.4} />
-              <Text style={styles.bioLabel}>{t('auth.biometricFace')}</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Face ID */}
+              {hasFaceId && (
+                <TouchableOpacity
+                  onPress={() => handleBiometric('face')}
+                  activeOpacity={0.7}
+                  disabled={bioLoading}
+                  style={[styles.bioBtn, styles.bioBtnFace, bioLoading && styles.bioBtnDisabled]}
+                >
+                  <View style={[styles.bioOrb, { backgroundColor: colors.purpleSoft }]} />
+                  {bioLoading ? (
+                    <ActivityIndicator size="small" color={colors.purple} />
+                  ) : (
+                    <ScanFace size={36} color={colors.purple} strokeWidth={1.4} />
+                  )}
+                  <Text style={styles.bioLabel}>{t('auth.biometricFace')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Fallback: sem biometria no dispositivo */}
+          {!hasFingerprint && !hasFaceId && hasBiometric === false && (
+            <View style={styles.bioRow}>
+              <TouchableOpacity
+                onPress={() => handleBiometric('finger')}
+                activeOpacity={0.7}
+                style={[styles.bioBtn, styles.bioBtnFinger]}
+              >
+                <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
+                <Fingerprint size={36} color={colors.accent} strokeWidth={1.4} />
+                <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleBiometric('face')}
+                activeOpacity={0.7}
+                style={[styles.bioBtn, styles.bioBtnFace]}
+              >
+                <View style={[styles.bioOrb, { backgroundColor: colors.purpleSoft }]} />
+                <ScanFace size={36} color={colors.purple} strokeWidth={1.4} />
+                <Text style={styles.bioLabel}>{t('auth.biometricFace')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Register link */}
           <View style={styles.registerRow}>
@@ -176,17 +297,6 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-// Inline icon components to avoid importing from lucide for colored prefix icons
-const MailIcon = () => {
-  const { Mail } = require('lucide-react-native');
-  return <Mail size={20} color={colors.petrol} strokeWidth={1.8} />;
-};
-
-const LockIcon = () => {
-  const { Lock } = require('lucide-react-native');
-  return <Lock size={20} color={colors.accent} strokeWidth={1.8} />;
-};
 
 const styles = StyleSheet.create({
   flex: {
@@ -221,12 +331,6 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
-  },
-  iconMail: {
-    marginRight: 0,
-  },
-  iconLock: {
-    marginRight: 0,
   },
   forgotBtn: {
     alignSelf: 'flex-end',
@@ -311,6 +415,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 3,
+  },
+  bioBtnDisabled: {
+    opacity: 0.6,
   },
   bioOrb: {
     position: 'absolute',

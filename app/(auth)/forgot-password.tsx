@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { ArrowRight, ChevronLeft, Mail } from 'lucide-react-native';
+import { ArrowRight, ChevronLeft, Mail, Send } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { Input } from '../../components/ui/Input';
 import { Alert } from '../../components/ui/Alert';
+import { getErrorMessage } from '../../utils/errorMessages';
 import * as auth from '../../lib/auth';
 
 export default function ForgotPasswordScreen() {
@@ -27,7 +28,7 @@ export default function ForgotPasswordScreen() {
 
   const handleReset = async () => {
     if (!email.includes('@')) {
-      setError('Email inválido');
+      setError('Informe um e-mail valido');
       return;
     }
     setError('');
@@ -37,8 +38,7 @@ export default function ForgotPasswordScreen() {
       if (err) throw err;
       setSent(true);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setError(msg);
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -68,16 +68,31 @@ export default function ForgotPasswordScreen() {
 
         {sent ? (
           <View style={styles.successSection}>
+            <View style={styles.sentIconWrap}>
+              <Send size={32} color={colors.accent} strokeWidth={1.5} />
+            </View>
+            <Text style={styles.sentTitle}>E-mail enviado!</Text>
+            <Text style={styles.sentText}>
+              Enviamos um link para{' '}
+              <Text style={styles.sentEmail}>{email}</Text>.{'\n'}
+              Abra o e-mail e clique em "Criar nova senha".
+            </Text>
             <Alert
-              variant="success"
-              message={`Link enviado para ${email}. Verifique sua caixa de entrada.`}
+              variant="info"
+              message="Nao recebeu? Verifique a pasta de spam ou lixo eletronico."
             />
+            <TouchableOpacity
+              onPress={() => { setSent(false); }}
+              style={styles.resendBtn}
+            >
+              <Text style={styles.resendText}>Enviar novamente</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.back()}
               style={styles.backToLogin}
             >
               <Text style={styles.backToLoginText}>
-                {t('auth.login')}
+                Voltar para o Login
               </Text>
             </TouchableOpacity>
           </View>
@@ -172,8 +187,44 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   successSection: {
-    gap: spacing.lg,
-    marginTop: spacing.md,
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.sm,
+  },
+  sentIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.accentGlow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  sentTitle: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: 22,
+    color: colors.text,
+  },
+  sentText: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: 14,
+    color: colors.textSec,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  sentEmail: {
+    fontFamily: 'Sora_700Bold',
+    color: colors.text,
+  },
+  resendBtn: {
+    marginTop: spacing.sm,
+  },
+  resendText: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: 13,
+    color: colors.petrol,
+    textDecorationLine: 'underline',
   },
   backToLogin: {
     alignSelf: 'center',

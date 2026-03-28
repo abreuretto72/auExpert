@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//e/@projetos_claude/PetsauLife/$LOCALAPPDATA/Android/Sdk/ndk/27.1.12297006/**)",
+      "Read(//e/@projetos_claude/PetsauLife/$LOCALAPPDATA/Android/Sdk/ndk/28.2.13676358/**)",
+      "Bash(ls -la /e/aa_projetos_claude/PetsauLife/app/\\\\\\(auth\\\\\\)/)",
+      "Bash(npm install:*)",
+      "Bash(npx expo:*)",
+      "Bash(EXPO_NO_INTERACTIVE=0 npx expo start --tunnel)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

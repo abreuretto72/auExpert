@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PetauLife+</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0F1923;color:#E8EDF2;font-family:'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.card{background:#162231;border:1px solid #1E3248;border-radius:24px;padding:40px 32px;max-width:420px;width:100%;text-align:center}
+.logo{font-size:24px;font-weight:700;margin-bottom:24px;letter-spacing:-0.8px}
+.icon{font-size:48px;margin-bottom:16px}
+h1{font-size:20px;margin-bottom:8px}
+p{font-size:14px;color:#8FA3B8;line-height:22px;margin-bottom:20px}
+.btn{display:inline-block;background:#E8813A;color:#fff;font-size:16px;font-weight:700;padding:14px 40px;border-radius:14px;text-decoration:none;margin-bottom:12px;width:100%;max-width:300px}
+.btn:hover{background:#CC6E2E}
+.btn-secondary{background:#1A2B3D;border:1px solid #1E3248;color:#8FA3B8;font-size:13px;padding:12px 24px}
+.spinner{width:32px;height:32px;border:3px solid #1E3248;border-top-color:#E8813A;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hint{font-size:11px;color:#5E7A94;margin-top:16px}
+.success{background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.15);border-radius:12px;padding:14px;margin-bottom:20px}
+.success p{color:#2ECC71;margin:0;font-size:13px}
+</style>
+</head>
+<body>
+<div class="card">
+<div class="logo"><span style="color:#E8EDF2">Pet</span><span style="color:#1B8EAD">au</span><span style="color:#E8EDF2">Life</span><span style="color:#E8813A">+</span></div>
+<div class="icon">&#128062;</div>
+
+<div id="loading">
+<div class="spinner"></div>
+<h1>Verificando...</h1>
+<p>Estamos validando seu link de redefinicao.</p>
+</div>
+
+<div id="success" style="display:none">
+<div class="success"><p>Link verificado com sucesso!</p></div>
+<h1>Sua senha pode ser alterada</h1>
+<p>Abra o app PetauLife+ para criar sua nova senha.</p>
+<a href="#" id="btn-native" class="btn">Abrir PetauLife+</a><br>
+<p class="hint">O app deve abrir automaticamente. Se nao abrir, toque no botao acima.</p>
+</div>
+
+<div id="error" style="display:none">
+<h1>Link expirado</h1>
+<p>Esse link ja foi usado ou expirou. Peca um novo na tela de login do app.</p>
+<p class="hint">Abra o PetauLife+ e toque em "Esqueci minha senha" para receber um novo link.</p>
+</div>
+</div>
+
+<script>
+(function(){
+  var hash = window.location.hash.substring(1);
+  var params = new URLSearchParams(hash);
+  var accessToken = params.get('access_token');
+  var refreshToken = params.get('refresh_token');
+  var type = params.get('type');
+
+  // Se temos tokens, o Supabase ja verificou — sucesso
+  if (accessToken && type === 'recovery') {
+    // Construir deep links
+    var fragment = 'access_token=' + accessToken + '&refresh_token=' + (refreshToken||'') + '&type=recovery';
+    var nativeLink = 'petaulife://reset-password#' + fragment;
+    // Expo Go link (desenvolvimento)
+    var expoLink = 'exp://192.168.0.183:8081/--/reset-password#' + fragment;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('success').style.display = 'block';
+    document.getElementById('btn-native').href = nativeLink;
+
+    // Tentar abrir automaticamente — primeiro Expo Go, depois native
+    setTimeout(function(){
+      // Tentar scheme nativo primeiro
+      var iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = nativeLink;
+      document.body.appendChild(iframe);
+
+      // Fallback para Expo Go
+      setTimeout(function(){
+        window.location.href = expoLink;
+      }, 1000);
+    }, 800);
+  } else if (hash && !accessToken) {
+    // Hash existe mas sem token — erro
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+  } else {
+    // Sem hash nenhum — pode ser acesso direto
+    setTimeout(function(){
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+    }, 3000);
+  }
+})();
+</script>
+</body>
+</html>
