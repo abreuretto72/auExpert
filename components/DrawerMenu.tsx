@@ -27,6 +27,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
+import { rs, fs } from '../hooks/useResponsive';
 import { useAuthStore } from '../stores/authStore';
 import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
@@ -119,37 +120,37 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
   const menuItems: MenuItem[] = [
     {
-      icon: <Settings size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Settings size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.preferences'),
       sublabel: t('menu.preferencesDesc'),
       route: '/settings',
     },
     {
-      icon: <Users size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Users size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.assistants'),
       sublabel: t('menu.assistantsDesc'),
       badge: t('menu.comingSoon'),
     },
     {
-      icon: <Shield size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.privacy'),
       sublabel: t('menu.privacyDesc'),
       route: '/privacy',
     },
     {
-      icon: <FileText size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.terms'),
       sublabel: t('menu.termsDesc'),
       route: '/terms',
     },
     {
-      icon: <HelpCircle size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <HelpCircle size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.helpSupport'),
       sublabel: t('menu.helpSupportDesc'),
       route: '/help',
     },
     {
-      icon: <Cloud size={20} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Cloud size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.backup'),
       sublabel: t('menu.backupDesc'),
       badge: t('menu.auto'),
@@ -182,7 +183,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
           <View style={styles.topBar}>
             <View />
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={22} color={colors.accent} strokeWidth={1.8} />
+              <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -193,7 +194,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
                 colors={[colors.accent, colors.accentDark]}
                 style={StyleSheet.absoluteFill}
               />
-              <User size={26} color="#fff" strokeWidth={1.8} />
+              <User size={rs(26)} color="#fff" strokeWidth={1.8} />
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
@@ -224,7 +225,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
                     <Text style={styles.menuBadgeText}>{item.badge}</Text>
                   </View>
                 ) : (
-                  <ChevronRight size={16} color={colors.textGhost} strokeWidth={1.8} />
+                  <ChevronRight size={rs(16)} color={colors.textGhost} strokeWidth={1.8} />
                 )}
               </TouchableOpacity>
             ))}
@@ -239,7 +240,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
             onPress={() => handleNavigate('/settings')}
           >
             <View style={[styles.menuIconBox, styles.dangerIconBox]}>
-              <Trash2 size={20} color={colors.danger} strokeWidth={1.8} />
+              <Trash2 size={rs(20)} color={colors.danger} strokeWidth={1.8} />
             </View>
             <View style={styles.menuTextCol}>
               <Text style={[styles.menuLabel, { color: colors.danger }]}>
@@ -247,7 +248,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
               </Text>
               <Text style={styles.menuSublabel}>{t('menu.dangerZoneDesc')}</Text>
             </View>
-            <ChevronRight size={16} color={colors.danger + '50'} strokeWidth={1.8} />
+            <ChevronRight size={rs(16)} color={colors.danger + '50'} strokeWidth={1.8} />
           </TouchableOpacity>
 
           <View style={styles.divider} />
@@ -259,7 +260,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
             onPress={handleLogout}
           >
             <View style={styles.menuIconBox}>
-              <LogOut size={20} color={colors.accent} strokeWidth={1.8} />
+              <LogOut size={rs(20)} color={colors.accent} strokeWidth={1.8} />
             </View>
             <View style={styles.menuTextCol}>
               <Text style={styles.menuLabel}>{t('menu.logoutLabel')}</Text>
@@ -289,21 +290,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: DRAWER_WIDTH,
     backgroundColor: colors.bgCard,
-    borderTopRightRadius: 28,
-    borderBottomRightRadius: 28,
+    borderTopRightRadius: rs(28),
+    borderBottomRightRadius: rs(28),
     shadowColor: '#000',
-    shadowOffset: { width: 8, height: 0 },
+    shadowOffset: { width: rs(8), height: 0 },
     shadowOpacity: 0.4,
-    shadowRadius: 30,
+    shadowRadius: rs(30),
     elevation: 20,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 52,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
+    paddingTop: rs(52),
+    paddingBottom: rs(32),
+    paddingHorizontal: rs(20),
   },
   topBar: {
     flexDirection: 'row',
@@ -312,8 +313,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   closeBtn: {
-    width: 40,
-    height: 40,
+    width: rs(40),
+    height: rs(40),
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,
@@ -325,37 +326,37 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   avatarWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: rs(56),
+    height: rs(56),
+    borderRadius: rs(16),
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowRadius: rs(12),
     elevation: 6,
   },
   profileInfo: {
-    marginLeft: 14,
+    marginLeft: rs(14),
     flex: 1,
   },
   profileName: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 18,
+    fontSize: fs(18),
     color: colors.text,
   },
   profileEmail: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.textDim,
     marginTop: 2,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 12,
+    marginVertical: rs(12),
   },
   menuList: {
     gap: 2,
@@ -363,12 +364,12 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    gap: 12,
+    paddingVertical: rs(10),
+    gap: rs(12),
   },
   menuIconBox: {
-    width: 42,
-    height: 42,
+    width: rs(42),
+    height: rs(42),
     borderRadius: radii.lg,
     backgroundColor: colors.accentSoft,
     alignItems: 'center',
@@ -382,12 +383,12 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.text,
   },
   menuSublabel: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textDim,
     marginTop: 1,
   },
@@ -395,13 +396,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentGlow,
     borderWidth: 1,
     borderColor: colors.accent + '20',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: rs(6),
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(3),
   },
   menuBadgeText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 9,
+    fontSize: fs(9),
     color: colors.accent,
   },
   footer: {
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontFamily: 'JetBrainsMono_400Regular',
-    fontSize: 10,
+    fontSize: fs(10),
     color: colors.textGhost,
   },
 });

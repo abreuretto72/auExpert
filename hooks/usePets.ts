@@ -16,6 +16,7 @@ export function usePets() {
     queryKey: PETS_KEY,
     queryFn: api.fetchPets,
     enabled: isAuthenticated,
+    refetchOnMount: 'always',
   });
 
   const addMutation = useMutation({

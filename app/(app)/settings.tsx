@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
@@ -70,7 +71,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={22} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <View style={styles.backBtn} />
@@ -82,7 +83,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Bell size={20} color={colors.accent} strokeWidth={1.8} />
+              <Bell size={rs(20)} color={colors.accent} strokeWidth={1.8} />
               <View style={styles.toggleTextCol}>
                 <Text style={styles.toggleLabel}>{t('settings.notifications')}</Text>
                 <Text style={styles.toggleDesc}>{t('settings.notificationsDesc')}</Text>
@@ -102,7 +103,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Fingerprint size={20} color={colors.accent} strokeWidth={1.8} />
+              <Fingerprint size={rs(20)} color={colors.accent} strokeWidth={1.8} />
               <View style={styles.toggleTextCol}>
                 <Text style={styles.toggleLabel}>{t('settings.biometric')}</Text>
                 <Text style={styles.toggleDesc}>{t('settings.biometricDesc')}</Text>
@@ -121,7 +122,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>{t('settings.about').toUpperCase()}</Text>
         <View style={styles.card}>
           <View style={styles.infoRow}>
-            <Info size={18} color={colors.petrol} strokeWidth={1.8} />
+            <Info size={rs(18)} color={colors.petrol} strokeWidth={1.8} />
             <Text style={styles.infoLabel}>{t('settings.version')}</Text>
             <Text style={styles.infoValue}>1.0.0-beta</Text>
           </View>
@@ -133,7 +134,7 @@ export default function SettingsScreen() {
         </Text>
         <View style={[styles.card, styles.dangerCard]}>
           <TouchableOpacity style={styles.dangerRow} onPress={handleDeleteAccount} activeOpacity={0.7}>
-            <Trash2 size={20} color={colors.danger} strokeWidth={1.8} />
+            <Trash2 size={rs(20)} color={colors.danger} strokeWidth={1.8} />
             <View style={styles.toggleTextCol}>
               <Text style={[styles.toggleLabel, { color: colors.danger }]}>{t('settings.deleteAccount')}</Text>
               <Text style={styles.toggleDesc}>{t('settings.deleteAccountDesc')}</Text>
@@ -149,21 +150,21 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  headerBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: 18, color: colors.text },
-  content: { paddingHorizontal: 20 },
-  sectionLabel: { fontFamily: 'Sora_700Bold', fontSize: 11, color: colors.textGhost, letterSpacing: 2, marginTop: spacing.lg, marginBottom: spacing.sm },
-  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.card, padding: spacing.md, marginBottom: spacing.sm },
+  headerBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(16), paddingVertical: rs(8), gap: rs(12) },
+  backBtn: { width: rs(40), height: rs(40), borderRadius: rs(radii.lg), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text },
+  content: { paddingHorizontal: rs(20) },
+  sectionLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textGhost, letterSpacing: 2, marginTop: rs(spacing.lg), marginBottom: rs(spacing.sm) },
+  card: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: rs(radii.card), padding: rs(spacing.md), marginBottom: rs(spacing.sm) },
   dangerCard: { borderColor: colors.danger + '30' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm), flex: 1 },
   toggleTextCol: { flex: 1 },
-  toggleLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: colors.text },
-  toggleDesc: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim, marginTop: 2 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  infoLabel: { fontFamily: 'Sora_500Medium', fontSize: 14, color: colors.textSec, flex: 1 },
-  infoValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: 13, color: colors.textDim },
-  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  bottomSpacer: { height: 40 },
+  toggleLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.text },
+  toggleDesc: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: rs(2) },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm) },
+  infoLabel: { fontFamily: 'Sora_500Medium', fontSize: fs(14), color: colors.textSec, flex: 1 },
+  infoValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(13), color: colors.textDim },
+  dangerRow: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm) },
+  bottomSpacer: { height: rs(40) },
 });

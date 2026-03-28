@@ -1,5 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { rs, fs } from '../hooks/useResponsive';
+import { useTranslation } from 'react-i18next';
 import {
   Dog,
   Cat,
@@ -40,6 +42,7 @@ interface PetCardProps {
 }
 
 const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
+  const { t } = useTranslation();
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
   if (pet.avatar_url) console.log('[PetCard]', pet.name, 'avatar:', pet.avatar_url.substring(0, 60) + '...');
@@ -113,7 +116,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
                 ? formatAge(pet.estimated_age_months)
                 : null,
               pet.weight_kg ? formatWeight(pet.weight_kg) : null,
-              isDog ? 'Cao' : 'Gato',
+              isDog ? t('pets.dog') : t('pets.cat'),
             ]
               .filter(Boolean)
               .map((tag, i) => (
@@ -190,14 +193,14 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderWidth: 1,
+    borderWidth: rs(1),
     borderColor: colors.border,
-    borderRadius: radii.card,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    shadowOffset: { width: 0, height: 4 },
+    borderRadius: rs(radii.card),
+    padding: rs(spacing.md),
+    marginBottom: rs(spacing.md),
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.15,
-    shadowRadius: 16,
+    shadowRadius: rs(16),
     elevation: 4,
   },
   topRow: {
@@ -205,10 +208,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarOuter: {
-    width: 68,
-    height: 68,
-    borderRadius: 18,
-    borderWidth: 2.5,
+    width: rs(68),
+    height: rs(68),
+    borderRadius: rs(18),
+    borderWidth: rs(2.5),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bgCard,
@@ -217,120 +220,120 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
+    borderRadius: rs(16),
   },
   avatarGlow: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 18,
+    borderRadius: rs(18),
   },
   topInfo: {
     flex: 1,
-    marginLeft: 14,
-    marginRight: 8,
+    marginLeft: rs(14),
+    marginRight: rs(8),
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: rs(8),
   },
   name: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 22,
+    fontSize: fs(22),
     color: colors.text,
     flexShrink: 1,
   },
   moodBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.md,
-    gap: 5,
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(3),
+    borderRadius: rs(radii.md),
+    gap: rs(5),
   },
   moodDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: rs(6),
+    height: rs(6),
+    borderRadius: rs(3),
   },
   moodText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 10,
+    fontSize: fs(10),
   },
   breed: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 13,
+    fontSize: fs(13),
     color: colors.textDim,
-    marginTop: 2,
+    marginTop: rs(2),
   },
   tagsRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 8,
+    gap: rs(6),
+    marginTop: rs(8),
   },
   tag: {
     backgroundColor: colors.bgCard,
-    borderWidth: 1,
+    borderWidth: rs(1),
     borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderRadius: rs(radii.sm),
+    paddingHorizontal: rs(8),
+    paddingVertical: rs(3),
   },
   tagText: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textSec,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: 14,
+    gap: rs(spacing.sm),
+    marginTop: rs(14),
   },
   statBox: {
     flex: 1,
     backgroundColor: colors.bgCard,
-    borderWidth: 1,
+    borderWidth: rs(1),
     borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingVertical: 10,
+    borderRadius: rs(radii.lg),
+    paddingVertical: rs(10),
     alignItems: 'center',
-    gap: 4,
+    gap: rs(4),
   },
   statValue: {
     fontFamily: 'JetBrainsMono_700Bold',
-    fontSize: 18,
+    fontSize: fs(18),
   },
   statLabel: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 10,
+    fontSize: fs(10),
     color: colors.textDim,
-    letterSpacing: 0.3,
+    letterSpacing: rs(0.3),
   },
   bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 12,
+    marginTop: rs(12),
   },
   vaccineBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radii.sm,
+    gap: rs(6),
+    paddingHorizontal: rs(10),
+    paddingVertical: rs(5),
+    borderRadius: rs(radii.sm),
   },
   vaccineText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 11,
+    fontSize: fs(11),
   },
   lastActivity: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: rs(4),
   },
   lastActivityText: {
     fontFamily: 'JetBrainsMono_500Medium',
-    fontSize: 10,
+    fontSize: fs(10),
     color: colors.textDim,
   },
 });

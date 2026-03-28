@@ -18,7 +18,11 @@
     "download": "Baixar",
     "he": "ele",
     "she": "ela",
-    "welcome": "Bem-vindo(a) de volta,"
+    "welcome": "Bem-vindo(a) de volta,",
+    "home": "Início",
+    "health": "Saúde",
+    "ia": "IA",
+    "diary": "Diário"
   },
   "auth": {
     "login": "Entrar",

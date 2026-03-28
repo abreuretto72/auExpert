@@ -21,6 +21,7 @@ import {
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import PetauLogo from '../../components/PetauLogo';
@@ -34,6 +35,7 @@ import type { AddPetData } from '../../components/AddPetModal';
 import { useToast } from '../../components/Toast';
 import { usePets } from '../../hooks/usePets';
 import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../stores/authStore';
 import { getErrorMessage } from '../../utils/errorMessages';
 import { supabase } from '../../lib/supabase';
 
@@ -59,23 +61,25 @@ export default function HubScreen() {
   const [tutorProfile, setTutorProfile] = useState<TutorProfile | null>(null);
 
   // Carregar perfil do tutor
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   useEffect(() => {
-    console.log('[Hub] useEffect tutor profile, user.id:', user?.id);
-    if (!user?.id) return;
+    if (!isAuthenticated) return;
+    // Buscar com auth.uid() via RLS — não depende de user?.id do store
     (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) {
+        console.log('[Hub] No session for tutor profile');
+        return;
+      }
       const { data, error } = await supabase
         .from('users')
         .select('avatar_url, city, state, xp, level, created_at')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .single();
-      console.log('[Hub] Tutor profile result:', {
-        avatar_url: data?.avatar_url ?? 'NULL',
-        city: data?.city ?? 'NULL',
-        error: error?.message ?? 'NONE',
-      });
+      console.log('[Hub] Tutor profile:', { avatar: !!data?.avatar_url, city: data?.city, err: error?.message });
       if (data) setTutorProfile(data as TutorProfile);
     })();
-  }, [user?.id]);
+  }, [isAuthenticated]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -83,8 +87,9 @@ export default function HubScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const userName = user?.full_name?.split(' ')[0] ?? 'Tutor';
+  const userName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Tutor';
   const userEmail = user?.email ?? '';
+  console.log('[Hub] user:', { id: user?.id, name: userName, hasAvatar: !!tutorProfile?.avatar_url });
 
   const petCards: PetCardData[] = pets.map((p) => ({
     id: p.id,
@@ -232,7 +237,7 @@ export default function HubScreen() {
         {hasOverdueVaccine && (
           <TouchableOpacity style={styles.vaccineAlert} activeOpacity={0.7}>
             <AlertTriangle
-              size={18}
+              size={rs(18)}
               color={colors.danger}
               strokeWidth={2}
             />
@@ -243,7 +248,7 @@ export default function HubScreen() {
               )}
             </Text>
             <ChevronRight
-              size={16}
+              size={rs(16)}
               color={colors.danger}
               strokeWidth={1.8}
             />
@@ -260,7 +265,7 @@ export default function HubScreen() {
             activeOpacity={0.7}
             onPress={handleAddPet}
           >
-            <Plus size={16} color="#fff" strokeWidth={2} />
+            <Plus size={rs(16)} color="#fff" strokeWidth={2} />
             <Text style={styles.newPetBtnText}>
               {t('pets.addNew', 'Novo Pet')}
             </Text>
@@ -268,7 +273,7 @@ export default function HubScreen() {
         </View>
       </>
     );},
-    [pets, userName, userEmail, hasOverdueVaccine, t, handleAddPet, router],
+    [pets, userName, userEmail, hasOverdueVaccine, t, handleAddPet, router, tutorProfile],
   );
 
   // ── Footer da lista ──────────────────────────────
@@ -279,7 +284,7 @@ export default function HubScreen() {
         {/* AI insight card */}
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
-            <Sparkles size={18} color={colors.purple} strokeWidth={1.8} />
+            <Sparkles size={rs(18)} color={colors.purple} strokeWidth={1.8} />
             <Text style={styles.insightLabel}>INSIGHT DA IA</Text>
           </View>
           <Text style={styles.insightText}>
@@ -311,8 +316,8 @@ export default function HubScreen() {
       !isLoading ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIconRow}>
-            <Dog size={40} color={colors.accent + '50'} strokeWidth={1.5} />
-            <Cat size={40} color={colors.purple + '50'} strokeWidth={1.5} />
+            <Dog size={rs(40)} color={colors.accent + '50'} strokeWidth={1.5} />
+            <Cat size={rs(40)} color={colors.purple + '50'} strokeWidth={1.5} />
           </View>
           <Text style={styles.emptyTitle}>Nenhum pet cadastrado</Text>
           <Text style={styles.emptyText}>
@@ -328,7 +333,7 @@ export default function HubScreen() {
               colors={[colors.accent, colors.accentDark]}
               style={styles.emptyBtnGradient}
             >
-              <Plus size={20} color="#fff" strokeWidth={2} />
+              <Plus size={rs(20)} color="#fff" strokeWidth={2} />
               <Text style={styles.emptyBtnText}>Cadastrar meu pet</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -350,7 +355,7 @@ export default function HubScreen() {
           />
           <View style={styles.header}>
             <View style={styles.headerBtn} />
-            <PetauLogo size="normal" />
+            <PetauLogo size="normal" showIcon={false} />
             <View style={styles.headerBtn} />
           </View>
           <HubSkeleton />
@@ -376,11 +381,11 @@ export default function HubScreen() {
             onPress={() => setDrawerVisible(true)}
             style={styles.headerBtn}
           >
-            <Menu size={24} color={colors.accent} strokeWidth={1.8} />
+            <Menu size={rs(24)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
-          <PetauLogo size="normal" />
+          <PetauLogo size="normal" showIcon={false} />
           <TouchableOpacity style={styles.headerBtn}>
-            <Bell size={24} color={colors.accent} strokeWidth={1.8} />
+            <Bell size={rs(24)} color={colors.accent} strokeWidth={1.8} />
             <View style={styles.bellDot} />
           </TouchableOpacity>
         </View>
@@ -443,37 +448,37 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: rs(200),
     zIndex: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: rs(20),
+    paddingTop: rs(12),
+    paddingBottom: rs(8),
     zIndex: 1,
   },
   headerBtn: {
-    width: 44,
-    height: 44,
+    width: rs(44),
+    height: rs(44),
     alignItems: 'center',
     justifyContent: 'center',
   },
   bellDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: rs(10),
+    right: rs(10),
+    width: rs(8),
+    height: rs(8),
+    borderRadius: rs(4),
     backgroundColor: colors.danger,
     borderWidth: 1.5,
     borderColor: colors.bg,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: rs(20),
   },
   scrollContentEmpty: {
     flexGrow: 1,
@@ -485,14 +490,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.danger + '30',
     borderRadius: radii.xl,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
-    gap: 8,
+    paddingHorizontal: rs(14),
+    paddingVertical: rs(12),
+    marginBottom: rs(16),
+    gap: rs(8),
   },
   vaccineAlertText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 13,
+    fontSize: fs(13),
     color: colors.danger,
     flex: 1,
   },
@@ -500,12 +505,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    marginTop: 4,
+    marginBottom: rs(16),
+    marginTop: rs(4),
   },
   sectionLabel: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textGhost,
     letterSpacing: 2,
   },
@@ -514,18 +519,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.accent,
     borderRadius: radii.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    paddingHorizontal: rs(12),
+    paddingVertical: rs(8),
+    gap: rs(6),
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowRadius: rs(12),
     elevation: 4,
   },
   newPetBtnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 12,
+    fontSize: fs(12),
     color: '#fff',
   },
   insightCard: {
@@ -539,23 +544,23 @@ const styles = StyleSheet.create({
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: rs(8),
+    marginBottom: rs(10),
   },
   insightLabel: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.purple,
     letterSpacing: 1,
   },
   insightText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 13,
+    fontSize: fs(13),
     color: colors.textSec,
-    lineHeight: 20,
+    lineHeight: rs(20),
   },
   bottomSpacer: {
-    height: 24,
+    height: rs(24),
   },
 
   // Empty state
@@ -564,30 +569,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
-    paddingVertical: 60,
+    paddingVertical: rs(60),
   },
   emptyIconRow: {
     flexDirection: 'row',
-    gap: 20,
+    gap: rs(20),
     marginBottom: spacing.lg,
   },
   emptyTitle: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 20,
+    fontSize: fs(20),
     color: colors.text,
     marginBottom: spacing.sm,
   },
   emptyText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: rs(22),
     marginBottom: spacing.xl,
   },
   emptyBtn: {
     width: '100%',
-    maxWidth: 280,
+    maxWidth: rs(280),
     borderRadius: radii.xl,
     overflow: 'hidden',
   },
@@ -595,17 +600,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 52,
-    gap: 8,
+    height: rs(52),
+    gap: rs(8),
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: rs(20),
     elevation: 6,
   },
   emptyBtnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 15,
+    fontSize: fs(15),
     color: '#fff',
   },
 });

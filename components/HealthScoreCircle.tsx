@@ -3,15 +3,17 @@ import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { ShieldCheck } from 'lucide-react-native';
 import { colors } from '../constants/colors';
+import { rs, fs } from '../hooks/useResponsive';
 
 interface HealthScoreCircleProps {
   score: number | null;
   size?: number;
 }
 
-export function HealthScoreCircle({ score, size = 100 }: HealthScoreCircleProps) {
+export function HealthScoreCircle({ score, size: rawSize = 100 }: HealthScoreCircleProps) {
+  const size = rs(rawSize);
   const value = score ?? 0;
-  const strokeWidth = 6;
+  const strokeWidth = rs(6);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = (value / 100) * circumference;
@@ -53,7 +55,7 @@ export function HealthScoreCircle({ score, size = 100 }: HealthScoreCircleProps)
           </>
         ) : (
           <>
-            <ShieldCheck size={24} color={colors.textDim} strokeWidth={1.5} />
+            <ShieldCheck size={rs(24)} color={colors.textDim} strokeWidth={1.5} />
             <Text style={styles.label}>sem dados</Text>
           </>
         )}
@@ -73,11 +75,11 @@ const styles = StyleSheet.create({
   },
   score: {
     fontFamily: 'JetBrainsMono_700Bold',
-    fontSize: 28,
+    fontSize: fs(28),
   },
   label: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 10,
+    fontSize: fs(10),
     color: colors.textDim,
     letterSpacing: 0.5,
     marginTop: 2,

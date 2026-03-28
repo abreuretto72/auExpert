@@ -35,6 +35,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
+import { rs, fs } from '../hooks/useResponsive';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
 import { Input } from './ui/Input';
@@ -396,7 +397,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
           <View style={styles.sheetHeader}>
             {step > 0 && !analyzing ? (
               <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-                <ChevronLeft size={22} color={colors.accent} strokeWidth={1.8} />
+                <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
               </TouchableOpacity>
             ) : (
               <View style={styles.backBtn} />
@@ -406,7 +407,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
             </Text>
             {!analyzing ? (
               <TouchableOpacity onPress={handleClose} style={styles.backBtn}>
-                <X size={22} color={colors.accent} strokeWidth={1.8} />
+                <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
               </TouchableOpacity>
             ) : (
               <View style={styles.backBtn} />
@@ -429,13 +430,13 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                   onPress={() => handleSelectSpecies('dog')}
                 >
                   <View style={[styles.speciesIcon, { backgroundColor: colors.accent + '12' }]}>
-                    <Dog size={40} color={colors.accent} strokeWidth={1.5} />
+                    <Dog size={rs(40)} color={colors.accent} strokeWidth={1.5} />
                   </View>
                   <View style={styles.speciesInfo}>
                     <Text style={styles.speciesLabel}>{t('pets.dog')}</Text>
                     <Text style={styles.speciesSub}>{t('addPet.allBreeds')}</Text>
                   </View>
-                  <ArrowRight size={20} color={colors.accent} strokeWidth={1.8} />
+                  <ArrowRight size={rs(20)} color={colors.accent} strokeWidth={1.8} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -444,13 +445,13 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                   onPress={() => handleSelectSpecies('cat')}
                 >
                   <View style={[styles.speciesIcon, { backgroundColor: colors.purple + '12' }]}>
-                    <Cat size={40} color={colors.purple} strokeWidth={1.5} />
+                    <Cat size={rs(40)} color={colors.purple} strokeWidth={1.5} />
                   </View>
                   <View style={styles.speciesInfo}>
                     <Text style={styles.speciesLabel}>{t('pets.cat')}</Text>
                     <Text style={styles.speciesSub}>{t('addPet.allBreeds')}</Text>
                   </View>
-                  <ArrowRight size={20} color={colors.purple} strokeWidth={1.8} />
+                  <ArrowRight size={rs(20)} color={colors.purple} strokeWidth={1.8} />
                 </TouchableOpacity>
 
                 <Text style={styles.onlyDogsAndCats}>{t('addPet.onlyDogsAndCats')}</Text>
@@ -461,7 +462,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
             {step === 1 && species && (
               <>
                 <View style={styles.aiBanner}>
-                  <Sparkles size={18} color={colors.purple} strokeWidth={1.8} />
+                  <Sparkles size={rs(18)} color={colors.purple} strokeWidth={1.8} />
                   <Text style={styles.aiBannerText}>{t('addPet.aiWillIdentify')}</Text>
                 </View>
 
@@ -476,14 +477,14 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                 >
                   <LinearGradient colors={[petColor + '08', petColor + '04']} style={styles.cameraBtnGradient}>
                     <View style={[styles.cameraCircle, { backgroundColor: petColor + '15' }]}>
-                      <Camera size={36} color={petColor} strokeWidth={1.5} />
+                      <Camera size={rs(36)} color={petColor} strokeWidth={1.5} />
                     </View>
                     <Text style={[styles.cameraBtnText, { color: petColor }]}>{t('addPet.takePhoto')}</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.galleryBtn} activeOpacity={0.7} onPress={handlePickFromGallery}>
-                  <ImageIcon size={18} color={colors.accent} strokeWidth={1.8} />
+                  <ImageIcon size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                   <Text style={styles.galleryBtnText}>{t('addPet.pickFromGallery')}</Text>
                 </TouchableOpacity>
 
@@ -517,7 +518,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                   <>
                     {analysis && (
                       <View style={styles.aiResultsHeader}>
-                        <Sparkles size={16} color={colors.purple} strokeWidth={2} />
+                        <Sparkles size={rs(16)} color={colors.purple} strokeWidth={2} />
                         <Text style={styles.aiResultsTitle}>{t('addPet.analysisComplete')}</Text>
                         {analysis.breed && (
                           <View style={styles.confidenceBadge}>
@@ -532,9 +533,9 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                     {!analysis && (
                       <View style={[styles.aiSummary, { borderColor: petColor + '25' }]}>
                         <View style={styles.aiSummaryTop}>
-                          {isDog ? <Dog size={24} color={petColor} strokeWidth={1.8} /> : <Cat size={24} color={petColor} strokeWidth={1.8} />}
+                          {isDog ? <Dog size={rs(24)} color={petColor} strokeWidth={1.8} /> : <Cat size={rs(24)} color={petColor} strokeWidth={1.8} />}
                           <View style={styles.aiSummaryBadge}>
-                            <Sparkles size={12} color={colors.purple} strokeWidth={2} />
+                            <Sparkles size={rs(12)} color={colors.purple} strokeWidth={2} />
                             <Text style={styles.aiSummaryBadgeText}>{t('addPet.manualEntry')}</Text>
                           </View>
                         </View>
@@ -553,7 +554,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       placeholder={t('addPet.petNamePlaceholder', { pet: isDog ? t('pets.dog').toLowerCase() : t('pets.cat').toLowerCase() })}
                       value={petName}
                       onChangeText={setPetName}
-                      icon={isDog ? <Dog size={20} color={petColor} strokeWidth={1.8} /> : <Cat size={20} color={petColor} strokeWidth={1.8} />}
+                      icon={isDog ? <Dog size={rs(20)} color={petColor} strokeWidth={1.8} /> : <Cat size={rs(20)} color={petColor} strokeWidth={1.8} />}
                       showMic
                     />
 
@@ -563,7 +564,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       placeholder={t('addPet.breed')}
                       value={editBreed}
                       onChangeText={setEditBreed}
-                      icon={<ScanEye size={20} color={colors.purple} strokeWidth={1.8} />}
+                      icon={<ScanEye size={rs(20)} color={colors.purple} strokeWidth={1.8} />}
                     />
 
                     {/* Idade + Peso (lado a lado) */}
@@ -574,7 +575,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                           placeholder="ex: 4m, 2a, 1a6m"
                           value={editAge}
                           onChangeText={setEditAge}
-                          icon={<Clock size={20} color={colors.petrol} strokeWidth={1.8} />}
+                          icon={<Clock size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
                         />
                       </View>
                       <View style={styles.halfField}>
@@ -584,7 +585,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                           value={editWeight}
                           onChangeText={setEditWeight}
                           type="numeric"
-                          icon={<Scale size={20} color={colors.petrol} strokeWidth={1.8} />}
+                          icon={<Scale size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
                         />
                       </View>
                     </View>
@@ -612,13 +613,13 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       placeholder={t('addPet.coatColor')}
                       value={editColor}
                       onChangeText={setEditColor}
-                      icon={<Palette size={20} color={colors.petrol} strokeWidth={1.8} />}
+                      icon={<Palette size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
                     />
 
                     {/* Humor */}
                     {editMood ? (
                       <View style={styles.moodRow}>
-                        <SmilePlus size={18} color={colors.accent} strokeWidth={1.8} />
+                        <SmilePlus size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                         <Text style={styles.moodLabel}>{t('diary.mood')}</Text>
                         <View style={[styles.moodChip, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
                           <Text style={[styles.moodChipText, { color: colors.accent }]}>{editMood}</Text>
@@ -637,7 +638,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                     {editHealth ? (
                       <View style={styles.healthCard}>
                         <View style={styles.healthHeader}>
-                          <ShieldCheck size={16} color={colors.success} strokeWidth={1.8} />
+                          <ShieldCheck size={rs(16)} color={colors.success} strokeWidth={1.8} />
                           <Text style={styles.healthTitle}>{t('health.score', 'Saúde')}</Text>
                         </View>
                         {editHealth.split('\n').filter(Boolean).map((obs, i) => (
@@ -706,7 +707,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                         colors={petName.trim() ? [petColor, isDog ? colors.accentDark : '#7D3C98'] : [colors.card, colors.card]}
                         style={styles.submitBtnGradient}
                       >
-                        {isDog ? <Dog size={18} color="#fff" strokeWidth={2} /> : <Cat size={18} color="#fff" strokeWidth={2} />}
+                        {isDog ? <Dog size={rs(18)} color="#fff" strokeWidth={2} /> : <Cat size={rs(18)} color="#fff" strokeWidth={2} />}
                         <Text style={styles.submitBtnText}>
                           {isSubmitting ? t('addPet.registering') : t('addPet.register', { name: petName.trim() || 'pet' })}
                         </Text>
@@ -732,116 +733,116 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.modal,
     maxHeight: '90%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -8 },
+    shadowOffset: { width: 0, height: rs(-8) },
     shadowOpacity: 0.3,
-    shadowRadius: 20,
+    shadowRadius: rs(20),
     elevation: 20,
   },
-  handleRow: { alignItems: 'center', paddingTop: 12, paddingBottom: 4 },
-  handle: { width: 40, height: 5, borderRadius: 3, backgroundColor: colors.textGhost },
+  handleRow: { alignItems: 'center', paddingTop: rs(12), paddingBottom: rs(4) },
+  handle: { width: rs(40), height: rs(5), borderRadius: rs(3), backgroundColor: colors.textGhost },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: rs(20),
+    paddingVertical: rs(12),
   },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  sheetTitle: { fontFamily: 'Sora_700Bold', fontSize: 18, color: colors.text },
-  sheetContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  backBtn: { width: rs(40), height: rs(40), alignItems: 'center', justifyContent: 'center' },
+  sheetTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text },
+  sheetContent: { paddingHorizontal: rs(20), paddingBottom: rs(40) },
 
   // Step 0
-  question: { fontFamily: 'Sora_600SemiBold', fontSize: 16, color: colors.text, textAlign: 'center', marginBottom: spacing.lg, marginTop: spacing.sm },
+  question: { fontFamily: 'Sora_600SemiBold', fontSize: fs(16), color: colors.text, textAlign: 'center', marginBottom: spacing.lg, marginTop: spacing.sm },
   speciesBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderRadius: radii.xxl, padding: spacing.md, marginBottom: spacing.md, gap: spacing.md },
-  speciesIcon: { width: 80, height: 80, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  speciesIcon: { width: rs(80), height: rs(80), borderRadius: rs(20), alignItems: 'center', justifyContent: 'center' },
   speciesInfo: { flex: 1 },
-  speciesLabel: { fontFamily: 'Sora_700Bold', fontSize: 20, color: colors.text },
-  speciesSub: { fontFamily: 'Sora_400Regular', fontSize: 13, color: colors.textDim, marginTop: 2 },
-  onlyDogsAndCats: { fontFamily: 'Sora_400Regular', fontSize: 12, color: colors.textGhost, textAlign: 'center', marginTop: spacing.sm },
+  speciesLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text },
+  speciesSub: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, marginTop: 2 },
+  onlyDogsAndCats: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textGhost, textAlign: 'center', marginTop: spacing.sm },
 
   // Step 1
-  aiBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.purpleSoft, borderWidth: 1, borderColor: colors.purple + '25', borderRadius: radii.lg, paddingVertical: 10, marginBottom: spacing.md },
-  aiBannerText: { fontFamily: 'Sora_700Bold', fontSize: 13, color: colors.purple },
-  photoInstructions: { fontFamily: 'Sora_400Regular', fontSize: 14, color: colors.textSec, textAlign: 'center', lineHeight: 22, marginBottom: spacing.lg },
+  aiBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.purpleSoft, borderWidth: 1, borderColor: colors.purple + '25', borderRadius: radii.lg, paddingVertical: rs(10), marginBottom: spacing.md },
+  aiBannerText: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.purple },
+  photoInstructions: { fontFamily: 'Sora_400Regular', fontSize: fs(14), color: colors.textSec, textAlign: 'center', lineHeight: rs(22), marginBottom: spacing.lg },
   cameraBtn: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: radii.card, overflow: 'hidden', marginBottom: spacing.md },
-  cameraBtnGradient: { alignItems: 'center', paddingVertical: 32, gap: 10 },
-  cameraCircle: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  cameraBtnText: { fontFamily: 'Sora_700Bold', fontSize: 16 },
-  galleryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.xl, paddingVertical: 14, marginBottom: spacing.md },
-  galleryBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: 14, color: colors.accent },
+  cameraBtnGradient: { alignItems: 'center', paddingVertical: rs(32), gap: rs(10) },
+  cameraCircle: { width: rs(72), height: rs(72), borderRadius: rs(36), alignItems: 'center', justifyContent: 'center', marginBottom: rs(4) },
+  cameraBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(16) },
+  galleryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.xl, paddingVertical: rs(14), marginBottom: spacing.md },
+  galleryBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.accent },
   skipPhotoBtn: { alignItems: 'center', paddingVertical: spacing.sm },
-  skipPhotoText: { fontFamily: 'Sora_500Medium', fontSize: 13, color: colors.textDim, textDecorationLine: 'underline' },
+  skipPhotoText: { fontFamily: 'Sora_500Medium', fontSize: fs(13), color: colors.textDim, textDecorationLine: 'underline' },
   photoPreview: { alignItems: 'center', marginBottom: spacing.lg },
-  photoImage: { width: 200, height: 200, borderRadius: radii.card, borderWidth: 3, marginBottom: spacing.md },
+  photoImage: { width: rs(200), height: rs(200), borderRadius: radii.card, borderWidth: rs(3), marginBottom: spacing.md },
   photoActions: { flexDirection: 'row', gap: spacing.md },
-  photoActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg, paddingHorizontal: 16, paddingVertical: 10 },
-  photoActionText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: colors.accent },
+  photoActionBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg, paddingHorizontal: rs(16), paddingVertical: rs(10) },
+  photoActionText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.accent },
   confirmPhotoBtn: { borderRadius: radii.xl, overflow: 'hidden' },
-  confirmPhotoBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, gap: spacing.sm },
-  confirmPhotoBtnText: { fontFamily: 'Sora_700Bold', fontSize: 15, color: '#fff' },
+  confirmPhotoBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: rs(52), gap: spacing.sm },
+  confirmPhotoBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: '#fff' },
 
   // Step 2: Analyzing
   analyzingContainer: { alignItems: 'center', paddingVertical: spacing.xl },
-  analyzingPhoto: { width: 140, height: 140, borderRadius: radii.card, borderWidth: 3, marginBottom: spacing.lg },
-  analyzingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.sm },
-  analyzingText: { fontFamily: 'Sora_700Bold', fontSize: 16, color: colors.purple },
-  analyzingHint: { fontFamily: 'Sora_400Regular', fontSize: 13, color: colors.textDim, textAlign: 'center' },
+  analyzingPhoto: { width: rs(140), height: rs(140), borderRadius: radii.card, borderWidth: rs(3), marginBottom: spacing.lg },
+  analyzingRow: { flexDirection: 'row', alignItems: 'center', gap: rs(10), marginBottom: spacing.sm },
+  analyzingText: { fontFamily: 'Sora_700Bold', fontSize: fs(16), color: colors.purple },
+  analyzingHint: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, textAlign: 'center' },
 
   // Step 2: AI Results header
-  aiResultsHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.md },
-  aiResultsTitle: { fontFamily: 'Sora_700Bold', fontSize: 14, color: colors.purple, flex: 1 },
-  confidenceBadge: { backgroundColor: colors.purpleSoft, borderRadius: radii.sm, paddingHorizontal: 6, paddingVertical: 2 },
-  confidenceText: { fontFamily: 'JetBrainsMono_500Medium', fontSize: 10, color: colors.purple },
-  aiDisclaimer: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim, textAlign: 'center', marginTop: 4, marginBottom: spacing.md, fontStyle: 'italic' },
+  aiResultsHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: spacing.md },
+  aiResultsTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(14), color: colors.purple, flex: 1 },
+  confidenceBadge: { backgroundColor: colors.purpleSoft, borderRadius: radii.sm, paddingHorizontal: rs(6), paddingVertical: 2 },
+  confidenceText: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(10), color: colors.purple },
+  aiDisclaimer: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, textAlign: 'center', marginTop: rs(4), marginBottom: spacing.md, fontStyle: 'italic' },
 
   // Step 2: Manual
   aiSummary: { backgroundColor: colors.card, borderWidth: 1, borderRadius: radii.xxl, padding: spacing.md, marginBottom: spacing.lg },
   aiSummaryTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
-  aiSummaryBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.purpleSoft, borderRadius: radii.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  aiSummaryBadgeText: { fontFamily: 'Sora_600SemiBold', fontSize: 10, color: colors.purple },
-  aiSummaryHint: { fontFamily: 'Sora_400Regular', fontSize: 13, color: colors.textSec, lineHeight: 20 },
+  aiSummaryBadge: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.purpleSoft, borderRadius: radii.sm, paddingHorizontal: rs(8), paddingVertical: rs(4) },
+  aiSummaryBadgeText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.purple },
+  aiSummaryHint: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec, lineHeight: rs(20) },
 
   // Alerts + BCS
   alertsCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.warning + '25', borderRadius: radii.xxl, padding: spacing.md, marginBottom: spacing.md },
-  alertItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
-  alertDot: { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  alertText: { fontFamily: 'Sora_500Medium', fontSize: 13, flex: 1, lineHeight: 20 },
-  bcsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md, paddingHorizontal: 4 },
-  bcsLabel: { fontFamily: 'Sora_700Bold', fontSize: 11, color: colors.textDim, width: 30 },
-  bcsBar: { flex: 1, flexDirection: 'row', gap: 2, height: 8 },
+  alertItem: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(8), marginBottom: rs(6) },
+  alertDot: { width: rs(8), height: rs(8), borderRadius: rs(4), marginTop: rs(5) },
+  alertText: { fontFamily: 'Sora_500Medium', fontSize: fs(13), flex: 1, lineHeight: rs(20) },
+  bcsRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: spacing.md, paddingHorizontal: rs(4) },
+  bcsLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textDim, width: rs(30) },
+  bcsBar: { flex: 1, flexDirection: 'row', gap: 2, height: rs(8) },
   bcsSegment: { flex: 1, borderRadius: 2, backgroundColor: colors.border },
-  bcsValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: 11, color: colors.textSec, width: 80, textAlign: 'right' },
+  bcsValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(11), color: colors.textSec, width: rs(80), textAlign: 'right' },
 
   // Mood + Health
-  moodRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: spacing.md, paddingVertical: 8 },
-  moodLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: colors.textDim },
-  moodChip: { borderRadius: radii.sm, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
-  moodChipText: { fontFamily: 'Sora_700Bold', fontSize: 12, textTransform: 'capitalize' },
+  moodRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: spacing.md, paddingVertical: rs(8) },
+  moodLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textDim },
+  moodChip: { borderRadius: radii.sm, borderWidth: 1, paddingHorizontal: rs(10), paddingVertical: rs(4) },
+  moodChipText: { fontFamily: 'Sora_700Bold', fontSize: fs(12), textTransform: 'capitalize' },
   healthCard: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.success + '25', borderRadius: radii.xxl, padding: spacing.md, marginBottom: spacing.md },
-  healthHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: spacing.sm },
-  healthTitle: { fontFamily: 'Sora_700Bold', fontSize: 13, color: colors.success },
-  healthItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 },
-  healthDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success, marginTop: 6 },
-  healthText: { fontFamily: 'Sora_400Regular', fontSize: 13, color: colors.textSec, flex: 1, lineHeight: 20 },
+  healthHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: spacing.sm },
+  healthTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.success },
+  healthItem: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(8), marginBottom: rs(6) },
+  healthDot: { width: rs(6), height: rs(6), borderRadius: rs(3), backgroundColor: colors.success, marginTop: rs(6) },
+  healthText: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec, flex: 1, lineHeight: rs(20) },
 
   // Editable fields
   rowFields: { flexDirection: 'row', gap: spacing.sm },
   halfField: { flex: 1 },
-  fieldLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: colors.textDim, marginBottom: 6, marginTop: 4 },
+  fieldLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textDim, marginBottom: rs(6), marginTop: rs(4) },
   sizeChips: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  sizeChip: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
-  sizeChipText: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: colors.textSec },
+  sizeChip: { flex: 1, alignItems: 'center', paddingVertical: rs(12), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
+  sizeChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.textSec },
 
   // Preview + Submit
   previewCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderRadius: radii.xxl, padding: spacing.md, gap: spacing.md, marginBottom: spacing.lg },
-  previewAvatar: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  previewAvatar: { width: rs(52), height: rs(52), borderRadius: rs(14), alignItems: 'center', justifyContent: 'center' },
   previewInfo: { flex: 1 },
-  previewName: { fontFamily: 'Sora_700Bold', fontSize: 20, color: colors.text },
-  previewSpecies: { fontFamily: 'Sora_400Regular', fontSize: 13, color: colors.textDim, marginTop: 2 },
+  previewName: { fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text },
+  previewSpecies: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, marginTop: 2 },
   submitBtn: { borderRadius: radii.xl, overflow: 'hidden' },
   submitBtnDisabled: { opacity: 0.4 },
-  submitBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, gap: 8 },
-  submitBtnText: { fontFamily: 'Sora_700Bold', fontSize: 15, color: '#fff' },
+  submitBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: rs(52), gap: rs(8) },
+  submitBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: '#fff' },
 });
 
 export default AddPetModal;

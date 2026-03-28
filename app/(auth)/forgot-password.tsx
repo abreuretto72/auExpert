@@ -14,6 +14,7 @@ import { ArrowRight, ChevronLeft, Mail, Send } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 import { Input } from '../../components/ui/Input';
 import { Alert } from '../../components/ui/Alert';
 import { getErrorMessage } from '../../utils/errorMessages';
@@ -56,7 +57,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <ChevronLeft size={18} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(18)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.resetPassword')}</Text>
@@ -69,7 +70,7 @@ export default function ForgotPasswordScreen() {
         {sent ? (
           <View style={styles.successSection}>
             <View style={styles.sentIconWrap}>
-              <Send size={32} color={colors.accent} strokeWidth={1.5} />
+              <Send size={rs(32)} color={colors.accent} strokeWidth={1.5} />
             </View>
             <Text style={styles.sentTitle}>E-mail enviado!</Text>
             <Text style={styles.sentText}>
@@ -105,7 +106,7 @@ export default function ForgotPasswordScreen() {
               onChangeText={(v) => { setEmail(v); setError(''); }}
               type="email"
               error={error}
-              icon={<Mail size={20} color={colors.petrol} strokeWidth={1.8} />}
+              icon={<Mail size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
             />
 
             <TouchableOpacity
@@ -125,7 +126,7 @@ export default function ForgotPasswordScreen() {
                     <Text style={styles.btnText}>
                       {t('auth.sendResetLink')}
                     </Text>
-                    <ArrowRight size={18} color="#fff" strokeWidth={2} />
+                    <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
                   </>
                 )}
               </LinearGradient>
@@ -152,20 +153,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingHorizontal: rs(28),
+    paddingBottom: rs(40),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingTop: 18,
-    paddingBottom: 32,
+    gap: rs(14),
+    paddingTop: rs(18),
+    paddingBottom: rs(32),
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: radii.lg,
+    width: rs(42),
+    height: rs(42),
+    borderRadius: rs(radii.lg),
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -177,14 +178,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 22,
+    fontSize: fs(22),
     color: colors.text,
   },
   subtitle: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.textDim,
-    marginTop: 3,
+    marginTop: rs(3),
   },
   successSection: {
     alignItems: 'center',
@@ -193,25 +194,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   sentIconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: rs(72),
+    height: rs(72),
+    borderRadius: rs(36),
     backgroundColor: colors.accentGlow,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: rs(spacing.sm),
   },
   sentTitle: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 22,
+    fontSize: fs(22),
     color: colors.text,
   },
   sentText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: rs(22),
   },
   sentEmail: {
     fontFamily: 'Sora_700Bold',
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 13,
+    fontSize: fs(13),
     color: colors.petrol,
     textDecorationLine: 'underline',
   },
@@ -232,39 +233,39 @@ const styles = StyleSheet.create({
   },
   backToLoginText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.accent,
   },
   btnWrap: {
-    borderRadius: radii.xl,
+    borderRadius: rs(radii.xl),
     overflow: 'hidden',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
-    shadowRadius: 30,
+    shadowRadius: rs(30),
     elevation: 6,
-    marginTop: spacing.sm,
+    marginTop: rs(spacing.sm),
   },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: radii.xl,
+    gap: rs(10),
+    paddingVertical: rs(16),
+    borderRadius: rs(radii.xl),
   },
   btnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 16,
+    fontSize: fs(16),
     color: '#fff',
   },
   cancelRow: {
     alignSelf: 'center',
-    marginTop: 20,
+    marginTop: rs(20),
   },
   cancelText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 13,
+    fontSize: fs(13),
     color: colors.textDim,
   },
 });

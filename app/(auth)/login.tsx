@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { ArrowRight, Fingerprint, ScanFace, Mail, Lock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { Input } from '../../components/ui/Input';
@@ -169,7 +170,7 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(v) => { setEmail(v); setError(''); }}
             type="email"
-            icon={<Mail size={20} color={colors.petrol} strokeWidth={1.8} />}
+            icon={<Mail size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
           />
 
           <Input
@@ -180,7 +181,7 @@ export default function LoginScreen() {
             type="password"
             showMic={false}
             error={error}
-            icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
+            icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
           />
 
           {/* Forgot password */}
@@ -207,7 +208,7 @@ export default function LoginScreen() {
               ) : (
                 <>
                   <Text style={styles.loginBtnText}>{t('auth.enterButton')}</Text>
-                  <ArrowRight size={18} color="#fff" strokeWidth={2} />
+                  <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
                 </>
               )}
             </LinearGradient>
@@ -235,7 +236,7 @@ export default function LoginScreen() {
                   {bioLoading ? (
                     <ActivityIndicator size="small" color={colors.accent} />
                   ) : (
-                    <Fingerprint size={36} color={colors.accent} strokeWidth={1.4} />
+                    <Fingerprint size={rs(36)} color={colors.accent} strokeWidth={1.4} />
                   )}
                   <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
                 </TouchableOpacity>
@@ -253,7 +254,7 @@ export default function LoginScreen() {
                   {bioLoading ? (
                     <ActivityIndicator size="small" color={colors.purple} />
                   ) : (
-                    <ScanFace size={36} color={colors.purple} strokeWidth={1.4} />
+                    <ScanFace size={rs(36)} color={colors.purple} strokeWidth={1.4} />
                   )}
                   <Text style={styles.bioLabel}>{t('auth.biometricFace')}</Text>
                 </TouchableOpacity>
@@ -270,7 +271,7 @@ export default function LoginScreen() {
                 style={[styles.bioBtn, styles.bioBtnFinger]}
               >
                 <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
-                <Fingerprint size={36} color={colors.accent} strokeWidth={1.4} />
+                <Fingerprint size={rs(36)} color={colors.accent} strokeWidth={1.4} />
                 <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -279,7 +280,7 @@ export default function LoginScreen() {
                 style={[styles.bioBtn, styles.bioBtnFace]}
               >
                 <View style={[styles.bioOrb, { backgroundColor: colors.purpleSoft }]} />
-                <ScanFace size={36} color={colors.purple} strokeWidth={1.4} />
+                <ScanFace size={rs(36)} color={colors.purple} strokeWidth={1.4} />
                 <Text style={styles.bioLabel}>{t('auth.biometricFace')}</Text>
               </TouchableOpacity>
             </View>
@@ -305,41 +306,41 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingHorizontal: rs(28),
+    paddingBottom: rs(40),
   },
   ambientGlow: {
     position: 'absolute',
-    top: -60,
+    top: rs(-60),
     alignSelf: 'center',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
+    width: rs(280),
+    height: rs(280),
+    borderRadius: rs(140),
     backgroundColor: colors.accentSoft,
   },
   logoSection: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 36,
+    paddingTop: rs(60),
+    paddingBottom: rs(36),
   },
   tagline: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 14,
+    fontSize: fs(14),
     color: 'rgba(232, 237, 242, 0.75)',
-    letterSpacing: 0.5,
-    marginTop: 18,
+    letterSpacing: rs(0.5),
+    marginTop: rs(18),
   },
   form: {
     flex: 1,
   },
   forgotBtn: {
     alignSelf: 'flex-end',
-    marginTop: -8,
-    marginBottom: 28,
+    marginTop: rs(-8),
+    marginBottom: rs(28),
   },
   forgotText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.accent,
     letterSpacing: 0.2,
   },
@@ -347,30 +348,30 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     overflow: 'hidden',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
-    shadowRadius: 30,
+    shadowRadius: rs(30),
     elevation: 6,
   },
   loginBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
+    gap: rs(10),
+    paddingVertical: rs(16),
     borderRadius: radii.xl,
   },
   loginBtnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 16,
+    fontSize: fs(16),
     color: '#fff',
-    letterSpacing: 0.3,
+    letterSpacing: rs(0.3),
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    marginVertical: 30,
+    gap: rs(16),
+    marginVertical: rs(30),
   },
   dividerLine: {
     flex: 1,
@@ -379,21 +380,21 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textGhost,
   },
   bioRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 36,
+    gap: rs(12),
+    marginBottom: rs(36),
   },
   bioBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 22,
-    borderRadius: 18,
+    gap: rs(10),
+    paddingVertical: rs(22),
+    borderRadius: rs(18),
     overflow: 'hidden',
   },
   bioBtnFinger: {
@@ -401,9 +402,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(232, 129, 58, 0.3)',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowRadius: rs(20),
     elevation: 3,
   },
   bioBtnFace: {
@@ -411,9 +412,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(155, 89, 182, 0.3)',
     shadowColor: colors.purple,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowRadius: rs(20),
     elevation: 3,
   },
   bioBtnDisabled: {
@@ -421,13 +422,13 @@ const styles = StyleSheet.create({
   },
   bioOrb: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(30),
   },
   bioLabel: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textSec,
   },
   registerRow: {
@@ -437,12 +438,12 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textDim,
   },
   registerLink: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.accent,
   },
 });

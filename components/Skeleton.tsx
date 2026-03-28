@@ -3,6 +3,7 @@ import { Animated, StyleSheet, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
+import { rs } from '../hooks/useResponsive';
 
 interface SkeletonProps {
   width?: number | string;
@@ -58,16 +59,16 @@ export function PetCardSkeleton() {
   return (
     <View style={skeletonStyles.petCard}>
       <View style={skeletonStyles.petCardHeader}>
-        <Skeleton width={52} height={52} radius={16} />
+        <Skeleton width={rs(52)} height={rs(52)} radius={rs(16)} />
         <View style={skeletonStyles.petCardInfo}>
-          <Skeleton width={120} height={20} />
-          <Skeleton width={80} height={14} style={{ marginTop: 6 }} />
+          <Skeleton width={rs(120)} height={rs(20)} />
+          <Skeleton width={rs(80)} height={rs(14)} style={{ marginTop: rs(6) }} />
         </View>
       </View>
       <View style={skeletonStyles.petCardStats}>
-        <Skeleton width={'30%' as unknown as number} height={44} radius={radii.md} />
-        <Skeleton width={'30%' as unknown as number} height={44} radius={radii.md} />
-        <Skeleton width={'30%' as unknown as number} height={44} radius={radii.md} />
+        <Skeleton width={'30%' as unknown as number} height={rs(44)} radius={rs(radii.md)} />
+        <Skeleton width={'30%' as unknown as number} height={rs(44)} radius={rs(radii.md)} />
+        <Skeleton width={'30%' as unknown as number} height={rs(44)} radius={rs(radii.md)} />
       </View>
     </View>
   );
@@ -76,17 +77,17 @@ export function PetCardSkeleton() {
 export function HubSkeleton() {
   return (
     <View style={skeletonStyles.hub}>
-      <Skeleton width={180} height={16} />
-      <Skeleton width={140} height={28} style={{ marginTop: 4 }} />
+      <Skeleton width={rs(180)} height={rs(16)} />
+      <Skeleton width={rs(140)} height={rs(28)} style={{ marginTop: rs(4) }} />
       <Skeleton
         width={'100%' as unknown as number}
-        height={48}
-        radius={radii.xl}
-        style={{ marginTop: spacing.md }}
+        height={rs(48)}
+        radius={rs(radii.xl)}
+        style={{ marginTop: rs(spacing.md) }}
       />
       <View style={skeletonStyles.sectionHeader}>
-        <Skeleton width={80} height={12} />
-        <Skeleton width={100} height={32} radius={radii.md} />
+        <Skeleton width={rs(80)} height={rs(12)} />
+        <Skeleton width={rs(100)} height={rs(32)} radius={rs(radii.md)} />
       </View>
       <PetCardSkeleton />
       <PetCardSkeleton />
@@ -96,30 +97,30 @@ export function HubSkeleton() {
 
 const skeletonStyles = StyleSheet.create({
   hub: {
-    paddingHorizontal: 20,
-    paddingTop: spacing.sm,
-    gap: spacing.xs,
+    paddingHorizontal: rs(20),
+    paddingTop: rs(spacing.sm),
+    gap: rs(spacing.xs),
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
+    marginTop: rs(spacing.lg),
+    marginBottom: rs(spacing.md),
   },
   petCard: {
     backgroundColor: colors.card,
-    borderRadius: radii.card,
+    borderRadius: rs(radii.card),
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    padding: rs(spacing.md),
+    marginBottom: rs(spacing.md),
   },
   petCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    gap: rs(spacing.md),
+    marginBottom: rs(spacing.md),
   },
   petCardInfo: {
     flex: 1,
@@ -127,6 +128,6 @@ const skeletonStyles = StyleSheet.create({
   petCardStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.sm,
+    gap: rs(spacing.sm),
   },
 });

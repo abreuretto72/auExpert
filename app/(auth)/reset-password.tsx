@@ -14,6 +14,7 @@ import { Lock, Check, ArrowRight } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 import { Input } from '../../components/ui/Input';
 import PasswordMeter from '../../components/PasswordMeter';
 import PetauLogo from '../../components/PetauLogo';
@@ -71,7 +72,7 @@ export default function ResetPasswordScreen() {
       <View style={styles.container}>
         <View style={styles.successCenter}>
           <View style={styles.successIcon}>
-            <Check size={40} color={colors.success} strokeWidth={2} />
+            <Check size={rs(40)} color={colors.success} strokeWidth={2} />
           </View>
           <Text style={styles.successTitle}>Senha redefinida!</Text>
           <Text style={styles.successText}>
@@ -87,7 +88,7 @@ export default function ResetPasswordScreen() {
               style={styles.btn}
             >
               <Text style={styles.btnText}>Ir para o Login</Text>
-              <ArrowRight size={18} color="#fff" strokeWidth={2} />
+              <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -123,7 +124,7 @@ export default function ResetPasswordScreen() {
           }}
           type="password"
           showMic={false}
-          icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
         />
 
         {password.length > 0 && <PasswordMeter password={password} />}
@@ -140,7 +141,7 @@ export default function ResetPasswordScreen() {
           type="password"
           showMic={false}
           error={error}
-          icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
         />
 
         {/* Submit */}
@@ -159,7 +160,7 @@ export default function ResetPasswordScreen() {
             ) : (
               <>
                 <Text style={styles.btnText}>Redefinir senha</Text>
-                <ArrowRight size={18} color="#fff" strokeWidth={2} />
+                <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
               </>
             )}
           </LinearGradient>
@@ -177,77 +178,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingHorizontal: rs(28),
+    paddingBottom: rs(40),
   },
   logoSection: {
     alignItems: 'center',
-    paddingTop: 48,
-    paddingBottom: 32,
+    paddingTop: rs(48),
+    paddingBottom: rs(32),
   },
   title: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 24,
+    fontSize: fs(24),
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: rs(8),
   },
   subtitle: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
-    lineHeight: 22,
-    marginBottom: spacing.lg,
+    lineHeight: rs(22),
+    marginBottom: rs(spacing.lg),
   },
   btnWrap: {
-    borderRadius: radii.xl,
+    borderRadius: rs(radii.xl),
     overflow: 'hidden',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
-    shadowRadius: 30,
+    shadowRadius: rs(30),
     elevation: 6,
-    marginTop: spacing.md,
+    marginTop: rs(spacing.md),
   },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: radii.xl,
+    gap: rs(10),
+    paddingVertical: rs(16),
+    borderRadius: rs(radii.xl),
   },
   btnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 16,
+    fontSize: fs(16),
     color: '#fff',
   },
   successCenter: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: rs(spacing.lg),
   },
   successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: rs(80),
+    height: rs(80),
+    borderRadius: rs(40),
     backgroundColor: colors.successSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: rs(spacing.lg),
   },
   successTitle: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 24,
+    fontSize: fs(24),
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: rs(spacing.sm),
   },
   successText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.xl,
+    lineHeight: rs(22),
+    marginBottom: rs(spacing.xl),
   },
 });

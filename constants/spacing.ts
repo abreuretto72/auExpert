@@ -1,19 +1,21 @@
+import { rs } from '../hooks/useResponsive';
+
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 40,
+  xs: rs(4),
+  sm: rs(8),
+  md: rs(16),
+  lg: rs(24),
+  xl: rs(32),
+  xxl: rs(40),
 } as const;
 
 export const radii = {
-  sm: 8,
-  md: 10,
-  lg: 12,
-  xl: 14,
-  xxl: 18,
-  card: 22,
-  modal: 26,
-  phone: 44,
+  sm: rs(8),
+  md: rs(10),
+  lg: rs(12),
+  xl: rs(14),
+  xxl: rs(18),
+  card: rs(22),
+  modal: rs(26),
+  phone: rs(44),
 } as const;

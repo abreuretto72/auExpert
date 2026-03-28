@@ -15,6 +15,7 @@ import { ArrowRight, ChevronLeft, User, Mail, Lock } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 import { Input } from '../../components/ui/Input';
 import PasswordMeter from '../../components/PasswordMeter';
 import * as auth from '../../lib/auth';
@@ -80,7 +81,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <ChevronLeft size={18} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(18)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.createAccount')}</Text>
@@ -106,7 +107,7 @@ export default function RegisterScreen() {
           value={name}
           onChangeText={(v) => { setName(v); clearError('name'); }}
           error={errors.name}
-          icon={<User size={20} color={colors.petrol} strokeWidth={1.8} />}
+          icon={<User size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
         />
 
         <Input
@@ -116,7 +117,7 @@ export default function RegisterScreen() {
           onChangeText={(v) => { setEmail(v); clearError('email'); }}
           type="email"
           error={errors.email}
-          icon={<Mail size={20} color={colors.petrol} strokeWidth={1.8} />}
+          icon={<Mail size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
         />
 
         <Input
@@ -127,7 +128,7 @@ export default function RegisterScreen() {
           type="password"
           showMic={false}
           error={errors.password}
-          icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
         />
 
         <PasswordMeter password={password} />
@@ -140,7 +141,7 @@ export default function RegisterScreen() {
           type="password"
           showMic={false}
           error={errors.confirm}
-          icon={<Lock size={20} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
         />
 
         {/* Register button */}
@@ -159,7 +160,7 @@ export default function RegisterScreen() {
             ) : (
               <>
                 <Text style={styles.btnText}>{t('common.next')}</Text>
-                <ArrowRight size={18} color="#fff" strokeWidth={2} />
+                <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
               </>
             )}
           </LinearGradient>
@@ -184,20 +185,20 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingHorizontal: rs(28),
+    paddingBottom: rs(40),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    paddingTop: 18,
-    paddingBottom: 24,
+    gap: rs(14),
+    paddingTop: rs(18),
+    paddingBottom: rs(24),
   },
   backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: radii.lg,
+    width: rs(42),
+    height: rs(42),
+    borderRadius: rs(radii.lg),
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -209,23 +210,23 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 22,
+    fontSize: fs(22),
     color: colors.text,
   },
   subtitle: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.textDim,
-    marginTop: 3,
+    marginTop: rs(3),
   },
   progressRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginBottom: 28,
+    gap: rs(6),
+    marginBottom: rs(28),
   },
   progressBar: {
     flex: 1,
-    height: 4,
+    height: rs(4),
     borderRadius: 2,
     backgroundColor: colors.border,
   },
@@ -234,47 +235,47 @@ const styles = StyleSheet.create({
   },
   generalError: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.danger,
     textAlign: 'center',
-    marginBottom: spacing.md,
+    marginBottom: rs(spacing.md),
   },
   btnWrap: {
-    borderRadius: radii.xl,
+    borderRadius: rs(radii.xl),
     overflow: 'hidden',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
-    shadowRadius: 30,
+    shadowRadius: rs(30),
     elevation: 6,
   },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: radii.xl,
+    gap: rs(10),
+    paddingVertical: rs(16),
+    borderRadius: rs(radii.xl),
   },
   btnText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 16,
+    fontSize: fs(16),
     color: '#fff',
   },
   loginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: rs(16),
   },
   loginText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textGhost,
   },
   loginLink: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.accent,
   },
 });

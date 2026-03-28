@@ -92,6 +92,8 @@ de produto. Toda tela, todo formulário, todo fluxo DEVE priorizar:
 
 ## 2. DESIGN SYSTEM — Identidade Visual Definitiva
 
+- Design obrigatório totalmente responsivo
+
 ### 2.1 Filosofia Visual
 - **Tema:** Dark premium — fundo azul petróleo escuro, acentos em laranja vibrante
 - **Clima:** Sofisticado, tecnológico e acolhedor. A escuridão transmite profundidade e confiança; o laranja traz calor e energia

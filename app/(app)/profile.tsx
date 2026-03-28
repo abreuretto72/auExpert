@@ -16,6 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 import { Input } from '../../components/ui/Input';
 import { useToast } from '../../components/Toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -86,6 +87,8 @@ export default function ProfileScreen() {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [data, setData] = useState<TutorData>(EMPTY);
   const initialDataRef = useRef<string>('');
+  const dataRef = useRef<TutorData>(EMPTY);
+  const userIdRef = useRef<string>('');
 
   useEffect(() => {
     if (!user?.id) return;
@@ -99,7 +102,9 @@ export default function ProfileScreen() {
         if (row) {
           const loaded = { ...EMPTY, ...row } as TutorData;
           setData(loaded);
+          dataRef.current = loaded;
           initialDataRef.current = JSON.stringify(loaded);
+          userIdRef.current = user.id;
         }
       } catch { /* silencioso */ }
       finally { setLoading(false); }
@@ -107,38 +112,39 @@ export default function ProfileScreen() {
   }, [user?.id]);
 
   const update = (field: keyof TutorData, value: string | boolean) => {
-    setData((prev) => ({ ...prev, [field]: value }));
+    setData((prev) => {
+      const next = { ...prev, [field]: value };
+      dataRef.current = next;
+      return next;
+    });
   };
 
-  // Auto-save: salva automaticamente ao sair da tela se houve mudança
-  const saveIfChanged = useCallback(async () => {
-    if (!user?.id) return;
-    const current = JSON.stringify(data);
-    if (current === initialDataRef.current) return; // Nada mudou
-
-    try {
-      const { full_name, phone, city, state, country, address_street, address_number, address_complement, address_neighborhood, address_zip, social_network_type, social_network_handle, privacy_profile_public, privacy_show_location, privacy_show_pets, privacy_show_social } = data;
-      await supabase.from('users').update({
-        full_name: full_name.trim(), phone: phone.trim() || null,
-        city: city.trim() || null, state: state.trim() || null, country: country.trim() || null,
-        address_street: address_street.trim() || null, address_number: address_number.trim() || null,
-        address_complement: address_complement.trim() || null, address_neighborhood: address_neighborhood.trim() || null,
-        address_zip: address_zip.trim() || null,
-        social_network_type: social_network_type || null, social_network_handle: social_network_handle.trim() || null,
-        privacy_profile_public, privacy_show_location, privacy_show_pets, privacy_show_social,
-      }).eq('id', user.id);
-      console.log('[Profile] Auto-saved');
-    } catch (err) {
-      console.warn('[Profile] Auto-save failed:', err);
-    }
-  }, [user?.id, data]);
-
-  // Salvar ao sair da tela
+  // Auto-save ao sair da tela (unmount) — usa refs para ter dados mais recentes
   useEffect(() => {
-    const nav = router as unknown as { addListener?: (event: string, cb: () => void) => () => void };
-    // Fallback: salvar no unmount
-    return () => { saveIfChanged(); };
-  }, [saveIfChanged]);
+    return () => {
+      const d = dataRef.current;
+      const uid = userIdRef.current;
+      if (!uid) return;
+      const current = JSON.stringify(d);
+      if (current === initialDataRef.current) return; // Nada mudou
+
+      console.log('[Profile] Auto-saving on exit...');
+      const s = (v: string | null | undefined) => v?.trim() || null;
+      supabase.from('users').update({
+        full_name: s(d.full_name) ?? '', phone: s(d.phone),
+        city: s(d.city), state: s(d.state), country: s(d.country),
+        address_street: s(d.address_street), address_number: s(d.address_number),
+        address_complement: s(d.address_complement), address_neighborhood: s(d.address_neighborhood),
+        address_zip: s(d.address_zip),
+        social_network_type: d.social_network_type || null, social_network_handle: s(d.social_network_handle),
+        privacy_profile_public: d.privacy_profile_public, privacy_show_location: d.privacy_show_location,
+        privacy_show_pets: d.privacy_show_pets, privacy_show_social: d.privacy_show_social,
+      }).eq('id', uid).then(({ error }) => {
+        if (error) console.warn('[Profile] Auto-save failed:', error.message);
+        else console.log('[Profile] Auto-saved OK');
+      });
+    };
+  }, []);
 
   const handleGps = useCallback(async () => {
     setGpsLoading(true);
@@ -213,7 +219,7 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
-          <ChevronLeft size={22} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('tutor.profile')}</Text>
         <View style={s.headerBtn} />
@@ -227,21 +233,21 @@ export default function ProfileScreen() {
               <Image source={{ uri: data.avatar_url }} style={s.avatarImg} />
             ) : (
               <LinearGradient colors={[colors.accent, colors.accentDark]} style={s.avatarGrad}>
-                <User size={48} color="#fff" strokeWidth={1.5} />
+                <User size={rs(48)} color="#fff" strokeWidth={1.5} />
               </LinearGradient>
             )}
             <TouchableOpacity style={s.cameraBtn} onPress={handleChangePhoto}>
-              <Camera size={16} color={colors.accent} strokeWidth={1.8} />
+              <Camera size={rs(16)} color={colors.accent} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
           <Text style={s.avatarName}>{data.full_name || 'Tutor'}</Text>
           <View style={s.avatarMeta}>
-            <Mail size={12} color={colors.textDim} strokeWidth={1.8} />
+            <Mail size={rs(12)} color={colors.textDim} strokeWidth={1.8} />
             <Text style={s.avatarMetaText}>{data.email}</Text>
           </View>
           {(data.city || data.state) && (
             <View style={s.avatarMeta}>
-              <MapPin size={12} color={colors.petrol} strokeWidth={1.8} />
+              <MapPin size={rs(12)} color={colors.petrol} strokeWidth={1.8} />
               <Text style={[s.avatarMetaText, { color: colors.petrol }]}>
                 {[data.city, data.state, data.country].filter(Boolean).join(', ')}
               </Text>
@@ -253,7 +259,7 @@ export default function ProfileScreen() {
         <View style={s.xpCard}>
           <View style={s.xpTop}>
             <View style={s.xpLevelRow}>
-              <Trophy size={18} color={colors.gold} strokeWidth={1.8} />
+              <Trophy size={rs(18)} color={colors.gold} strokeWidth={1.8} />
               <Text style={s.xpLevelText}>{t('tutor.level', { level: data.level })}</Text>
             </View>
             <Text style={s.xpTitle}>{data.title}</Text>
@@ -267,22 +273,22 @@ export default function ProfileScreen() {
 
         {/* ── Proof of Love ── */}
         <TouchableOpacity style={s.proofCard} activeOpacity={0.7}>
-          <View style={s.proofIcon}><Heart size={20} color={colors.gold} strokeWidth={1.8} /></View>
+          <View style={s.proofIcon}><Heart size={rs(20)} color={colors.gold} strokeWidth={1.8} /></View>
           <View style={{ flex: 1 }}>
             <Text style={s.proofTitle}>{t('tutor.proofOfLove')}</Text>
             <Text style={s.proofSub}>{t(`tutor.proofTier.${data.proof_of_love_tier}`)} — {t('tutor.proofDiscount', { percent: discount })}</Text>
           </View>
-          <ChevronRight size={14} color={colors.accent} strokeWidth={1.8} />
+          <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
 
         {/* ── Estatísticas 2x2 ── */}
         <Text style={s.sectionLabel}>{t('tutor.stats').toUpperCase()}</Text>
         <View style={s.statsGrid}>
           {[
-            { label: t('tutor.statPets'), value: pets.length, icon: <Heart size={16} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
-            { label: t('tutor.statDiary'), value: 0, icon: <BookOpen size={16} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
-            { label: t('tutor.statAnalysis'), value: 0, icon: <ScanEye size={16} color={colors.purple} strokeWidth={1.8} />, color: colors.purple },
-            { label: t('tutor.statVaccines'), value: '—', icon: <ShieldCheck size={16} color={colors.success} strokeWidth={1.8} />, color: colors.success },
+            { label: t('tutor.statPets'), value: pets.length, icon: <Heart size={rs(16)} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
+            { label: t('tutor.statDiary'), value: 0, icon: <BookOpen size={rs(16)} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
+            { label: t('tutor.statAnalysis'), value: 0, icon: <ScanEye size={rs(16)} color={colors.purple} strokeWidth={1.8} />, color: colors.purple },
+            { label: t('tutor.statVaccines'), value: '—', icon: <ShieldCheck size={rs(16)} color={colors.success} strokeWidth={1.8} />, color: colors.success },
           ].map((st, i) => (
             <View key={i} style={s.statBox}>
               <View style={s.statHeader}>{st.icon}<Text style={s.statLabel}>{st.label}</Text></View>
@@ -301,7 +307,7 @@ export default function ProfileScreen() {
                 <Image source={{ uri: pet.avatar_url }} style={s.petAvatar} />
               ) : (
                 <View style={[s.petAvatarIcon, { backgroundColor: petColor + '10', borderColor: petColor + '20' }]}>
-                  {pet.species === 'dog' ? <Dog size={26} color={petColor} strokeWidth={1.8} /> : <Cat size={26} color={petColor} strokeWidth={1.8} />}
+                  {pet.species === 'dog' ? <Dog size={rs(26)} color={petColor} strokeWidth={1.8} /> : <Cat size={rs(26)} color={petColor} strokeWidth={1.8} />}
                 </View>
               )}
               <View style={{ flex: 1 }}>
@@ -314,23 +320,23 @@ export default function ProfileScreen() {
               <Text style={[s.petHealth, { color: (pet.health_score ?? 0) >= 80 ? colors.success : colors.warning }]}>
                 {pet.health_score ?? '—'}
               </Text>
-              <ChevronRight size={14} color={colors.accent} strokeWidth={1.8} />
+              <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={1.8} />
             </TouchableOpacity>
           );
         })}
 
         {/* ── Dados pessoais (sempre editável, auto-save ao sair) ── */}
         <Text style={s.sectionLabel}>{t('tutor.account').toUpperCase()}</Text>
-        <Input label={t('tutor.fullName')} value={data.full_name} onChangeText={(v) => update('full_name', v)} icon={<User size={20} color={colors.petrol} strokeWidth={1.8} />} showMic />
-        <Input label={t('tutor.phone')} value={data.phone} onChangeText={(v) => update('phone', v)} type="numeric" icon={<Phone size={20} color={colors.petrol} strokeWidth={1.8} />} showMic={false} />
+        <Input label={t('tutor.fullName')} value={data.full_name} onChangeText={(v) => update('full_name', v)} icon={<User size={rs(20)} color={colors.petrol} strokeWidth={1.8} />} showMic />
+        <Input label={t('tutor.phone')} value={data.phone} onChangeText={(v) => update('phone', v)} type="numeric" icon={<Phone size={rs(20)} color={colors.petrol} strokeWidth={1.8} />} showMic={false} />
 
         {/* Endereço */}
         <Text style={s.sectionLabel}>{t('tutor.address').toUpperCase()}</Text>
         <TouchableOpacity style={s.gpsBtn} onPress={handleGps} disabled={gpsLoading} activeOpacity={0.7}>
-          {gpsLoading ? <ActivityIndicator size="small" color={colors.accent} /> : <Navigation size={18} color={colors.accent} strokeWidth={1.8} />}
+          {gpsLoading ? <ActivityIndicator size="small" color={colors.accent} /> : <Navigation size={rs(18)} color={colors.accent} strokeWidth={1.8} />}
           <Text style={s.gpsBtnText}>{gpsLoading ? t('tutor.detectingGps') : t('tutor.detectGps')}</Text>
         </TouchableOpacity>
-        <Input label={t('tutor.addressStreet')} value={data.address_street} onChangeText={(v) => update('address_street', v)} icon={<MapPin size={20} color={colors.petrol} strokeWidth={1.8} />} />
+        <Input label={t('tutor.addressStreet')} value={data.address_street} onChangeText={(v) => update('address_street', v)} icon={<MapPin size={rs(20)} color={colors.petrol} strokeWidth={1.8} />} />
         <View style={s.row}>
           <View style={{ flex: 1 }}><Input label={t('tutor.addressNumber')} value={data.address_number} onChangeText={(v) => update('address_number', v)} type="numeric" showMic={false} /></View>
           <View style={{ flex: 2 }}><Input label={t('tutor.addressComplement')} value={data.address_complement} onChangeText={(v) => update('address_complement', v)} /></View>
@@ -378,7 +384,7 @@ export default function ProfileScreen() {
           </View>
         ))}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: rs(40) }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -387,75 +393,75 @@ export default function ProfileScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
-  headerBtn: { width: 42, height: 42, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontFamily: 'Sora_700Bold', fontSize: 22, color: colors.text },
-  content: { paddingHorizontal: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: rs(16), paddingVertical: rs(8) },
+  headerBtn: { width: rs(42), height: rs(42), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(22), color: colors.text },
+  content: { paddingHorizontal: rs(20) },
 
   // Avatar
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
-  avatarGrad: { width: 100, height: 100, borderRadius: 32, alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 },
-  avatarImg: { width: 100, height: 100, borderRadius: 32 },
-  cameraBtn: { position: 'absolute', bottom: -4, right: -4, width: 32, height: 32, borderRadius: 10, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  avatarName: { fontFamily: 'Sora_700Bold', fontSize: 24, color: colors.text, marginTop: spacing.md },
-  avatarMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
-  avatarMetaText: { fontFamily: 'Sora_400Regular', fontSize: 12, color: colors.textDim },
+  avatarGrad: { width: rs(100), height: rs(100), borderRadius: rs(32), alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: rs(6) }, shadowOpacity: 0.3, shadowRadius: rs(16), elevation: 6 },
+  avatarImg: { width: rs(100), height: rs(100), borderRadius: rs(32) },
+  cameraBtn: { position: 'absolute', bottom: rs(-4), right: rs(-4), width: rs(32), height: rs(32), borderRadius: rs(10), backgroundColor: colors.card, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  avatarName: { fontFamily: 'Sora_700Bold', fontSize: fs(24), color: colors.text, marginTop: spacing.md },
+  avatarMeta: { flexDirection: 'row', alignItems: 'center', gap: rs(5), marginTop: rs(4) },
+  avatarMetaText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim },
 
   // XP
-  xpCard: { backgroundColor: colors.card, borderRadius: 20, padding: 20, marginBottom: 14, borderWidth: 1, borderColor: colors.gold + '12' },
-  xpTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  xpLevelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  xpLevelText: { fontFamily: 'Sora_800ExtraBold', fontSize: 16, color: colors.gold },
-  xpTitle: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim },
-  xpTrack: { height: 6, borderRadius: 3, backgroundColor: colors.border, marginBottom: 8 },
-  xpFill: { height: '100%', borderRadius: 3, backgroundColor: colors.gold },
+  xpCard: { backgroundColor: colors.card, borderRadius: rs(20), padding: rs(20), marginBottom: rs(14), borderWidth: 1, borderColor: colors.gold + '12' },
+  xpTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rs(12) },
+  xpLevelRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
+  xpLevelText: { fontFamily: 'Sora_800ExtraBold', fontSize: fs(16), color: colors.gold },
+  xpTitle: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim },
+  xpTrack: { height: rs(6), borderRadius: rs(3), backgroundColor: colors.border, marginBottom: rs(8) },
+  xpFill: { height: '100%', borderRadius: rs(3), backgroundColor: colors.gold },
   xpBottom: { flexDirection: 'row', justifyContent: 'space-between' },
-  xpVal: { fontFamily: 'JetBrainsMono_500Medium', fontSize: 10, color: colors.textDim },
-  xpNext: { fontFamily: 'JetBrainsMono_400Regular', fontSize: 10, color: colors.textGhost },
+  xpVal: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(10), color: colors.textDim },
+  xpNext: { fontFamily: 'JetBrainsMono_400Regular', fontSize: fs(10), color: colors.textGhost },
 
   // Proof of Love
-  proofCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
-  proofIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.gold + '10', alignItems: 'center', justifyContent: 'center' },
-  proofTitle: { fontFamily: 'Sora_700Bold', fontSize: 14, color: colors.text },
-  proofSub: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim, marginTop: 2 },
+  proofCard: { flexDirection: 'row', alignItems: 'center', gap: rs(14), backgroundColor: colors.card, borderRadius: rs(18), padding: rs(16), marginBottom: rs(14), borderWidth: 1, borderColor: colors.border },
+  proofIcon: { width: rs(42), height: rs(42), borderRadius: rs(14), backgroundColor: colors.gold + '10', alignItems: 'center', justifyContent: 'center' },
+  proofTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(14), color: colors.text },
+  proofSub: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: 2 },
 
   // Stats
-  sectionLabel: { fontFamily: 'Sora_700Bold', fontSize: 11, color: colors.textGhost, letterSpacing: 2, marginTop: 20, marginBottom: 12 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
-  statBox: { width: '48%', backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  statHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  statLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 11, color: colors.textDim },
-  statValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: 20 },
+  sectionLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textGhost, letterSpacing: 2, marginTop: rs(20), marginBottom: rs(12) },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(10), marginBottom: rs(14) },
+  statBox: { width: '48%', backgroundColor: colors.card, borderRadius: rs(16), padding: rs(16), borderWidth: 1, borderColor: colors.border },
+  statHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(8) },
+  statLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.textDim },
+  statValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(20) },
 
   // My Pets
-  petRow: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: colors.card, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
-  petAvatar: { width: 48, height: 48, borderRadius: 16 },
-  petAvatarIcon: { width: 48, height: 48, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  petNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  petName: { fontFamily: 'Sora_700Bold', fontSize: 15, color: colors.text },
-  moodDot: { width: 6, height: 6, borderRadius: 3 },
-  petBreed: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim, marginTop: 2 },
-  petHealth: { fontFamily: 'JetBrainsMono_700Bold', fontSize: 16, marginRight: 4 },
+  petRow: { flexDirection: 'row', alignItems: 'center', gap: rs(14), backgroundColor: colors.card, borderRadius: rs(16), padding: rs(14), marginBottom: rs(10), borderWidth: 1, borderColor: colors.border },
+  petAvatar: { width: rs(48), height: rs(48), borderRadius: rs(16) },
+  petAvatarIcon: { width: rs(48), height: rs(48), borderRadius: rs(16), borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  petNameRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
+  petName: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: colors.text },
+  moodDot: { width: rs(6), height: rs(6), borderRadius: rs(3) },
+  petBreed: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: 2 },
+  petHealth: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(16), marginRight: rs(4) },
 
   // Account
-  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  accountLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 10, color: colors.textDim },
-  accountValue: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: colors.text, marginTop: 2 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: rs(14), padding: rs(14), marginBottom: rs(8), borderWidth: 1, borderColor: colors.border },
+  accountLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim },
+  accountValue: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text, marginTop: 2 },
 
   // Edit fields
   row: { flexDirection: 'row', gap: spacing.sm },
-  gpsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accent + '12', borderWidth: 1, borderColor: colors.accent + '25', borderRadius: radii.lg, paddingVertical: 12, marginBottom: spacing.md },
-  gpsBtnText: { fontFamily: 'Sora_700Bold', fontSize: 13, color: colors.accent },
+  gpsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.accent + '12', borderWidth: 1, borderColor: colors.accent + '25', borderRadius: radii.lg, paddingVertical: rs(12), marginBottom: spacing.md },
+  gpsBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.accent },
 
   // Social
-  socialChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md },
-  socialChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
+  socialChips: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8), marginBottom: spacing.md },
+  socialChip: { paddingHorizontal: rs(14), paddingVertical: rs(8), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
   socialChipActive: { backgroundColor: colors.accent + '15', borderColor: colors.accent },
-  socialChipText: { fontFamily: 'Sora_600SemiBold', fontSize: 12, color: colors.textSec },
+  socialChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textSec },
   socialChipTextActive: { color: colors.accent },
 
   // Privacy
-  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  privacyLabel: { fontFamily: 'Sora_600SemiBold', fontSize: 13, color: colors.text },
-  privacyDesc: { fontFamily: 'Sora_400Regular', fontSize: 11, color: colors.textDim, marginTop: 2 },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: rs(14), padding: rs(14), marginBottom: rs(8), borderWidth: 1, borderColor: colors.border },
+  privacyLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text },
+  privacyDesc: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: 2 },
 });

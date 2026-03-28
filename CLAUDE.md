@@ -755,7 +755,59 @@ no parâmetro `language` de toda chamada a Edge Functions que usam IA.
 - Commits: `type(scope): message` em inglês
 - **NUNCA EMOJIS** no código — sempre ícones Lucide
 
-### 10.1 PROIBIÇÃO ABSOLUTA: STRINGS HARDCODED — REGRA INVIOLÁVEL
+### 10.1 PROIBIÇÃO ABSOLUTA: PIXELS FIXOS — DESIGN RESPONSIVO OBRIGATÓRIO
+
+> **NENHUM valor de pixel pode estar hardcoded no StyleSheet. NENHUM. ZERO. JAMAIS.**
+
+O app opera em dispositivos de **tamanhos muito diferentes** — de um iPhone SE (320px) a um
+tablet Android (600px+). Um botão com `height: 56` fica enorme num SE e pequeno num tablet.
+Pixels fixos quebram a experiência em qualquer tela que não seja a do desenvolvedor.
+
+**TODA dimensão DEVE usar as funções responsivas de `hooks/useResponsive.ts`:**
+
+```typescript
+import { rs, fs, wp, hp } from '../hooks/useResponsive';
+
+// rs(size) — Responsive Size — para padding, margin, borderRadius, width, height, gap
+// fs(size) — Font Size — para fontSize (com limites de acessibilidade)
+// wp(pct)  — Width Percentage — para larguras baseadas em % da tela
+// hp(pct)  — Height Percentage — para alturas baseadas em % da tela
+```
+
+**Base de design:** iPhone 14 (390px largura). Tudo escala proporcionalmente.
+
+| Dispositivo | Largura | Escala |
+|-------------|---------|--------|
+| iPhone SE / Android compacto | 320px | 0.82x |
+| iPhone 14 / maioria Androids | 390px | 1.0x (base) |
+| iPhone Pro Max | 428px | 1.10x |
+| iPad Mini | 744px | 1.91x |
+
+**ERRADO (proibido):**
+```typescript
+{ height: 56, fontSize: 16, padding: 20, borderRadius: 14 }
+```
+
+**CERTO (obrigatório):**
+```typescript
+{ height: rs(56), fontSize: fs(16), padding: rs(20), borderRadius: rs(14) }
+```
+
+**Exceções (NÃO precisam de rs/fs):**
+- `flex: 1`, `flex: 2` — valores de flex
+- `'100%'` — percentuais de string
+- `borderWidth: 1` ou `1.5` — bordas finas (1-2px não escalam)
+- Cores, opacidade
+- `spacing.*` e `radii.*` de `constants/spacing.ts` — já são responsivos internamente
+
+**Checklist antes de cada commit:**
+1. Buscar no StyleSheet por números > 2 que NÃO estejam dentro de `rs()` ou `fs()`
+2. Se encontrar → envolver com a função correta
+3. Ícones Lucide: `size={rs(20)}` em vez de `size={20}`
+
+---
+
+### 10.2 PROIBIÇÃO ABSOLUTA: STRINGS HARDCODED — REGRA INVIOLÁVEL
 
 > **NENHUMA string visível ao tutor pode estar hardcoded no código. NENHUMA. ZERO. JAMAIS.**
 

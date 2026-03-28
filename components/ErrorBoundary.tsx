@@ -4,6 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { AlertTriangle, RotateCcw } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
+import { rs, fs } from '../hooks/useResponsive';
 import { Button } from './ui/Button';
 
 interface Props {
@@ -43,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return (
       <View style={styles.container}>
         <View style={styles.iconWrap}>
-          <AlertTriangle size={48} color={colors.warning} strokeWidth={1.5} />
+          <AlertTriangle size={rs(48)} color={colors.warning} strokeWidth={1.5} />
         </View>
         <Text style={styles.title}>Algo deu errado</Text>
         <Text style={styles.message}>
@@ -56,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Button
             label="Tentar novamente"
             onPress={this.handleReset}
-            icon={<RotateCcw size={18} color="#fff" strokeWidth={2} />}
+            icon={<RotateCcw size={rs(18)} color="#fff" strokeWidth={2} />}
           />
         </View>
       </View>
@@ -70,43 +71,43 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: rs(spacing.xl),
   },
   iconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: rs(80),
+    height: rs(80),
+    borderRadius: rs(40),
     backgroundColor: colors.warningSoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: rs(spacing.lg),
   },
   title: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 22,
+    fontSize: fs(22),
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: rs(spacing.sm),
   },
   message: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.lg,
+    lineHeight: fs(22),
+    marginBottom: rs(spacing.lg),
   },
   debug: {
     fontFamily: 'JetBrainsMono_400Regular',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.danger,
     backgroundColor: colors.dangerSoft,
-    borderRadius: radii.sm,
-    padding: spacing.sm,
-    marginBottom: spacing.lg,
+    borderRadius: rs(radii.sm),
+    padding: rs(spacing.sm),
+    marginBottom: rs(spacing.lg),
     maxWidth: '100%',
   },
   btnWrap: {
     width: '100%',
-    maxWidth: 280,
+    maxWidth: rs(280),
   },
 });

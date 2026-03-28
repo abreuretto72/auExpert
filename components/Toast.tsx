@@ -12,6 +12,7 @@ import { X, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
+import { rs, fs } from '../hooks/useResponsive';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -88,7 +89,7 @@ function ToastItem({ message, onDone }: { message: ToastMessage; onDone: () => v
     <Animated.View style={[styles.bubble, { opacity, transform: [{ scale }] }]}>
       <TouchableOpacity onPress={onDone} style={styles.closeBtn} activeOpacity={0.7}>
         <View style={styles.closeBtnCircle}>
-          <X size={14} color={colors.danger} strokeWidth={2.5} />
+          <X size={rs(14)} color={colors.danger} strokeWidth={2.5} />
         </View>
       </TouchableOpacity>
 
@@ -137,7 +138,7 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
           onPress={() => dismiss(message.onNo)}
           activeOpacity={0.7}
         >
-          <X size={18} color={colors.textSec} strokeWidth={2} />
+          <X size={rs(18)} color={colors.textSec} strokeWidth={2} />
           <Text style={styles.confirmBtnNoText}>
             {message.noLabel ?? t('common.cancel')}
           </Text>
@@ -149,7 +150,7 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
           onPress={() => dismiss(message.onYes)}
           activeOpacity={0.7}
         >
-          <Check size={18} color="#FFFFFF" strokeWidth={2} />
+          <Check size={rs(18)} color="#FFFFFF" strokeWidth={2} />
           <Text style={styles.confirmBtnYesText}>
             {message.yesLabel ?? t('common.confirm')}
           </Text>
@@ -242,40 +243,40 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11, 18, 25, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: rs(spacing.xl),
   },
   center: {
     width: '100%',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: rs(spacing.md),
   },
   bubble: {
     backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.modal,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    borderRadius: rs(radii.modal),
+    paddingHorizontal: rs(spacing.lg),
+    paddingTop: rs(spacing.xl),
+    paddingBottom: rs(spacing.lg),
     alignItems: 'center',
     width: '100%',
-    maxWidth: 300,
+    maxWidth: rs(300),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
+    shadowOffset: { width: 0, height: rs(16) },
     shadowOpacity: 0.5,
-    shadowRadius: 32,
+    shadowRadius: rs(32),
     elevation: 16,
   },
   closeBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: rs(10),
+    right: rs(10),
     zIndex: 1,
   },
   closeBtnCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(14),
     backgroundColor: colors.dangerSoft,
     borderWidth: 1,
     borderColor: colors.danger + '30',
@@ -283,22 +284,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pawImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    marginBottom: spacing.md,
+    width: rs(56),
+    height: rs(56),
+    borderRadius: rs(16),
+    marginBottom: rs(spacing.md),
   },
   bubbleText: {
     fontFamily: 'Sora_500Medium',
-    fontSize: 15,
+    fontSize: fs(15),
     color: colors.text,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: spacing.md,
+    lineHeight: fs(24),
+    marginBottom: rs(spacing.md),
   },
   bubbleSignature: {
     fontFamily: 'Caveat_400Regular',
-    fontSize: 16,
+    fontSize: fs(16),
     color: colors.textDim,
     fontStyle: 'italic',
   },
@@ -306,8 +307,8 @@ const styles = StyleSheet.create({
   // Confirmacao
   confirmRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    gap: rs(spacing.sm),
+    marginBottom: rs(spacing.md),
     width: '100%',
   },
   confirmBtnNo: {
@@ -315,16 +316,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: rs(6),
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingVertical: 12,
+    borderRadius: rs(radii.lg),
+    paddingVertical: rs(12),
   },
   confirmBtnNoText: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 14,
+    fontSize: fs(14),
     color: colors.textSec,
   },
   confirmBtnYes: {
@@ -332,14 +333,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: rs(6),
     backgroundColor: colors.accent,
-    borderRadius: radii.lg,
-    paddingVertical: 12,
+    borderRadius: rs(radii.lg),
+    paddingVertical: rs(12),
   },
   confirmBtnYesText: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 14,
+    fontSize: fs(14),
     color: '#FFFFFF',
   },
 });

@@ -41,7 +41,7 @@ Tutor (dono do pet). PK = `id` (UUID). Bucket de fotos: **tutores**.
 | phone | varchar(20) | YES | null | Telefone |
 | cpf | varchar(14) | YES | null | CPF (Brasil) |
 | birth_date | date | YES | null | Data de nascimento |
-| country | varchar(3) | YES | 'BRA' | País (código ISO) |
+| country | varchar(100) | YES | 'BRA' | País (nome completo ou código ISO) |
 | city | varchar(100) | YES | null | Cidade |
 | state | varchar(100) | YES | null | Estado (nome completo ou UF) |
 | address_street | varchar(255) | YES | null | Rua/Avenida |

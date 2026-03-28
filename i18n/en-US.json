@@ -18,7 +18,11 @@
     "download": "Download",
     "he": "he",
     "she": "she",
-    "welcome": "Welcome back,"
+    "welcome": "Welcome back,",
+    "home": "Home",
+    "health": "Health",
+    "ia": "AI",
+    "diary": "Diary"
   },
   "auth": {
     "login": "Sign In",

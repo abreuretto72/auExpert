@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mic } from 'lucide-react-native';
 import { getLocales } from 'expo-localization';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
+import { rs, fs } from '../../hooks/useResponsive';
 
 // Speech recognition é opcional (não funciona no Expo Go)
 let SpeechModule: typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule | null = null;
@@ -148,7 +149,7 @@ export function Input(props: InputProps) {
   }
 
   wrapperParts.push(
-    <View key="wrap" style={[styles.inputWrap, focused && styles.inputFocused, error ? styles.inputError : null]}>
+    <View key="wrap" style={[styles.inputWrap, multiline && styles.inputWrapMultiline, focused && styles.inputFocused, error ? styles.inputError : null]}>
       {parts}
     </View>,
   );
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Sora_600SemiBold',
-    fontSize: 12,
+    fontSize: fs(12),
     color: colors.textSec,
     marginBottom: spacing.xs,
     letterSpacing: 0.3,
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radii.xl,
-    height: 56,
+    height: rs(52),
     paddingHorizontal: spacing.md,
   },
   inputFocused: {
@@ -193,14 +194,20 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontFamily: 'Sora_400Regular',
-    fontSize: 15,
+    fontSize: fs(15),
     color: colors.text,
     height: '100%' as unknown as number,
   },
+  inputWrapMultiline: {
+    height: 'auto' as unknown as number,
+    minHeight: rs(70),
+    alignItems: 'flex-start',
+    paddingVertical: spacing.sm,
+  },
   multiline: {
-    height: 100,
+    height: undefined,
+    minHeight: rs(50),
     textAlignVertical: 'top',
-    paddingTop: spacing.sm,
   },
   suffix: {
     marginLeft: spacing.sm,
@@ -208,12 +215,12 @@ const styles = StyleSheet.create({
   },
   micActive: {
     backgroundColor: colors.accent,
-    borderRadius: 16,
-    padding: 6,
+    borderRadius: rs(16),
+    padding: rs(6),
   },
   errorText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.danger,
     marginTop: spacing.xs,
   },

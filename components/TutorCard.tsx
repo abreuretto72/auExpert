@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
+import { rs, fs } from '../hooks/useResponsive';
 
 interface TutorCardProps {
   name: string;
@@ -60,7 +61,7 @@ const TutorCard: React.FC<TutorCardProps> = ({
         <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
       ) : (
         <LinearGradient colors={[colors.accent, colors.accentDark]} style={styles.avatar}>
-          <User size={28} color="#fff" strokeWidth={1.8} />
+          <User size={rs(28)} color="#fff" strokeWidth={1.8} />
         </LinearGradient>
       )}
 
@@ -69,21 +70,21 @@ const TutorCard: React.FC<TutorCardProps> = ({
         {/* Nome + seta */}
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
-          <ChevronRight size={14} color={colors.accent} strokeWidth={2} />
+          <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={2} />
         </View>
 
         {/* Localização + membro desde */}
         <View style={styles.metaRow}>
           {location ? (
             <>
-              <MapPin size={11} color={colors.petrol} strokeWidth={1.8} />
+              <MapPin size={rs(11)} color={colors.petrol} strokeWidth={1.8} />
               <Text style={styles.metaText}>{location}</Text>
               <Text style={styles.metaDot}>·</Text>
             </>
           ) : null}
           {memberSince ? (
             <>
-              <Calendar size={11} color={colors.textDim} strokeWidth={1.8} />
+              <Calendar size={rs(11)} color={colors.textDim} strokeWidth={1.8} />
               <Text style={styles.metaText}>{memberSince}</Text>
             </>
           ) : null}
@@ -91,22 +92,22 @@ const TutorCard: React.FC<TutorCardProps> = ({
 
         {/* Mini stats */}
         <View style={styles.statsRow}>
-          <Heart size={12} color={colors.accent} strokeWidth={1.8} />
+          <Heart size={rs(12)} color={colors.accent} strokeWidth={1.8} />
           <Text style={styles.statValue}>{petsCount}</Text>
           <Text style={styles.statLabel}>{t('tutor.statPets').toLowerCase()}</Text>
           <View style={styles.statGap} />
-          <BookOpen size={12} color={colors.accent} strokeWidth={1.8} />
+          <BookOpen size={rs(12)} color={colors.accent} strokeWidth={1.8} />
           <Text style={styles.statValue}>{diaryCount}</Text>
           <Text style={styles.statLabel}>{t('tutor.statDiary').toLowerCase()}</Text>
           <View style={styles.statGap} />
-          <ScanEye size={12} color={colors.purple} strokeWidth={1.8} />
+          <ScanEye size={rs(12)} color={colors.purple} strokeWidth={1.8} />
           <Text style={styles.statValue}>{photoCount}</Text>
           <Text style={styles.statLabel}>{t('tutor.statAnalysis').toLowerCase()}</Text>
         </View>
 
         {/* XP bar */}
         <View style={styles.xpRow}>
-          <Trophy size={14} color={colors.gold} strokeWidth={1.8} />
+          <Trophy size={rs(14)} color={colors.gold} strokeWidth={1.8} />
           <Text style={styles.xpLevel}>Nv.{level}</Text>
           <View style={styles.xpTrack}>
             <View style={[styles.xpFill, { width: `${xpPct}%` }]} />
@@ -122,39 +123,39 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderWidth: 1,
+    borderWidth: rs(1),
     borderColor: colors.accent + '15',
-    borderRadius: radii.card,
-    padding: 20,
-    gap: 16,
-    marginBottom: spacing.md,
+    borderRadius: rs(radii.card),
+    padding: rs(20),
+    gap: rs(16),
+    marginBottom: rs(spacing.md),
     overflow: 'hidden',
   },
   glow: {
     position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    top: rs(-20),
+    right: rs(-20),
+    width: rs(100),
+    height: rs(100),
+    borderRadius: rs(50),
     backgroundColor: colors.accent + '06',
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(20),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.25,
-    shadowRadius: 16,
+    shadowRadius: rs(16),
     elevation: 4,
   },
   avatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: rs(60),
+    height: rs(60),
+    borderRadius: rs(20),
   },
   info: {
     flex: 1,
@@ -162,73 +163,73 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: rs(8),
+    marginBottom: rs(4),
   },
   name: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 18,
+    fontSize: fs(18),
     color: colors.text,
     flex: 1,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginBottom: 10,
+    gap: rs(5),
+    marginBottom: rs(10),
   },
   metaText: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textDim,
   },
   metaDot: {
     color: colors.textGhost,
-    fontSize: 9,
+    fontSize: fs(9),
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 10,
+    gap: rs(4),
+    marginBottom: rs(10),
   },
   statValue: {
     fontFamily: 'JetBrainsMono_600SemiBold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.textSec,
   },
   statLabel: {
     fontFamily: 'Sora_400Regular',
-    fontSize: 10,
+    fontSize: fs(10),
     color: colors.textDim,
   },
   statGap: {
-    width: 8,
+    width: rs(8),
   },
   xpRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: rs(6),
   },
   xpLevel: {
     fontFamily: 'Sora_700Bold',
-    fontSize: 11,
+    fontSize: fs(11),
     color: colors.gold,
   },
   xpTrack: {
     flex: 1,
-    height: 4,
-    borderRadius: 2,
+    height: rs(4),
+    borderRadius: rs(2),
     backgroundColor: colors.border,
   },
   xpFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: rs(2),
     backgroundColor: colors.gold,
   },
   xpText: {
     fontFamily: 'JetBrainsMono_400Regular',
-    fontSize: 9,
+    fontSize: fs(9),
     color: colors.textGhost,
   },
 });
