@@ -1,5 +1,5 @@
 -- Migration 003: Row Level Security Policies
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- Enable RLS on ALL tables
 ALTER TABLE users              ENABLE ROW LEVEL SECURITY;

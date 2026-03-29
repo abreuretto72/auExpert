@@ -1,26 +1,35 @@
 {
   "expo": {
-    "name": "PetauLife+",
+    "name": "AuExpert",
     "slug": "petaulife-plus",
-    "scheme": "petaulife",
+    "scheme": "auexpert",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo_petau.png",
+    "icon": "./assets/images/icon_app_ok.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/images/logo_petau.png",
+      "image": "./assets/images/logotipotrans.png",
       "resizeMode": "contain",
-      "backgroundColor": "#E8813A"
+      "backgroundColor": "#0F1923"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.petaulife.app"
+      "bundleIdentifier": "com.auexpert.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
+        "NSSpeechRecognitionUsageDescription": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
+      }
     },
     "android": {
-      "package": "com.petaulife.app",
+      "package": "com.auexpert.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E8813A",
-        "foregroundImage": "./assets/images/logo_petau.png"
+        "backgroundColor": "#0F1923",
+        "foregroundImage": "./assets/images/icon_app_ok.png"
+      },
+      "splash": {
+        "image": "./assets/images/logotipotrans.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0F1923"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -38,32 +47,47 @@
       "expo-font",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0F1923",
+          "image": "./assets/images/logotipotrans.png",
+          "imageWidth": 280
+        }
+      ],
+      [
         "expo-camera",
         {
-          "cameraPermission": "Permitir que PetauLife+ acesse sua câmera para análise de fotos do pet."
+          "cameraPermission": "Permitir que AuExpert acesse sua câmera para análise de fotos do pet."
         }
       ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/logo_petau.png",
+          "icon": "./assets/images/icon_app_ok.png",
           "color": "#E8813A"
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Permitir que PetauLife+ use o Face ID para login rápido."
+          "faceIDPermission": "Permitir que AuExpert use o Face ID para login rápido."
         }
       ],
       "expo-localization",
-      "expo-speech-recognition"
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
+          "speechRecognitionPermission": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
+        }
+      ]
     ],
     "extra": {
       "router": {},
       "eas": {
         "projectId": "887ce224-1ce4-4088-b561-fb38151c234f"
       }
-    }
+    },
+    "owner": "abreuretto"
   }
 }

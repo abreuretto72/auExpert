@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   ChevronRight,
+  Pencil,
 } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
@@ -22,6 +23,7 @@ export interface PetCardData {
   id: string;
   name: string;
   species: 'dog' | 'cat';
+  sex?: 'male' | 'female' | null;
   breed: string | null;
   weight_kg: number | null;
   health_score: number | null;
@@ -39,9 +41,10 @@ export interface PetCardData {
 interface PetCardProps {
   pet: PetCardData;
   onPress?: () => void;
+  onEdit?: () => void;
 }
 
-const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
+const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit }) => {
   const { t } = useTranslation();
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
@@ -89,6 +92,11 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
             <Text style={styles.name} numberOfLines={1}>
               {pet.name}
             </Text>
+            {pet.sex && (
+              <Text style={[styles.sexSymbol, { color: pet.sex === 'male' ? colors.petrol : colors.rose }]}>
+                {pet.sex === 'male' ? '♂' : '♀'}
+              </Text>
+            )}
             {mood ? (
               <View
                 style={[
@@ -127,7 +135,13 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
           </View>
         </View>
 
-        <ChevronRight size={20} color={colors.accent} strokeWidth={1.8} />
+        <TouchableOpacity
+          onPress={(e) => { e.stopPropagation(); onEdit?.(); }}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={styles.editBtn}
+        >
+          <Pencil size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+        </TouchableOpacity>
       </View>
 
       {/* Stats: saude, diario, fotos */}
@@ -207,6 +221,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  editBtn: {
+    width: rs(36),
+    height: rs(36),
+    borderRadius: rs(10),
+    backgroundColor: colors.accent + '12',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarOuter: {
     width: rs(68),
     height: rs(68),
@@ -241,6 +263,10 @@ const styles = StyleSheet.create({
     fontSize: fs(22),
     color: colors.text,
     flexShrink: 1,
+  },
+  sexSymbol: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(18),
   },
   moodBadge: {
     flexDirection: 'row',

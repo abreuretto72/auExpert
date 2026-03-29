@@ -1,29 +1,15 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Image,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  RefreshControl, Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import {
-  ChevronLeft,
-  Dog,
-  Cat,
-  BookOpen,
-  Camera,
-  Syringe,
-  AlertTriangle,
-  ShieldCheck,
-  Clock,
-  Sparkles,
-  TrendingUp,
+  Dog, Cat, BookOpen, Camera, AlertTriangle, ShieldCheck, Clock,
+  Sparkles, TrendingUp, Users, Trophy, Hourglass, ScrollText, QrCode,
+  Apple, Map, Umbrella, ScanEye, ChevronRight, Syringe,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { rs, fs } from '../../../../hooks/useResponsive';
@@ -34,13 +20,11 @@ import { usePet, usePets } from '../../../../hooks/usePets';
 import { useVaccines, useAllergies, useMoodLogs } from '../../../../hooks/useHealth';
 import { useDiary } from '../../../../hooks/useDiary';
 import { useAuthStore } from '../../../../stores/authStore';
-import { HealthScoreCircle } from '../../../../components/HealthScoreCircle';
 import { Skeleton } from '../../../../components/Skeleton';
-import { Input } from '../../../../components/ui/Input';
 import { useToast } from '../../../../components/Toast';
 import { supabase } from '../../../../lib/supabase';
 import { getErrorMessage } from '../../../../utils/errorMessages';
-import { formatAge, formatWeight, formatDate, formatRelativeDate } from '../../../../utils/format';
+import { formatAge, formatWeight, formatRelativeDate } from '../../../../utils/format';
 
 export default function PetDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -49,6 +33,7 @@ export default function PetDetailScreen() {
   const { toast } = useToast();
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   const { data: pet, isLoading, refetch } = usePet(id!);
   const { updatePet } = usePets();
@@ -57,7 +42,7 @@ export default function PetDetailScreen() {
   const { moodLogs } = useMoodLogs(id!);
   const { entries: diaryEntries } = useDiary(id!);
 
-  // Campos editáveis
+  // ── Editable fields + auto-save ──
   const [editBreed, setEditBreed] = useState('');
   const [editAge, setEditAge] = useState('');
   const [editWeight, setEditWeight] = useState('');
@@ -66,7 +51,6 @@ export default function PetDetailScreen() {
   const initialRef = useRef('');
   const dataRef = useRef({ breed: '', age: '', weight: '', size: '', color: '' });
 
-  // Preencher quando pet carrega
   useEffect(() => {
     if (!pet) return;
     const b = pet.breed ?? '';
@@ -76,20 +60,18 @@ export default function PetDetailScreen() {
         : `${pet.estimated_age_months}m`)
       : '';
     const w = pet.weight_kg != null ? String(pet.weight_kg) : '';
-    const s = pet.size ?? '';
+    const sz = pet.size ?? '';
     const c = pet.color ?? '';
-    setEditBreed(b); setEditAge(a); setEditWeight(w); setEditSize(s); setEditColor(c);
-    const snap = JSON.stringify({ breed: b, age: a, weight: w, size: s, color: c });
+    setEditBreed(b); setEditAge(a); setEditWeight(w); setEditSize(sz); setEditColor(c);
+    const snap = JSON.stringify({ breed: b, age: a, weight: w, size: sz, color: c });
     initialRef.current = snap;
-    dataRef.current = { breed: b, age: a, weight: w, size: s, color: c };
+    dataRef.current = { breed: b, age: a, weight: w, size: sz, color: c };
   }, [pet?.id]);
 
-  // Sync ref
   useEffect(() => {
     dataRef.current = { breed: editBreed, age: editAge, weight: editWeight, size: editSize, color: editColor };
   }, [editBreed, editAge, editWeight, editSize, editColor]);
 
-  // Auto-save ao sair
   useEffect(() => {
     return () => {
       const d = dataRef.current;
@@ -97,31 +79,26 @@ export default function PetDetailScreen() {
       const parseAge = (input: string): number | null => {
         if (!input.trim()) return null;
         const s = input.trim().toLowerCase();
-        const mixed = s.match(/(\d+)\s*a\D*(\d+)\s*m/);
-        if (mixed) return parseInt(mixed[1], 10) * 12 + parseInt(mixed[2], 10);
-        const years = s.match(/^(\d+)\s*(a|ano|anos|year|years|y)$/);
-        if (years) return parseInt(years[1], 10) * 12;
-        const months = s.match(/^(\d+)\s*(m|mes|meses|month|months)$/);
-        if (months) return parseInt(months[1], 10);
-        const num = parseInt(s, 10);
-        return isNaN(num) ? null : num;
+        const mx = s.match(/(\d+)\s*a\D*(\d+)\s*m/);
+        if (mx) return parseInt(mx[1], 10) * 12 + parseInt(mx[2], 10);
+        const yr = s.match(/^(\d+)\s*(a|ano|anos|year|years|y)$/);
+        if (yr) return parseInt(yr[1], 10) * 12;
+        const mo = s.match(/^(\d+)\s*(m|mes|meses|month|months)$/);
+        if (mo) return parseInt(mo[1], 10);
+        const n = parseInt(s, 10);
+        return isNaN(n) ? null : n;
       };
       const wNum = d.weight ? parseFloat(d.weight) : null;
-      console.log('[PetProfile] Auto-saving...');
       supabase.from('pets').update({
-        breed: d.breed.trim() || null,
-        estimated_age_months: parseAge(d.age),
-        weight_kg: wNum && !isNaN(wNum) ? wNum : null,
-        size: d.size || null,
-        color: d.color.trim() || null,
+        breed: d.breed.trim() || null, estimated_age_months: parseAge(d.age),
+        weight_kg: wNum && !isNaN(wNum) ? wNum : null, size: d.size || null, color: d.color.trim() || null,
       }).eq('id', id).then(({ error }) => {
-        if (error) console.warn('[PetProfile] Auto-save failed:', error.message);
-        else console.log('[PetProfile] Auto-saved OK');
+        if (error) console.warn('[Pet] Auto-save failed:', error.message);
       });
     };
   }, [id]);
 
-  // Upload foto do pet para o bucket
+  // ── Photo handlers ──
   const uploadPetPhoto = useCallback(async (uri: string) => {
     const FileSystem = require('expo-file-system/legacy');
     const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
@@ -134,30 +111,23 @@ export default function PetDetailScreen() {
     const { data: urlData } = supabase.storage.from('pets').getPublicUrl(upData.path);
     await supabase.from('pets').update({ avatar_url: urlData.publicUrl }).eq('id', id);
     refetch();
-    toast(t('tutor.profileSaved'), 'success');
-  }, [id, user?.id, refetch, toast, t]);
+  }, [id, user?.id, refetch]);
 
-  // Tirar foto com câmera
   const handleTakePhoto = useCallback(async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') { toast(t('toast.cameraPermission'), 'warning'); return; }
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.4,
-      });
+      const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.4 });
       if (!result.canceled && result.assets[0]) await uploadPetPhoto(result.assets[0].uri);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [uploadPetPhoto, toast, t]);
 
-  // Escolher da galeria
   const handlePickPhoto = useCallback(async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'], copyToCacheDirectory: true });
       if (!result.canceled && result.assets?.[0]) await uploadPetPhoto(result.assets[0].uri);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [uploadPetPhoto, toast]);
-
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -167,11 +137,10 @@ export default function PetDetailScreen() {
 
   if (isLoading || !pet) {
     return (
-      <View style={styles.safe}>
-        <View style={styles.loadingCenter}>
-          <Skeleton width={rs(100)} height={rs(100)} radius={rs(28)} />
+      <View style={s.container}>
+        <View style={s.loadingCenter}>
+          <Skeleton width={rs(90)} height={rs(90)} radius={rs(28)} />
           <Skeleton width={rs(160)} height={rs(24)} style={{ marginTop: rs(16) }} />
-          <Skeleton width={rs(100)} height={rs(14)} style={{ marginTop: rs(8) }} />
         </View>
       </View>
     );
@@ -179,622 +148,328 @@ export default function PetDetailScreen() {
 
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
-  const latestMood = moodLogs.length > 0
-    ? moods.find((m) => m.id === moodLogs[0].mood_id)
-    : null;
+  const latestMood = moodLogs.length > 0 ? moods.find((m) => m.id === moodLogs[0].mood_id) : null;
+  const healthScore = pet.health_score ?? 0;
+  const happinessScore = pet.happiness_score ?? 0;
+  const lastEntry = diaryEntries[0] ?? null;
+
+  const mvpFeatures = [
+    { id: 'diary', label: t('common.diary'), sub: `${diaryEntries.length} ${t('diary.entries', { defaultValue: diaryEntries.length === 1 ? 'entrada' : 'entradas' })}`, icon: BookOpen, color: colors.accent, route: `/pet/${id}/diary` },
+    { id: 'health', label: t('common.health'), sub: `${vaccines.length} ${t('health.vaccines').toLowerCase()}`, icon: ShieldCheck, color: colors.success, route: `/pet/${id}/health`, badge: overdueCount > 0 ? String(overdueCount) : undefined },
+    { id: 'ai', label: t('common.ia'), sub: '—', icon: ScanEye, color: colors.purple, route: `/pet/${id}/photo-analysis` },
+  ];
+
+  const extraFeatures = [
+    { id: 'happiness', label: t('pet.happiness'), sub: t('pet.happinessSub'), icon: TrendingUp, color: colors.success, route: `/pet/${id}/happiness` },
+    { id: 'coparents', label: t('pet.coparents'), sub: t('pet.coparentsSub'), icon: Users, color: colors.petrol, route: `/pet/${id}/coparents` },
+    { id: 'achievements', label: t('pet.achievements'), sub: t('pet.achievementsSub'), icon: Trophy, color: colors.gold, route: `/pet/${id}/achievements` },
+    { id: 'capsules', label: t('pet.capsules'), sub: t('pet.capsulesSub'), icon: Hourglass, color: colors.rose, route: `/pet/${id}/capsules` },
+    { id: 'testament', label: t('pet.testament'), sub: t('pet.testamentSub'), icon: ScrollText, color: colors.rose, route: `/pet/${id}/testament` },
+    { id: 'idCard', label: t('pet.idCard'), sub: t('pet.idCardSub'), icon: QrCode, color: colors.sky, route: `/pet/${id}/id-card` },
+    { id: 'nutrition', label: t('pet.nutrition'), sub: t('pet.nutritionSub'), icon: Apple, color: colors.lime, route: `/pet/${id}/nutrition` },
+    { id: 'travel', label: t('pet.travel'), sub: t('pet.travelSub'), icon: Map, color: colors.sky, route: `/pet/${id}/travel` },
+    { id: 'insurance', label: t('pet.insurance'), sub: t('pet.insuranceSub'), icon: Umbrella, color: colors.petrol, route: `/pet/${id}/insurance` },
+  ];
 
   return (
-    <View style={styles.safe}>
+    <View style={s.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.card}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.card} />}
       >
-        {/* ── Avatar + Info ── */}
-        <View style={styles.profileSection}>
+        {/* ── Profile Hero ── */}
+        <View style={s.heroRow}>
           <TouchableOpacity onPress={() => setShowPhotoOptions(!showPhotoOptions)} activeOpacity={0.8}>
-            <View style={[styles.avatarLarge, { borderColor: petColor + '40' }]}>
+            <View style={[s.avatar, { borderColor: petColor + '25' }]}>
               {pet.avatar_url ? (
-                <Image source={{ uri: pet.avatar_url }} style={styles.avatarImg} />
+                <Image source={{ uri: pet.avatar_url }} style={s.avatarImg} />
               ) : (
-                <>
-                  <View style={[styles.avatarGlow, { backgroundColor: petColor + '10' }]} />
-                  {isDog ? <Dog size={rs(52)} color={petColor} strokeWidth={1.5} /> : <Cat size={rs(52)} color={petColor} strokeWidth={1.5} />}
-                </>
+                isDog ? <Dog size={rs(48)} color={petColor} strokeWidth={1.5} /> : <Cat size={rs(48)} color={petColor} strokeWidth={1.5} />
               )}
             </View>
-            <View style={styles.cameraBtn}>
-              <Camera size={rs(14)} color={colors.accent} strokeWidth={1.8} />
-            </View>
+            <View style={s.cameraBtn}><Camera size={rs(14)} color={colors.accent} strokeWidth={1.8} /></View>
           </TouchableOpacity>
 
-          {/* Opções de foto */}
-          {showPhotoOptions && (
-            <View style={styles.photoOptions}>
-              <TouchableOpacity style={styles.photoOptionBtn} onPress={() => { setShowPhotoOptions(false); handleTakePhoto(); }} activeOpacity={0.7}>
-                <Camera size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                <Text style={styles.photoOptionText}>{t('addPet.takePhoto')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.photoOptionBtn} onPress={() => { setShowPhotoOptions(false); handlePickPhoto(); }} activeOpacity={0.7}>
-                <Dog size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                <Text style={styles.photoOptionText}>{t('addPet.pickFromGallery')}</Text>
-              </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <View style={s.nameRow}>
+              <Text style={s.petName}>{pet.name}</Text>
+              {pet.sex && (
+                <Text style={{ fontFamily: 'Sora_700Bold', fontSize: fs(16), color: pet.sex === 'male' ? colors.petrol : colors.rose }}>
+                  {pet.sex === 'male' ? '♂' : '♀'}
+                </Text>
+              )}
+              {latestMood && (
+                <View style={[s.moodBadge, { backgroundColor: latestMood.color + '15' }]}>
+                  <View style={[s.moodDot, { backgroundColor: latestMood.color }]} />
+                  <Text style={[s.moodText, { color: latestMood.color }]}>{latestMood.label}</Text>
+                </View>
+              )}
             </View>
-          )}
-
-          <Text style={styles.petName}>{pet.name}</Text>
-          <Text style={styles.petBreed}>{pet.breed ?? t('addPet.unknownBreed')}</Text>
-
-          {latestMood && (
-            <View style={[styles.moodBadge, { backgroundColor: latestMood.color + '1F' }]}>
-              <View style={[styles.moodDot, { backgroundColor: latestMood.color }]} />
-              <Text style={[styles.moodText, { color: latestMood.color }]}>
-                {latestMood.label}
-              </Text>
+            <Text style={s.breedText}>{pet.breed ?? t('addPet.unknownBreed')}</Text>
+            <View style={s.tagsRow}>
+              {[
+                pet.estimated_age_months ? formatAge(pet.estimated_age_months) : null,
+                pet.weight_kg ? formatWeight(pet.weight_kg) : null,
+                isDog ? t('pets.dog') : t('pets.cat'),
+              ].filter(Boolean).map((tag, i) => (
+                <View key={i} style={s.tag}><Text style={s.tagText}>{tag}</Text></View>
+              ))}
             </View>
-          )}
-
-          <View style={styles.tagsRow}>
-            {[
-              pet.estimated_age_months ? formatAge(pet.estimated_age_months) : null,
-              pet.weight_kg ? formatWeight(pet.weight_kg) : null,
-              pet.size ? ({ small: t('addPet.sizeSmall'), medium: t('addPet.sizeMedium'), large: t('addPet.sizeLarge') }[pet.size]) : null,
-              isDog ? t('pets.dog') : t('pets.cat'),
-            ].filter(Boolean).map((tag, i) => (
-              <View key={i} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
           </View>
         </View>
 
-        {/* ── Health Score + Stats ── */}
-        <View style={styles.healthRow}>
-          <HealthScoreCircle score={pet.health_score} size={rs(110)} />
-          <View style={styles.statsCol}>
-            <View style={styles.statItem}>
-              <BookOpen size={rs(16)} color={colors.accent} strokeWidth={1.8} />
-              <Text style={styles.statValue}>{diaryEntries.length}</Text>
-              <Text style={styles.statLabel}>diario</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Camera size={rs(16)} color={colors.purple} strokeWidth={1.8} />
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statLabel}>fotos</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Syringe
-                size={rs(16)}
-                color={overdueCount > 0 ? colors.danger : colors.success}
-                strokeWidth={1.8}
-              />
-              <Text style={[styles.statValue, { color: overdueCount > 0 ? colors.danger : colors.success }]}>
-                {vaccines.length}
-              </Text>
-              <Text style={styles.statLabel}>vacinas</Text>
-            </View>
+        {/* Photo options */}
+        {showPhotoOptions && (
+          <View style={s.photoOpts}>
+            <TouchableOpacity style={s.photoOptBtn} onPress={() => { setShowPhotoOptions(false); handleTakePhoto(); }}>
+              <Camera size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+              <Text style={s.photoOptText}>{t('addPet.takePhoto')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.photoOptBtn} onPress={() => { setShowPhotoOptions(false); handlePickPhoto(); }}>
+              <Dog size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+              <Text style={s.photoOptText}>{t('addPet.pickFromGallery')}</Text>
+            </TouchableOpacity>
           </View>
+        )}
+
+        {/* ── Score Cards ── */}
+        <View style={s.scoresRow}>
+          {[
+            { label: t('health.aiHealthScore'), value: healthScore || '—', color: healthScore >= 80 ? colors.success : healthScore >= 50 ? colors.warning : colors.danger, sub: overdueCount > 0 ? `${overdueCount} ${t('health.vaccineOverdue')}` : t('health.upToDate'), subColor: overdueCount > 0 ? colors.danger : colors.success },
+            { label: t('pet.happiness'), value: happinessScore || '—', color: colors.accent, sub: '—', subColor: colors.textDim },
+            { label: t('tutor.level', { level: 1 }), value: 1, color: colors.gold, sub: '0 XP', subColor: colors.textDim },
+          ].map((sc, i) => (
+            <View key={i} style={s.scoreCard}>
+              <Text style={[s.scoreValue, { color: sc.color }]}>{sc.value}</Text>
+              <Text style={s.scoreLabel}>{sc.label}</Text>
+              <Text style={[s.scoreSub, { color: sc.subColor }]}>{sc.sub}</Text>
+            </View>
+          ))}
         </View>
 
         {/* ── Vaccine Alert ── */}
         {overdueCount > 0 && (
-          <TouchableOpacity
-            style={styles.vaccineAlert}
-            activeOpacity={0.7}
-            onPress={() => router.push(`/pet/${id}/health` as never)}
-          >
-            <AlertTriangle size={rs(18)} color={colors.danger} strokeWidth={2} />
-            <Text style={styles.vaccineAlertText}>
-              {overdueCount} {overdueCount === 1 ? 'vacina atrasada' : 'vacinas atrasadas'}
-            </Text>
+          <TouchableOpacity style={s.vaccineAlert} onPress={() => router.replace(`/pet/${id}/health` as never)} activeOpacity={0.7}>
+            <AlertTriangle size={rs(16)} color={colors.danger} strokeWidth={2} />
+            <Text style={s.vaccineAlertText}>{overdueCount} {t('health.vaccineOverdue')}</Text>
+            <ChevronRight size={rs(12)} color={colors.danger} strokeWidth={1.8} />
           </TouchableOpacity>
         )}
 
-        {/* ── Pet Info (editável, auto-save ao sair) ── */}
-        <Text style={styles.sectionLabel}>{t('addPet.breed').toUpperCase()}</Text>
-        <Input label={t('addPet.breed')} value={editBreed} onChangeText={setEditBreed} showMic={false} />
-
-        <View style={styles.editRow}>
-          <View style={{ flex: 1 }}>
-            <Input label={t('addPet.estimatedAge')} value={editAge} onChangeText={setEditAge} placeholder="ex: 2a, 4m" showMic={false} />
+        {/* ── AI Personality ── */}
+        {pet.ai_personality && (
+          <View style={s.aiCard}>
+            <View style={s.aiHeader}>
+              <Sparkles size={rs(14)} color={colors.purple} strokeWidth={1.8} />
+              <Text style={s.aiLabel}>{t('pet.personality')}</Text>
+            </View>
+            <Text style={s.aiText}>{pet.ai_personality}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Input label={t('addPet.estimatedWeight')} value={editWeight} onChangeText={setEditWeight} placeholder="kg" type="numeric" showMic={false} />
-          </View>
-        </View>
+        )}
 
-        <Text style={styles.fieldLabel}>{t('addPet.petSize')}</Text>
-        <View style={styles.sizeChips}>
-          {(['small', 'medium', 'large'] as const).map((sz) => (
-            <TouchableOpacity
-              key={sz}
-              style={[styles.sizeChip, editSize === sz && { backgroundColor: petColor + '20', borderColor: petColor }]}
-              onPress={() => setEditSize(sz)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.sizeChipText, editSize === sz && { color: petColor }]}>
-                {{ small: t('addPet.sizeSmall'), medium: t('addPet.sizeMedium'), large: t('addPet.sizeLarge') }[sz]}
-              </Text>
+        {/* ── Feature Grid MVP ── */}
+        <Text style={s.sectionLabel}>{t('pet.features')}</Text>
+        <View style={s.mvpRow}>
+          {mvpFeatures.map((f) => (
+            <TouchableOpacity key={f.id} style={s.mvpCard} onPress={() => router.replace(f.route as never)} activeOpacity={0.7}>
+              {f.badge && <View style={s.mvpBadge}><Text style={s.mvpBadgeText}>{f.badge}</Text></View>}
+              <View style={[s.mvpIcon, { backgroundColor: f.color + '12' }]}>
+                <f.icon size={rs(24)} color={f.color} strokeWidth={1.8} />
+              </View>
+              <Text style={s.mvpLabel}>{f.label}</Text>
+              <Text style={s.mvpSub}>{f.sub}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Input label={t('addPet.coatColor')} value={editColor} onChangeText={setEditColor} showMic={false} multiline />
+        {/* ── Extra Features Grid ── */}
+        <View style={s.futureGrid}>
+          {extraFeatures.map((f) => (
+            <TouchableOpacity key={f.id} style={s.futureCard} onPress={() => router.push(f.route as never)} activeOpacity={0.7}>
+              <View style={[s.futureIcon, { backgroundColor: f.color + '10' }]}>
+                <f.icon size={rs(20)} color={f.color} strokeWidth={1.8} />
+              </View>
+              <Text style={s.futureLabel}>{f.label}</Text>
+              <Text style={s.futureSub}>{f.sub}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* ── Allergies ── */}
         {allergies.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>ALERGIAS</Text>
-            <View style={styles.allergiesRow}>
+          <View style={s.allergiesCard}>
+            <View style={s.allergiesHeader}>
+              <AlertTriangle size={rs(12)} color={colors.danger} strokeWidth={1.8} />
+              <Text style={s.allergiesTitle}>{t('health.allergies').toUpperCase()}</Text>
+            </View>
+            <View style={s.allergiesRow}>
               {allergies.map((a) => (
-                <View
-                  key={a.id}
-                  style={[
-                    styles.allergyChip,
-                    a.severity === 'severe' && styles.allergyChipSevere,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.allergyText,
-                      a.severity === 'severe' && { color: colors.danger },
-                    ]}
-                  >
-                    {a.allergen}
-                  </Text>
+                <View key={a.id} style={s.allergyChip}>
+                  <Text style={s.allergyText}>{a.allergen}</Text>
                 </View>
               ))}
             </View>
-          </>
+          </View>
         )}
 
-        {/* ── AI Personality ── */}
-        {pet.personality_summary && (
-          <>
-            <Text style={styles.sectionLabel}>PERSONALIDADE (IA)</Text>
-            <View style={styles.aiCard}>
-              <Sparkles size={rs(16)} color={colors.purple} strokeWidth={1.8} />
-              <Text style={styles.aiText}>{pet.personality_summary}</Text>
+        {/* ── Last Diary Narration ── */}
+        {lastEntry?.narration && (
+          <View style={s.narrationCard}>
+            <View style={s.narrationHeader}>
+              <Sparkles size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <Text style={s.narrationLabel}>{t('pet.lastNarration')}</Text>
+              <View style={{ flex: 1 }} />
+              <Clock size={rs(10)} color={colors.textGhost} strokeWidth={1.8} />
+              <Text style={s.narrationTime}>{formatRelativeDate(lastEntry.created_at)}</Text>
             </View>
-          </>
+            <Text style={s.narrationText}>"{lastEntry.narration}"</Text>
+            <View style={s.narrationFooter}>
+              <Text style={s.narrationAuthor}>— {pet.name}</Text>
+              {isDog ? <Dog size={rs(14)} color={colors.accent} strokeWidth={1.8} /> : <Cat size={rs(14)} color={colors.purple} strokeWidth={1.8} />}
+            </View>
+          </View>
         )}
 
-        {/* ── Recent Diary ── */}
+        {/* ── Recent Timeline ── */}
         {diaryEntries.length > 0 && (
           <>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionLabel}>DIARIO RECENTE</Text>
-              <TouchableOpacity onPress={() => router.push(`/pet/${id}/diary` as never)}>
-                <Text style={styles.seeAll}>Ver tudo</Text>
+            <View style={s.timelineHeader}>
+              <Text style={s.sectionLabel}>{t('pet.recentActivity')}</Text>
+              <TouchableOpacity onPress={() => router.replace(`/pet/${id}/diary` as never)}>
+                <Text style={s.seeAll}>{t('pet.seeAll')}</Text>
               </TouchableOpacity>
             </View>
-            {diaryEntries.slice(0, 3).map((entry) => {
+            {diaryEntries.slice(0, 4).map((entry, i) => {
               const entryMood = moods.find((m) => m.id === entry.mood_id);
               return (
-                <View key={entry.id} style={styles.diaryPreview}>
-                  <View style={styles.diaryPreviewLeft}>
-                    {entryMood && (
-                      <View style={[styles.diaryMoodDot, { backgroundColor: entryMood.color }]} />
-                    )}
-                    <Clock size={rs(12)} color={colors.textDim} strokeWidth={1.8} />
-                    <Text style={styles.diaryDate}>
-                      {formatRelativeDate(entry.created_at)}
-                    </Text>
+                <View key={entry.id} style={[s.timelineItem, i < Math.min(diaryEntries.length, 4) - 1 && s.timelineBorder]}>
+                  <View style={[s.timelineDot, { backgroundColor: (entryMood?.color ?? colors.accent) + '15' }]}>
+                    <BookOpen size={rs(16)} color={entryMood?.color ?? colors.accent} strokeWidth={1.8} />
                   </View>
-                  <Text style={styles.diaryContent} numberOfLines={2}>
-                    {entry.content}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.timelineTitle} numberOfLines={1}>{entry.content}</Text>
+                    <Text style={s.timelineTime}>{formatRelativeDate(entry.created_at)}</Text>
+                  </View>
+                  <ChevronRight size={rs(12)} color={colors.accent} strokeWidth={1.8} />
                 </View>
               );
             })}
           </>
         )}
 
-        <View style={styles.bottomSpacer} />
+        {/* ── Microchip ── */}
+        {pet.microchip_id && (
+          <View style={s.chipCard}>
+            <QrCode size={rs(18)} color={colors.sky} strokeWidth={1.8} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.chipLabel}>Microchip</Text>
+              <Text style={s.chipValue}>{pet.microchip_id}</Text>
+            </View>
+            <TouchableOpacity style={s.chipQrBtn} onPress={() => router.push(`/pet/${id}/id-card` as never)} activeOpacity={0.7}>
+              <QrCode size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <Text style={s.chipQrText}>{t('pet.qrCode')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ height: rs(20) }} />
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: rs(16),
-    paddingVertical: rs(8),
-    gap: rs(12),
-  },
-  backBtn: {
-    width: rs(40),
-    height: rs(40),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(18),
-    color: colors.text,
-  },
-  editBtn: {
-    width: rs(40),
-    height: rs(40),
-    borderRadius: rs(radii.lg),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    paddingHorizontal: rs(20),
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { paddingHorizontal: rs(20) },
+  loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Profile
-  profileSection: {
-    alignItems: 'center',
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  avatarLarge: {
-    width: rs(100),
-    height: rs(100),
-    borderRadius: rs(28),
-    borderWidth: 3,
-    backgroundColor: colors.bgCard,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-  },
-  avatarImg: {
-    width: '100%',
-    height: '100%',
-    borderRadius: rs(26),
-  },
-  avatarGlow: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: rs(28),
-  },
-  photoOptions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  photoOptionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(6),
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.accent + '30',
-    borderRadius: rs(radii.lg),
-    paddingHorizontal: rs(14),
-    paddingVertical: rs(10),
-  },
-  photoOptionText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(12),
-    color: colors.accent,
-  },
-  cameraBtn: {
-    position: 'absolute',
-    bottom: rs(8),
-    right: rs(-4),
-    width: rs(28),
-    height: rs(28),
-    borderRadius: rs(8),
-    backgroundColor: colors.card,
-    borderWidth: 2,
-    borderColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  petName: {
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(28),
-    color: colors.text,
-  },
-  petBreed: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(14),
-    color: colors.textDim,
-    marginTop: 2,
-  },
-  moodBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(5),
-    borderRadius: rs(radii.md),
-    gap: rs(6),
-    marginTop: spacing.sm,
-  },
-  moodDot: {
-    width: rs(8),
-    height: rs(8),
-    borderRadius: rs(4),
-  },
-  moodText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(12),
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    gap: rs(6),
-    marginTop: spacing.md,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  tag: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.sm),
-    paddingHorizontal: rs(10),
-    paddingVertical: rs(4),
-  },
-  tagText: {
-    fontFamily: 'Sora_500Medium',
-    fontSize: fs(11),
-    color: colors.textSec,
-  },
+  // Hero
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: rs(18), paddingTop: rs(8), paddingBottom: rs(16) },
+  avatar: { width: rs(90), height: rs(90), borderRadius: rs(28), backgroundColor: colors.bgCard, borderWidth: rs(3), alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImg: { width: '100%', height: '100%', borderRadius: rs(26) },
+  cameraBtn: { position: 'absolute', bottom: rs(-4), right: rs(-4), width: rs(28), height: rs(28), borderRadius: rs(9), backgroundColor: colors.card, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: rs(10), marginBottom: rs(4) },
+  petName: { fontFamily: 'Sora_700Bold', fontSize: fs(24), color: colors.text },
+  moodBadge: { flexDirection: 'row', alignItems: 'center', gap: rs(4), paddingHorizontal: rs(10), paddingVertical: rs(3), borderRadius: rs(8) },
+  moodDot: { width: rs(6), height: rs(6), borderRadius: rs(3) },
+  moodText: { fontFamily: 'Sora_700Bold', fontSize: fs(10) },
+  breedText: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, marginBottom: rs(8) },
+  tagsRow: { flexDirection: 'row', gap: rs(6), flexWrap: 'wrap' },
+  tag: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border, borderRadius: rs(7), paddingHorizontal: rs(10), paddingVertical: rs(3) },
+  tagText: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.textDim },
 
-  // Health row
-  healthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.card),
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    gap: spacing.lg,
-  },
-  statsCol: {
-    flex: 1,
-    gap: spacing.md,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  statValue: {
-    fontFamily: 'JetBrainsMono_700Bold',
-    fontSize: fs(18),
-    color: colors.text,
-  },
-  statLabel: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(12),
-    color: colors.textDim,
-  },
+  // Photo options
+  photoOpts: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  photoOptBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent + '30', borderRadius: radii.lg, paddingHorizontal: rs(14), paddingVertical: rs(10) },
+  photoOptText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+
+  // Scores
+  scoresRow: { flexDirection: 'row', gap: rs(8), marginBottom: spacing.md },
+  scoreCard: { flex: 1, backgroundColor: colors.card, borderRadius: rs(18), padding: rs(16), alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  scoreValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(28) },
+  scoreLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim, marginTop: rs(4) },
+  scoreSub: { fontFamily: 'Sora_700Bold', fontSize: fs(9), marginTop: rs(2) },
 
   // Vaccine alert
-  vaccineAlert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: colors.danger + '30',
-    borderRadius: rs(radii.xl),
-    paddingHorizontal: rs(14),
-    paddingVertical: rs(12),
-    marginBottom: spacing.md,
-  },
-  vaccineAlertText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(13),
-    color: colors.danger,
-    flex: 1,
-  },
+  vaccineAlert: { flexDirection: 'row', alignItems: 'center', gap: rs(10), backgroundColor: colors.dangerSoft, borderRadius: rs(14), paddingHorizontal: rs(16), paddingVertical: rs(12), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.danger + '18' },
+  vaccineAlertText: { fontFamily: 'Sora_700Bold', fontSize: fs(12), color: colors.danger, flex: 1 },
+
+  // AI Personality
+  aiCard: { backgroundColor: colors.purple + '08', borderRadius: rs(18), padding: rs(16), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.purple + '12' },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) },
+  aiLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.purple, letterSpacing: 0.5 },
+  aiText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, lineHeight: fs(19) },
 
   // Section
-  sectionLabel: {
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(11),
-    color: colors.textGhost,
-    letterSpacing: 2,
-    marginBottom: spacing.md,
-    marginTop: spacing.lg,
-  },
-  sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  seeAll: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(12),
-    color: colors.accent,
-  },
+  sectionLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textGhost, letterSpacing: 2, marginBottom: rs(14) },
 
-  // Actions grid
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  actionCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.xxl),
-    padding: spacing.md,
-    gap: spacing.sm,
-    flexGrow: 1,
-    flexBasis: '45%',
-  },
-  actionIcon: {
-    width: rs(44),
-    height: rs(44),
-    borderRadius: rs(14),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(14),
-    color: colors.text,
-  },
-  actionHint: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(11),
-    color: colors.textDim,
-  },
+  // MVP features
+  mvpRow: { flexDirection: 'row', gap: rs(8), marginBottom: rs(10) },
+  mvpCard: { flex: 1, backgroundColor: colors.card, borderRadius: rs(18), paddingVertical: rs(20), paddingHorizontal: rs(10), alignItems: 'center', gap: rs(10), borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  mvpBadge: { position: 'absolute', top: rs(8), right: rs(8), width: rs(20), height: rs(20), borderRadius: rs(6), backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  mvpBadgeText: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(10), color: '#fff' },
+  mvpIcon: { width: rs(48), height: rs(48), borderRadius: rs(16), alignItems: 'center', justifyContent: 'center' },
+  mvpLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.text },
+  mvpSub: { fontFamily: 'Sora_400Regular', fontSize: fs(9), color: colors.textDim },
 
-  // Info card
-  infoCard: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.card),
-    overflow: 'hidden',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: rs(14),
-  },
-  infoRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  infoLabel: {
-    fontFamily: 'Sora_500Medium',
-    fontSize: fs(13),
-    color: colors.textDim,
-  },
-  infoValue: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(13),
-    color: colors.text,
-  },
+  // Future features
+  futureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8), marginBottom: spacing.md },
+  futureCard: { width: '31%', backgroundColor: colors.card, borderRadius: rs(14), paddingVertical: rs(14), paddingHorizontal: rs(8), alignItems: 'center', gap: rs(6), borderWidth: 1, borderColor: colors.border },
+  futureIcon: { width: rs(36), height: rs(36), borderRadius: rs(12), alignItems: 'center', justifyContent: 'center' },
+  futureLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.text, textAlign: 'center' },
+  futureSub: { fontFamily: 'Sora_400Regular', fontSize: fs(8), color: colors.textDim, textAlign: 'center' },
 
   // Allergies
-  allergiesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  allergyChip: {
-    backgroundColor: colors.warningSoft,
-    borderWidth: 1,
-    borderColor: colors.warning + '25',
-    borderRadius: rs(radii.sm),
-    paddingHorizontal: rs(12),
-    paddingVertical: rs(6),
-  },
-  allergyChipSevere: {
-    backgroundColor: colors.dangerSoft,
-    borderColor: colors.danger + '25',
-  },
-  allergyText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(12),
-    color: colors.warning,
-  },
+  allergiesCard: { backgroundColor: colors.dangerSoft, borderRadius: rs(14), padding: rs(14), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.danger + '10' },
+  allergiesHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(6) },
+  allergiesTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.danger },
+  allergiesRow: { flexDirection: 'row', gap: rs(6), flexWrap: 'wrap' },
+  allergyChip: { backgroundColor: colors.danger + '15', borderRadius: rs(8), paddingHorizontal: rs(12), paddingVertical: rs(4) },
+  allergyText: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.danger },
 
-  // AI card
-  aiCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.purple + '25',
-    borderRadius: rs(radii.xxl),
-    padding: spacing.md,
-    gap: spacing.sm,
-    alignItems: 'flex-start',
-  },
-  aiText: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(13),
-    color: colors.textSec,
-    lineHeight: rs(20),
-    flex: 1,
-  },
+  // Narration
+  narrationCard: { backgroundColor: colors.card, borderRadius: rs(20), padding: rs(18), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.accent + '10' },
+  narrationHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(12) },
+  narrationLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.accent },
+  narrationTime: { fontFamily: 'JetBrainsMono_400Regular', fontSize: fs(10), color: colors.textGhost, marginLeft: rs(4) },
+  narrationText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: fs(27), fontStyle: 'italic' },
+  narrationFooter: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(12), justifyContent: 'flex-end' },
+  narrationAuthor: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim },
 
-  // Diary preview
-  diaryPreview: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.xl),
-    padding: rs(14),
-    marginBottom: spacing.sm,
-  },
-  diaryPreviewLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(6),
-    marginBottom: rs(6),
-  },
-  diaryMoodDot: {
-    width: rs(6),
-    height: rs(6),
-    borderRadius: rs(3),
-  },
-  diaryDate: {
-    fontFamily: 'JetBrainsMono_500Medium',
-    fontSize: fs(10),
-    color: colors.textDim,
-  },
-  diaryContent: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(13),
-    color: colors.textSec,
-    lineHeight: rs(20),
-  },
+  // Timeline
+  timelineHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rs(14) },
+  seeAll: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.accent },
+  timelineItem: { flexDirection: 'row', alignItems: 'center', gap: rs(14), paddingVertical: rs(12) },
+  timelineBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  timelineDot: { width: rs(36), height: rs(36), borderRadius: rs(12), alignItems: 'center', justifyContent: 'center' },
+  timelineTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text },
+  timelineTime: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textGhost, marginTop: rs(2) },
 
-  editRow: { flexDirection: 'row', gap: spacing.sm },
-  fieldLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textDim, marginBottom: rs(6), marginTop: rs(4) },
-  sizeChips: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
-  sizeChip: { flex: 1, alignItems: 'center', paddingVertical: rs(12), borderRadius: rs(radii.lg), backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
-  sizeChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.textSec },
-  bottomSpacer: {
-    height: rs(80),
-  },
-
-  // FAB
-  fab: {
-    position: 'absolute',
-    bottom: rs(24),
-    right: rs(20),
-    width: rs(56),
-    height: rs(56),
-    borderRadius: rs(18),
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: rs(8) },
-    shadowOpacity: 0.3,
-    shadowRadius: rs(16),
-    elevation: 8,
-  },
+  // Microchip
+  chipCard: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: rs(14), padding: rs(14), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
+  chipLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim },
+  chipValue: { fontFamily: 'JetBrainsMono_600SemiBold', fontSize: fs(13), color: colors.text, marginTop: rs(2) },
+  chipQrBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(5), backgroundColor: colors.accent + '12', borderWidth: 1, borderColor: colors.accent + '20', borderRadius: rs(10), paddingHorizontal: rs(14), paddingVertical: rs(6) },
+  chipQrText: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.accent },
 });

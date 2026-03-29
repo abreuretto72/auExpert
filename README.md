@@ -1,4 +1,4 @@
-# PetauLife+
+# AuExpert
 
 **Uma inteligencia unica para o seu pet**
 
@@ -23,17 +23,17 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - **Biometria** (impressao digital + Face ID) via `expo-local-authentication` — detecta hardware disponivel, restaura sessao salva no SecureStore
 - **Cadastro** com validacao de senha (8+ chars, maiuscula, numero, especial)
 - **Esqueci minha senha** — fluxo completo:
-  - Email branded com template HTML do PetauLife+ (voz do pet: "Oi humano! Sou eu, seu pet")
+  - Email branded com template HTML do AuExpert (voz do pet: "Oi humano! Sou eu, seu pet")
   - SMTP customizado via `mail.multiversodigital.com.br`
-  - Pagina intermediaria de redirect em `multiversodigital.com.br/petaulife/auth-callback.html`
-  - Deep link `petaulife://reset-password` para abrir o app
+  - Pagina intermediaria de redirect em `multiversodigital.com.br/auexpert/auth-callback.html`
+  - Deep link `auexpert://reset-password` para abrir o app
   - Tela de redefinicao de senha com validacao + PasswordMeter
   - Tela de sucesso com botao "Ir para o Login"
 - **Mensagens de erro humanas** — nunca mostra erro tecnico ao tutor (`utils/errorMessages.ts`)
 - **i18n** em todas as mensagens de erro (PT-BR + EN-US)
 
 #### Tela Principal (Hub Meus Pets)
-- **Header** com logo PetauLife+, botao menu (drawer) e sino de notificacoes
+- **Header** com logo AuExpert, botao menu (drawer) e sino de notificacoes
 - **Welcome section** com nome do tutor (dados reais do Supabase)
 - **Pet count banner** com icones dos pets (Dog/Cat coloridos)
 - **Alerta de vacinas** atrasadas (condicional)
@@ -46,7 +46,7 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 
 #### Drawer Menu
 - **Animacao slide** com Animated.View (300ms, translateX)
-- **Logo PetauLife+ small** no topo
+- **Logo AuExpert small** no topo
 - **Perfil do tutor** com avatar gradiente, nome e email
 - **Mini pet cards** com avatar colorido, nome e raca (clicaveis)
 - **Menu items** com icones semanticos, sublabels e badges (Em breve, Auto)
@@ -69,7 +69,10 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - **Bottom sheet animado** com spring animation
 - **Step 0** — selecao de especie (cao/gato) com cards grandes
 - **Step 1** — camera/foto com banner IA + opcao de pular
-- **Step 2** — nome do pet com input + mic STT + preview card
+- **Step 2** — campos obrigatorios: sexo (♂/♀ chips), nome, data nascimento (formato locale-aware)
+- **Idade auto-calculada** a partir da data de nascimento
+- **Simbolo ♂/♀** ao lado do nome do pet em todos os cards e headers
+- **Formato de data** adapta ao idioma (dd/mm/yyyy, mm/dd/yyyy, yyyy/mm/dd)
 - **Botao submit** com gradiente da cor do pet
 - **KeyboardAvoidingView** para iOS
 - **Conectado** com `usePets().addPet` + toast de sucesso/erro
@@ -80,10 +83,20 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - **Skeleton** — componente base + PetCardSkeleton + HubSkeleton
 - **Input** — label, icone, mic STT (exceto senha), erro, focus glow
 - **Button** — primary (gradiente), secondary, danger, loading state
-- **PetauLogo** — 3 tamanhos (large, normal, small), proporcional
+- **AuExpertLogo** — 3 tamanhos (large, normal, small), proporcional
+
+#### Diario Inteligente
+- **Separacao Diario vs Prontuario** — diario = vida emocional, prontuario = saude clinica
+- **3 modos de entrada**: Falar (STT nativo), Foto (IA analisa e narra), Digitar
+- **Barra de midia** em todos os modos: camera, galeria, video, microfone — todos funcionais
+- **STT nativo** via `expo-speech-recognition` (development build)
+- **Narracao IA** na voz do pet (Claude claude-sonnet-4-20250514, max 50 palavras, genero gramatical correto)
+- **Filtros**: Momentos, IA, Marcos, Capsulas (sem filtro Saude — dados clinicos ficam no Prontuario)
+- **Ponte Prontuario→Diario**: vacinas/alergias geram entrada emocional automatica via IA
+- **Edge Functions**: `generate-diary-narration`, `bridge-health-to-diary`
 
 #### Utilities
-- `utils/format.ts` — formatDate, formatRelativeDate, formatWeight, formatAge, truncateText, getHealthLevel
+- `utils/format.ts` — formatDate, formatRelativeDate, formatWeight, formatAge, truncateText, getHealthLevel, locale-aware date input (parseDateInput, formatDateInput, getDatePlaceholder)
 - `utils/errorMessages.ts` — getErrorMessage() mapeia erros tecnicos para mensagens humanas via i18n
 
 #### Email Templates
@@ -92,7 +105,11 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 
 #### Edge Functions (Supabase)
 - `send-reset-email` — gerador de link + envio SMTP (fallback para built-in)
-- `auth-callback` — pagina de redirect para deep link
+- `analyze-pet-photo` — analise visual completa via Claude Vision (raca, humor, saude, ambiente)
+- `generate-diary-narration` — narracao IA na voz do pet (1a pessoa, genero correto, max 50 palavras)
+- `bridge-health-to-diary` — ponte prontuario→diario (vacina/alergia gera entrada emocional)
+- `ocr-document` — OCR de documentos veterinarios
+- `translate-strings` — traducao dinamica de strings via IA
 
 #### Configuracoes
 - **SMTP customizado** no Supabase Auth (mail.multiversodigital.com.br:465)
@@ -101,15 +118,17 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - **DMARC** recomendado para evitar spam
 - **Secrets** SMTP configurados no Supabase
 
+#### Icones de Mensagem
+- **5 icones customizados** para toast/confirm: sucesso, erro, aviso, info, confirmacao
+- Arquivos PNG em `assets/images/m_*_icon.png`
+
+#### Splash Screen
+- Logotipo AuExpert sobre fundo `#0F1923` (azul petroleo)
+- Sem retangulo cinza — imagem PNG transparente
+
 ### Pendente (MVP)
-- Tela do Pet (`pet/[id]/index.tsx`) — perfil completo
-- Diario (`pet/[id]/diary.tsx` + `diary/new.tsx`) — timeline + nova entrada com narracao IA
-- Prontuario de saude (`pet/[id]/health.tsx`) — vacinas, alergias, health score
-- Analise de foto IA (`pet/[id]/photo-analysis.tsx`) — camera + IA identifica raca/humor/saude
-- Integracao camera no Add Pet — foto + analise IA
-- Settings e Help screens
-- Notificacoes push
-- Build de producao (EAS Build)
+- Notificacoes push (vaccine reminders, diary reminders)
+- Build de producao (EAS Build para lojas)
 
 ---
 

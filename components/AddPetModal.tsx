@@ -29,6 +29,7 @@ import {
   Clock,
   SmilePlus,
   ShieldCheck,
+  Calendar,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -41,6 +42,7 @@ import { radii, spacing } from '../constants/spacing';
 import { Input } from './ui/Input';
 import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
+import { formatDateInput, parseDateInput, getDatePlaceholder, calcAgeMonths } from '../utils/format';
 import { supabase } from '../lib/supabase';
 import type { PhotoAnalysisResponse } from '../types/ai';
 
@@ -50,6 +52,8 @@ type Step = 0 | 1 | 2;
 export interface AddPetData {
   name: string;
   species: Species;
+  sex: 'male' | 'female';
+  birth_date: string;
   breed?: string | null;
   estimated_age_months?: number | null;
   weight_kg?: number | null;
@@ -83,10 +87,11 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   const [analysis, setAnalysis] = useState<PhotoAnalysisResponse | null>(null);
   // Campos editáveis — pré-preenchidos pela IA
   const [editBreed, setEditBreed] = useState('');
-  const [editAge, setEditAge] = useState('');
+  const [editBirthDate, setEditBirthDate] = useState('');
   const [editWeight, setEditWeight] = useState('');
   const [editSize, setEditSize] = useState<'small' | 'medium' | 'large' | ''>('');
   const [editColor, setEditColor] = useState('');
+  const [editSex, setEditSex] = useState<'male' | 'female' | ''>('');
   const [editMood, setEditMood] = useState('');
   const [editHealth, setEditHealth] = useState('');
   const { t, i18n } = useTranslation();
@@ -134,10 +139,11 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
     setAnalysis(null);
     setAnalyzing(false);
     setEditBreed('');
-    setEditAge('');
+    setEditBirthDate('');
     setEditWeight('');
     setEditSize('');
     setEditColor('');
+    setEditSex('');
     setEditMood('');
     setEditHealth('');
     onClose();
@@ -324,22 +330,29 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   };
 
   const handleSubmit = useCallback(() => {
-    console.log('[AddPet][Submit] INICIO', { species, petName: petName.trim(), editBreed, editAge, editWeight, editSize, editColor, editMood, hasAnalysis: !!analysis });
-    if (!species || !petName.trim()) {
-      console.log('[AddPet][Submit] ABORTADO — species ou nome vazio', { species, petName });
+    if (!species || !petName.trim()) return;
+    // Validate required fields
+    if (!editSex) {
+      toast(t('addPet.sexRequired'), 'warning');
       return;
     }
-    const ageNum = parseAgeToMonths(editAge);
+    const birthDateIso = parseDateInput(editBirthDate, i18n.language);
+    if (!birthDateIso) {
+      toast(t('addPet.birthDateRequired'), 'warning');
+      return;
+    }
+    const ageMonths = calcAgeMonths(birthDateIso);
     const weightNum = editWeight ? parseFloat(editWeight) : null;
-    console.log('[AddPet][Submit] Parsed — age:', editAge, '→', ageNum, 'meses | weight:', editWeight, '→', weightNum);
     const healthObs = editHealth.trim()
       ? editHealth.trim().split('\n').filter(Boolean)
       : null;
     const submitData = {
       name: petName.trim(),
       species,
+      sex: editSex as 'male' | 'female',
+      birth_date: birthDateIso,
       breed: editBreed.trim() || null,
-      estimated_age_months: ageNum && !isNaN(ageNum) ? ageNum : null,
+      estimated_age_months: ageMonths,
       weight_kg: weightNum && !isNaN(weightNum) ? weightNum : null,
       size: (editSize as 'small' | 'medium' | 'large') || null,
       color: editColor.trim() || null,
@@ -348,11 +361,8 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
       photoUri,
       full_analysis: analysis,
     };
-    console.log('[AddPet][Submit] Chamando onSubmit com:', JSON.stringify({
-      ...submitData, full_analysis: submitData.full_analysis ? '[PRESENT]' : null, photoUri: submitData.photoUri ? '[PRESENT]' : null,
-    }));
     onSubmit(submitData);
-  }, [species, petName, editBreed, editAge, editWeight, editSize, editColor, editMood, editHealth, photoUri, onSubmit]);
+  }, [species, petName, editSex, editBirthDate, editBreed, editWeight, editSize, editColor, editMood, editHealth, photoUri, onSubmit, toast, t]);
 
   if (!visible) return null;
 
@@ -548,6 +558,23 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                 {/* ── Campos editáveis (hidden while analyzing) ── */}
                 {!analyzing && (
                   <>
+                    {/* Sexo — obrigatório, primeiro campo */}
+                    <Text style={styles.fieldLabel}>{t('addPet.petSex')} *</Text>
+                    <View style={styles.sizeChips}>
+                      {(['male', 'female'] as const).map((s) => (
+                        <TouchableOpacity
+                          key={s}
+                          style={[styles.sizeChip, editSex === s && { backgroundColor: petColor + '20', borderColor: petColor }]}
+                          onPress={() => setEditSex(s)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.sizeChipText, editSex === s && { color: petColor }]}>
+                            {s === 'male' ? '♂ ' : '♀ '}{t(`addPet.sex${s.charAt(0).toUpperCase() + s.slice(1)}`)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
                     {/* Nome */}
                     <Input
                       label={t('addPet.whatIsName', { pronoun: isDog ? t('common.he') : t('common.she') })}
@@ -567,15 +594,16 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       icon={<ScanEye size={rs(20)} color={colors.purple} strokeWidth={1.8} />}
                     />
 
-                    {/* Idade + Peso (lado a lado) */}
+                    {/* Data nascimento + Peso (lado a lado) */}
                     <View style={styles.rowFields}>
                       <View style={styles.halfField}>
                         <Input
-                          label={t('addPet.estimatedAge')}
-                          placeholder="ex: 4m, 2a, 1a6m"
-                          value={editAge}
-                          onChangeText={setEditAge}
-                          icon={<Clock size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
+                          label={t('addPet.birthDate') + ' *'}
+                          placeholder={getDatePlaceholder(i18n.language)}
+                          value={editBirthDate}
+                          onChangeText={(text) => setEditBirthDate(formatDateInput(text, i18n.language))}
+                          icon={<Calendar size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
+                          showMic={false}
                         />
                       </View>
                       <View style={styles.halfField}>

@@ -1,5 +1,5 @@
 -- Migration 005: Functions
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- ══════════════════════════════════════
 -- fn_search_rag: Busca semântica via pgvector

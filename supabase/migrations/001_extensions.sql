@@ -1,5 +1,5 @@
 -- Migration 001: Extensions
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

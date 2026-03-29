@@ -30,6 +30,7 @@ export interface Pet {
   user_id: string;
   name: string;
   species: 'dog' | 'cat';
+  sex: 'male' | 'female' | null;
   breed: string | null;
   birth_date: string | null;
   estimated_age_months: number | null;
@@ -39,6 +40,12 @@ export interface Pet {
   microchip_id: string | null;
   avatar_url: string | null;
   health_score: number | null;
+  happiness_score: number | null;
+  current_mood: string | null;
+  current_mood_updated_at: string | null;
+  total_diary_entries: number;
+  total_photos: number;
+  ai_personality: string | null;
   personality_summary: string | null;
   is_active: boolean;
   created_at: string;
@@ -50,11 +57,20 @@ export interface DiaryEntry {
   pet_id: string;
   user_id: string;
   content: string;
+  input_method: 'voice' | 'photo' | 'text';
   narration: string | null;
   mood_id: string;
+  mood_score: number | null;
+  mood_source: 'manual' | 'ai_suggested';
+  entry_type: 'manual' | 'photo_analysis' | 'vaccine' | 'allergy' | 'ai_insight' | 'milestone' | 'mood_change';
+  tags: string[];
   photos: string[];
+  is_special: boolean;
+  linked_photo_analysis_id: string | null;
+  entry_date: string;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export interface MoodLog {
@@ -63,7 +79,8 @@ export interface MoodLog {
   user_id: string;
   mood_id: string;
   score: number;
-  source: 'manual' | 'ai_photo' | 'ai_diary';
+  source: 'manual' | 'ai_photo' | 'ai_diary' | 'ai_auto';
+  source_id: string | null;
   notes: string | null;
   is_active: boolean;
   created_at: string;

@@ -1,5 +1,5 @@
 -- Migration 006: Triggers
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- ══════════════════════════════════════
 -- 1. AUTO-UPDATE updated_at
@@ -189,7 +189,7 @@ BEGIN
   VALUES (
     NEW.id,
     'welcome',
-    'Bem-vindo ao PetauLife+!',
+    'Bem-vindo ao auExpert!',
     'Uma inteligência única para o seu pet. Comece adicionando seu primeiro pet!'
   );
 

@@ -20,8 +20,8 @@ import { getQueueSize } from '../lib/offlineQueue';
 import { persistQueryCache } from '../lib/offlineCache';
 import { queryClient } from '../lib/queryClient';
 /* eslint-disable @typescript-eslint/no-var-requires */
-const pataAmarela = require('../assets/images/pata_amarela.png');
-const pataVerde = require('../assets/images/pata_verde.png');
+const pataAmarela = require('../assets/images/m_aviso_icon.png');
+const pataVerde = require('../assets/images/m_sucesso_icon.png');
 
 interface NetworkGuardProps {
   children: ReactNode;

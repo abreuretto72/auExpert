@@ -54,7 +54,6 @@ export function usePets() {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Pet> }) => {
       if (!onlineManager.isOnline()) {
         await addToQueue({ type: 'updatePet', payload: { id, updates } });
-        // Retornar pet atualizado localmente
         const current = qc.getQueryData<Pet[]>(PETS_KEY);
         const pet = current?.find((p) => p.id === id);
         return { ...pet, ...updates } as Pet;
@@ -65,6 +64,7 @@ export function usePets() {
       qc.setQueryData<Pet[]>(PETS_KEY, (old) =>
         old?.map((p) => (p.id === updatedPet.id ? updatedPet : p)) ?? [],
       );
+      qc.invalidateQueries({ queryKey: ['pet', updatedPet.id] });
     },
   });
 

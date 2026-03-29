@@ -1,2 +1,2 @@
--- PetauLife+ seed data
+-- auExpert seed data
 -- Run after migrations to populate initial data

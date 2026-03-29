@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
-import PetauLogo from '../../components/PetauLogo';
+import AuExpertLogo from '../../components/AuExpertLogo';
 import PetCard from '../../components/PetCard';
 import type { PetCardData } from '../../components/PetCard';
 import TutorCard from '../../components/TutorCard';
@@ -60,25 +60,47 @@ export default function HubScreen() {
   const { toast } = useToast();
   const [refreshing, setRefreshing] = useState(false);
   const [tutorProfile, setTutorProfile] = useState<TutorProfile | null>(null);
+  const [diaryCount, setDiaryCount] = useState(0);
+  const [photoCount, setPhotoCount] = useState(0);
 
-  // Carregar perfil do tutor
+  // Carregar perfil do tutor + contadores
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   useEffect(() => {
     if (!isAuthenticated) return;
-    // Buscar com auth.uid() via RLS — não depende de user?.id do store
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) {
-        console.log('[Hub] No session for tutor profile');
-        return;
-      }
-      const { data, error } = await supabase
+      if (!session?.user?.id) return;
+      const userId = session.user.id;
+
+      // Perfil
+      const { data } = await supabase
         .from('users')
         .select('avatar_url, city, state, xp, level, created_at')
-        .eq('id', session.user.id)
+        .eq('id', userId)
         .single();
-      console.log('[Hub] Tutor profile:', { avatar: !!data?.avatar_url, city: data?.city, err: error?.message });
       if (data) setTutorProfile(data as TutorProfile);
+
+      // Contadores — buscar pets do tutor e contar entradas/análises
+      const { data: userPets } = await supabase
+        .from('pets')
+        .select('id')
+        .eq('tutor_id', userId)
+        .eq('is_active', true);
+      const petIds = userPets?.map((p) => p.id) ?? [];
+
+      if (petIds.length > 0) {
+        const { count: dCount } = await supabase
+          .from('diary_entries')
+          .select('id', { count: 'exact', head: true })
+          .in('pet_id', petIds);
+        setDiaryCount(dCount ?? 0);
+
+        const { count: pCount } = await supabase
+          .from('photo_analyses')
+          .select('id', { count: 'exact', head: true })
+          .in('pet_id', petIds);
+        setPhotoCount(pCount ?? 0);
+      }
     })();
   }, [isAuthenticated]);
 
@@ -96,6 +118,7 @@ export default function HubScreen() {
     id: p.id,
     name: p.name,
     species: p.species,
+    sex: p.sex,
     breed: p.breed,
     weight_kg: p.weight_kg,
     health_score: p.health_score,
@@ -167,6 +190,8 @@ export default function HubScreen() {
         const petPayload = {
           name: data.name,
           species: data.species,
+          sex: data.sex,
+          birth_date: data.birth_date,
           breed: data.breed ?? null,
           estimated_age_months: data.estimated_age_months ?? null,
           weight_kg: data.weight_kg ?? null,
@@ -236,8 +261,8 @@ export default function HubScreen() {
           state={tutorProfile?.state}
           memberSince={memberDate}
           petsCount={pets.length}
-          diaryCount={0}
-          photoCount={0}
+          diaryCount={diaryCount}
+          photoCount={photoCount}
           level={tutorProfile?.level ?? 1}
           xp={tutorProfile?.xp ?? 0}
           xpNext={1000}
@@ -313,11 +338,15 @@ export default function HubScreen() {
 
   // ── Render item ──────────────────────────────────
 
+  const handleEditPet = useCallback((petId: string) => {
+    router.push(`/pet/${petId}/edit` as never);
+  }, [router]);
+
   const renderPetCard = useCallback(
     ({ item }: { item: PetCardData }) => (
-      <PetCard pet={item} onPress={() => handlePetPress(item.id)} />
+      <PetCard pet={item} onPress={() => handlePetPress(item.id)} onEdit={() => handleEditPet(item.id)} />
     ),
-    [handlePetPress],
+    [handlePetPress, handleEditPet],
   );
 
   // ── Empty state ──────────────────────────────────
@@ -330,11 +359,8 @@ export default function HubScreen() {
             <Dog size={rs(40)} color={colors.accent + '50'} strokeWidth={1.5} />
             <Cat size={rs(40)} color={colors.purple + '50'} strokeWidth={1.5} />
           </View>
-          <Text style={styles.emptyTitle}>Nenhum pet cadastrado</Text>
-          <Text style={styles.emptyText}>
-            Cadastre seu primeiro pet e comece a usar a inteligencia do
-            PetauLife+
-          </Text>
+          <Text style={styles.emptyTitle}>{t('pets.noPets')}</Text>
+          <Text style={styles.emptyText}>{t('pets.noPetsHint')}</Text>
           <TouchableOpacity
             style={styles.emptyBtn}
             activeOpacity={0.7}
@@ -366,7 +392,7 @@ export default function HubScreen() {
           />
           <View style={styles.header}>
             <View style={styles.headerBtn} />
-            <PetauLogo size="normal" showIcon={false} />
+            <AuExpertLogo size="normal" showIcon={false} />
             <View style={styles.headerBtn} />
           </View>
           <HubSkeleton />
@@ -394,7 +420,7 @@ export default function HubScreen() {
           >
             <Menu size={rs(24)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
-          <PetauLogo size="normal" showIcon={false} />
+          <AuExpertLogo size="normal" showIcon={false} />
           <TouchableOpacity style={styles.headerBtn}>
             <Bell size={rs(24)} color={colors.accent} strokeWidth={1.8} />
             <View style={styles.bellDot} />

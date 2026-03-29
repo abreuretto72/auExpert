@@ -73,29 +73,144 @@ export async function deletePet(id: string): Promise<void> {
 // DIARY
 // ══════════════════════════════════════
 
-export async function fetchDiaryEntries(petId: string): Promise<DiaryEntry[]> {
+export async function fetchDiaryEntries(petId: string, page = 1, perPage = 20): Promise<DiaryEntry[]> {
   const { data, error } = await supabase
-    .from('diary_entries')
-    .select('*')
-    .eq('pet_id', petId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .rpc('fn_get_diary_timeline', {
+      p_pet_id: petId,
+      p_page: page,
+      p_per_page: perPage,
+    });
 
-  if (error) throw error;
+  if (error) {
+    // Fallback to direct query if function not deployed yet
+    const { data: fallback, error: fbError } = await supabase
+      .from('diary_entries')
+      .select('*')
+      .eq('pet_id', petId)
+      .eq('is_active', true)
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range((page - 1) * perPage, page * perPage - 1);
+
+    if (fbError) throw fbError;
+    return (fallback as DiaryEntry[]) ?? [];
+  }
+
   return (data as DiaryEntry[]) ?? [];
 }
 
-export async function createDiaryEntry(
-  entry: Omit<DiaryEntry, 'id' | 'created_at' | 'is_active'>,
+export interface CreateDiaryParams {
+  pet_id: string;
+  user_id: string;
+  content: string;
+  input_method: 'voice' | 'photo' | 'text';
+  mood_id: string;
+  mood_score?: number | null;
+  mood_source?: 'manual' | 'ai_suggested';
+  entry_type?: DiaryEntry['entry_type'];
+  tags?: string[];
+  is_special?: boolean;
+  photos?: string[];
+  linked_photo_analysis_id?: string | null;
+}
+
+export async function createDiaryEntry(params: CreateDiaryParams): Promise<string> {
+  console.log('[api.createDiaryEntry] params →', JSON.stringify({ pet_id: params.pet_id, mood_id: params.mood_id, input_method: params.input_method, content_len: params.content?.length }));
+  // Try using the DB function (atomic: creates entry + mood_log)
+  const { data, error } = await supabase.rpc('fn_create_diary_entry', {
+    p_pet_id: params.pet_id,
+    p_author_id: params.user_id,
+    p_content: params.content,
+    p_input_method: params.input_method,
+    p_mood_id: params.mood_id,
+    p_mood_score: params.mood_score ?? null,
+    p_mood_source: params.mood_source ?? 'manual',
+    p_entry_type: params.entry_type ?? 'manual',
+    p_tags: JSON.stringify(params.tags ?? []),
+    p_is_special: params.is_special ?? false,
+    p_photos: JSON.stringify(params.photos ?? []),
+    p_linked_photo_analysis_id: params.linked_photo_analysis_id ?? null,
+  });
+
+  if (error) {
+    console.warn('[api.createDiaryEntry] rpc fn_create_diary_entry failed →', error.code, error.message);
+    console.log('[api.createDiaryEntry] Fallback: direct insert');
+    // Fallback to direct insert — only columns that exist in the table
+    const { data: fallback, error: fbError } = await supabase
+      .from('diary_entries')
+      .insert({
+        pet_id: params.pet_id,
+        user_id: params.user_id,
+        content: params.content,
+        narration: null,
+        mood_id: params.mood_id,
+        tags: params.tags ?? [],
+        is_special: params.is_special ?? false,
+        photos: params.photos ?? [],
+        entry_date: new Date().toISOString().split('T')[0],
+      })
+      .select('id')
+      .single();
+
+    if (fbError) {
+      console.error('[api.createDiaryEntry] Fallback ALSO failed →', fbError.code, fbError.message, fbError.details);
+      throw fbError;
+    }
+    console.log('[api.createDiaryEntry] Fallback OK — id:', (fallback as { id: string }).id);
+    return (fallback as { id: string }).id;
+  }
+
+  console.log('[api.createDiaryEntry] rpc OK — entryId:', data);
+  return data as string;
+}
+
+export async function updateDiaryEntry(
+  id: string,
+  updates: Partial<Pick<DiaryEntry, 'content' | 'narration' | 'mood_id' | 'mood_score' | 'tags' | 'photos' | 'is_special'>>,
 ): Promise<DiaryEntry> {
   const { data, error } = await supabase
     .from('diary_entries')
-    .insert(entry)
+    .update(updates)
+    .eq('id', id)
     .select()
     .single();
 
   if (error) throw error;
   return data as DiaryEntry;
+}
+
+export async function updateDiaryNarration(
+  entryId: string,
+  narration: string,
+  moodScore?: number | null,
+  tags?: string[] | null,
+): Promise<void> {
+  const { error } = await supabase.rpc('fn_update_diary_narration', {
+    p_entry_id: entryId,
+    p_narration: narration,
+    p_mood_score: moodScore ?? null,
+    p_tags: tags ? JSON.stringify(tags) : null,
+  });
+
+  // Fallback to direct update — only columns that exist in the table
+  if (error) {
+    const updates: Record<string, unknown> = { narration };
+    if (tags) updates.tags = tags;
+    const { error: fbError } = await supabase
+      .from('diary_entries')
+      .update(updates)
+      .eq('id', entryId);
+    if (fbError) throw fbError;
+  }
+}
+
+export async function deleteDiaryEntry(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('diary_entries')
+    .update({ is_active: false })
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 // ══════════════════════════════════════
@@ -230,6 +345,19 @@ export async function fetchAllergies(petId: string): Promise<Allergy[]> {
   return (data as Allergy[]) ?? [];
 }
 
+export async function createAllergy(
+  allergy: Omit<Allergy, 'id' | 'created_at' | 'is_active'>,
+): Promise<Allergy> {
+  const { data, error } = await supabase
+    .from('allergies')
+    .insert(allergy)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as Allergy;
+}
+
 // ══════════════════════════════════════
 // MOOD LOGS
 // ══════════════════════════════════════
@@ -245,4 +373,17 @@ export async function fetchMoodLogs(petId: string, limit = 30): Promise<MoodLog[
 
   if (error) throw error;
   return (data as MoodLog[]) ?? [];
+}
+
+export async function createMoodLog(
+  log: Omit<MoodLog, 'id' | 'created_at' | 'is_active'>,
+): Promise<MoodLog> {
+  const { data, error } = await supabase
+    .from('mood_logs')
+    .insert(log)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as MoodLog;
 }

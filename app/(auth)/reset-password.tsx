@@ -17,7 +17,7 @@ import { radii, spacing } from '../../constants/spacing';
 import { rs, fs } from '../../hooks/useResponsive';
 import { Input } from '../../components/ui/Input';
 import PasswordMeter from '../../components/PasswordMeter';
-import PetauLogo from '../../components/PetauLogo';
+import AuExpertLogo from '../../components/AuExpertLogo';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
 import * as auth from '../../lib/auth';
@@ -104,7 +104,7 @@ export default function ResetPasswordScreen() {
       <View style={styles.container}>
         {/* Logo */}
         <View style={styles.logoSection}>
-          <PetauLogo size="normal" />
+          <AuExpertLogo size="normal" />
         </View>
 
         {/* Title */}

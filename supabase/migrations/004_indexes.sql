@@ -1,5 +1,5 @@
 -- Migration 004: Indexes
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- ══════════════════════════════════════
 -- USERS

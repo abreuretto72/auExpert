@@ -18,7 +18,7 @@ import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { Input } from '../../components/ui/Input';
-import PetauLogo from '../../components/PetauLogo';
+import AuExpertLogo from '../../components/AuExpertLogo';
 import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
@@ -104,7 +104,7 @@ export default function LoginScreen() {
     try {
       // Solicitar autenticacao biometrica REAL (sem fallback para PIN)
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: t('auth.biometricPrompt', 'Entrar no PetauLife+'),
+        promptMessage: t('auth.biometricPrompt', 'Entrar no AuExpert'),
         cancelLabel: t('common.cancel', 'Cancelar'),
         disableDeviceFallback: true,
       });
@@ -153,13 +153,9 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Ambient glow */}
-        <View style={styles.ambientGlow} />
-
-        {/* Logo + Tagline */}
+        {/* Logo */}
         <View style={styles.logoSection}>
-          <PetauLogo size="large" />
-          <Text style={styles.tagline}>{t('tagline')}</Text>
+          <AuExpertLogo size="large" />
         </View>
 
         {/* Form */}
@@ -309,26 +305,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(28),
     paddingBottom: rs(40),
   },
-  ambientGlow: {
-    position: 'absolute',
-    top: rs(-60),
-    alignSelf: 'center',
-    width: rs(280),
-    height: rs(280),
-    borderRadius: rs(140),
-    backgroundColor: colors.accentSoft,
-  },
   logoSection: {
     alignItems: 'center',
     paddingTop: rs(60),
     paddingBottom: rs(36),
-  },
-  tagline: {
-    fontFamily: 'Sora_500Medium',
-    fontSize: fs(14),
-    color: 'rgba(232, 237, 242, 0.75)',
-    letterSpacing: rs(0.5),
-    marginTop: rs(18),
   },
   form: {
     flex: 1,

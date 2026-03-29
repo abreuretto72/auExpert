@@ -1,5 +1,5 @@
 -- Migration 002: Core MVP Tables (12 tables)
--- PetauLife+ MVP — "Diário Inteligente"
+-- auExpert MVP — "Diário Inteligente"
 
 -- ══════════════════════════════════════
 -- 1. USERS
@@ -29,7 +29,7 @@ CREATE TABLE users (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-COMMENT ON TABLE users IS 'Tutores e assistentes do PetauLife+';
+COMMENT ON TABLE users IS 'Tutores e assistentes do auExpert';
 
 -- ══════════════════════════════════════
 -- 2. SESSIONS

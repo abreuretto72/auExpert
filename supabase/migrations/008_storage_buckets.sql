@@ -1,5 +1,5 @@
 -- Migration 008: Storage Buckets
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- ══════════════════════════════════════
 -- BUCKETS

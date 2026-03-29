@@ -1,5 +1,5 @@
 -- Migration 007: Views
--- PetauLife+ MVP
+-- auExpert MVP
 
 -- ══════════════════════════════════════
 -- 1. vw_pet_health_summary

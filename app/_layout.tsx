@@ -43,7 +43,7 @@ export default function RootLayout() {
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
       // O Supabase redireciona com tokens na URL
-      // petaulife://reset-password#access_token=xxx&type=recovery
+      // auexpert://reset-password#access_token=xxx&type=recovery
       if (url.includes('reset-password') || url.includes('type=recovery')) {
         // Extrair tokens do fragmento
         const fragment = url.split('#')[1];

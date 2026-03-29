@@ -56,11 +56,13 @@ const ANIM_DURATION = 300;
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const pawImageMap: Record<ToastType, ImageSourcePropType> = {
-  success: require('../assets/images/pata_verde.png'),
-  error: require('../assets/images/pata_vermelha.png'),
-  warning: require('../assets/images/pata_amarela.png'),
-  info: require('../assets/images/pata_rosa.png'),
+  success: require('../assets/images/m_sucesso_icon.png'),
+  error: require('../assets/images/m_erro_icon.png'),
+  warning: require('../assets/images/m_aviso_icon.png'),
+  info: require('../assets/images/m_info_icon.png'),
 };
+
+const confirmImage: ImageSourcePropType = require('../assets/images/m_confirma_icon.png');
 
 // ─── Balao de mensagem simples ───
 
@@ -127,7 +129,7 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
 
   return (
     <Animated.View style={[styles.bubble, { opacity, transform: [{ scale }] }]}>
-      <Image source={pawImageMap[message.type]} style={styles.pawImage} />
+      <Image source={confirmImage} style={styles.pawImage} />
 
       <Text style={styles.bubbleText}>{message.text}</Text>
 
