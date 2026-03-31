@@ -609,7 +609,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       <View style={styles.halfField}>
                         <Input
                           label={t('addPet.estimatedWeight')}
-                          placeholder="kg"
+                          placeholder={t('addPet.placeholderWeight')}
                           value={editWeight}
                           onChangeText={setEditWeight}
                           type="numeric"

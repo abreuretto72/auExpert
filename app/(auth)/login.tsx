@@ -69,11 +69,11 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.includes('@')) {
-      setError('Informe um e-mail valido');
+      setError(t('auth.errorInvalidEmail'));
       return;
     }
     if (password.length < 8) {
-      setError('A senha precisa ter pelo menos 8 caracteres');
+      setError(t('auth.errorPasswordMin'));
       return;
     }
     setError('');
@@ -112,7 +112,6 @@ export default function LoginScreen() {
       if (result.success) {
         // Biometria OK — restaurar sessao via refresh token salvo
         await biometricLogin();
-        toast(t('toast.biometricSuccess'), 'success');
         router.replace('/(app)');
       } else if (result.error === 'user_cancel') {
         // Cancelou — nada a fazer
@@ -162,7 +161,7 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <Input
             label={t('auth.email')}
-            placeholder="seu@email.com"
+            placeholder={t('auth.placeholderEmail')}
             value={email}
             onChangeText={(v) => { setEmail(v); setError(''); }}
             type="email"
@@ -171,7 +170,7 @@ export default function LoginScreen() {
 
           <Input
             label={t('auth.password')}
-            placeholder="Mínimo 8 caracteres"
+            placeholder={t('auth.placeholderPasswordMin')}
             value={password}
             onChangeText={(v) => { setPassword(v); setError(''); }}
             type="password"

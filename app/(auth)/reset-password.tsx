@@ -33,23 +33,23 @@ export default function ResetPasswordScreen() {
 
   const handleSubmit = async () => {
     if (password.length < 8) {
-      setError('A senha precisa ter pelo menos 8 caracteres');
+      setError(t('auth.errorPasswordMin'));
       return;
     }
     if (!/[A-Z]/.test(password)) {
-      setError('A senha precisa ter pelo menos 1 letra maiuscula');
+      setError(t('auth.errorPasswordUpper'));
       return;
     }
     if (!/[0-9]/.test(password)) {
-      setError('A senha precisa ter pelo menos 1 numero');
+      setError(t('auth.errorPasswordNumber'));
       return;
     }
     if (!/[^A-Za-z0-9]/.test(password)) {
-      setError('A senha precisa ter pelo menos 1 caractere especial');
+      setError(t('auth.errorPasswordSpecial'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('As senhas nao conferem');
+      setError(t('auth.errorPasswordMatch'));
       return;
     }
 
@@ -74,9 +74,9 @@ export default function ResetPasswordScreen() {
           <View style={styles.successIcon}>
             <Check size={rs(40)} color={colors.success} strokeWidth={2} />
           </View>
-          <Text style={styles.successTitle}>Senha redefinida!</Text>
+          <Text style={styles.successTitle}>{t('auth.passwordResetTitle')}</Text>
           <Text style={styles.successText}>
-            Sua nova senha esta pronta. Agora voce pode entrar no app.
+            {t('auth.passwordResetBody')}
           </Text>
           <TouchableOpacity
             onPress={() => router.replace('/(auth)/login')}
@@ -87,7 +87,7 @@ export default function ResetPasswordScreen() {
               colors={[colors.accent, colors.accentDark]}
               style={styles.btn}
             >
-              <Text style={styles.btnText}>Ir para o Login</Text>
+              <Text style={styles.btnText}>{t('auth.goToLogin')}</Text>
               <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
             </LinearGradient>
           </TouchableOpacity>
@@ -108,15 +108,15 @@ export default function ResetPasswordScreen() {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Criar nova senha</Text>
+        <Text style={styles.title}>{t('auth.newPasswordTitle')}</Text>
         <Text style={styles.subtitle}>
-          Escolha uma senha forte para proteger sua conta.
+          {t('auth.newPasswordSubtitle')}
         </Text>
 
         {/* New password */}
         <Input
-          label="Nova senha"
-          placeholder="Minimo 8 caracteres"
+          label={t('auth.newPassword')}
+          placeholder={t('auth.placeholderPasswordMin')}
           value={password}
           onChangeText={(v) => {
             setPassword(v);
@@ -131,8 +131,8 @@ export default function ResetPasswordScreen() {
 
         {/* Confirm password */}
         <Input
-          label="Confirmar nova senha"
-          placeholder="Digite novamente"
+          label={t('auth.confirmNewPassword')}
+          placeholder={t('auth.placeholderConfirmPasswordNew')}
           value={confirmPassword}
           onChangeText={(v) => {
             setConfirmPassword(v);
@@ -159,7 +159,7 @@ export default function ResetPasswordScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
-                <Text style={styles.btnText}>Redefinir senha</Text>
+                <Text style={styles.btnText}>{t('auth.resetPassword')}</Text>
                 <ArrowRight size={rs(18)} color="#fff" strokeWidth={2} />
               </>
             )}

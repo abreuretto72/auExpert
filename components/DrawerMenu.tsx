@@ -7,7 +7,7 @@ import {
   Animated,
   Pressable,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Settings,
@@ -32,8 +32,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.84;
 const ANIM_DURATION = 300;
 
 interface DrawerMenuProps {
@@ -61,8 +59,10 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
   const { t } = useTranslation();
   const { toast, confirm } = useToast();
   const logout = useAuthStore((s) => s.logout);
+  const { width: screenWidth } = useWindowDimensions();
+  const drawerWidth = screenWidth * 0.84;
 
-  const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
+  const slideAnim = useRef(new Animated.Value(-drawerWidth)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -82,7 +82,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: -DRAWER_WIDTH,
+          toValue: -drawerWidth,
           duration: ANIM_DURATION,
           useNativeDriver: true,
         }),
@@ -171,7 +171,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       <Animated.View
         style={[
           styles.drawer,
-          { transform: [{ translateX: slideAnim }] },
+          { width: drawerWidth, transform: [{ translateX: slideAnim }] },
         ]}
       >
         <ScrollView
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: DRAWER_WIDTH,
+    // width is applied inline via useWindowDimensions (drawerWidth = screenWidth * 0.84)
     backgroundColor: colors.bgCard,
     borderTopRightRadius: rs(28),
     borderBottomRightRadius: rs(28),

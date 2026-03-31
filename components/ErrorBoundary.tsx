@@ -6,6 +6,7 @@ import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
 import { rs, fs } from '../hooks/useResponsive';
 import { Button } from './ui/Button';
+import i18n from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -46,16 +47,16 @@ export class ErrorBoundary extends Component<Props, State> {
         <View style={styles.iconWrap}>
           <AlertTriangle size={rs(48)} color={colors.warning} strokeWidth={1.5} />
         </View>
-        <Text style={styles.title}>Algo deu errado</Text>
+        <Text style={styles.title}>{i18n.t('errors.unexpectedTitle')}</Text>
         <Text style={styles.message}>
-          Ocorreu um erro inesperado. Tente novamente.
+          {i18n.t('errors.unexpectedBody')}
         </Text>
         {__DEV__ && this.state.error && (
           <Text style={styles.debug}>{this.state.error.message}</Text>
         )}
         <View style={styles.btnWrap}>
           <Button
-            label="Tentar novamente"
+            label={i18n.t('common.retry')}
             onPress={this.handleReset}
             icon={<RotateCcw size={rs(18)} color="#fff" strokeWidth={2} />}
           />

@@ -31,13 +31,13 @@ export default function RegisterScreen() {
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Obrigatório';
-    if (!email.includes('@')) e.email = 'Email inválido';
-    if (password.length < 8) e.password = 'Mínimo 8 caracteres';
-    else if (!/[A-Z]/.test(password)) e.password = 'Precisa de maiúscula';
-    else if (!/[0-9]/.test(password)) e.password = 'Precisa de número';
-    else if (!/[^A-Za-z0-9]/.test(password)) e.password = 'Precisa de caractere especial';
-    if (password !== confirm) e.confirm = 'Senhas não coincidem';
+    if (!name.trim()) e.name = t('auth.errorRequired');
+    if (!email.includes('@')) e.email = t('auth.errorInvalidEmail');
+    if (password.length < 8) e.password = t('auth.errorPasswordMin');
+    else if (!/[A-Z]/.test(password)) e.password = t('auth.errorPasswordUpper');
+    else if (!/[0-9]/.test(password)) e.password = t('auth.errorPasswordNumber');
+    else if (!/[^A-Za-z0-9]/.test(password)) e.password = t('auth.errorPasswordSpecial');
+    if (password !== confirm) e.confirm = t('auth.errorPasswordMatch');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.createAccount')}</Text>
-            <Text style={styles.subtitle}>Passo 1 de 2 — Dados pessoais</Text>
+            <Text style={styles.subtitle}>{t('auth.registerStep1Subtitle')}</Text>
           </View>
         </View>
 
@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         {/* Form fields */}
         <Input
           label={t('auth.fullName')}
-          placeholder="Ana Martins"
+          placeholder={t('auth.placeholderName')}
           value={name}
           onChangeText={(v) => { setName(v); clearError('name'); }}
           error={errors.name}
@@ -112,7 +112,7 @@ export default function RegisterScreen() {
 
         <Input
           label={t('auth.email')}
-          placeholder="ana@email.com"
+          placeholder={t('auth.placeholderEmail')}
           value={email}
           onChangeText={(v) => { setEmail(v); clearError('email'); }}
           type="email"
@@ -122,7 +122,7 @@ export default function RegisterScreen() {
 
         <Input
           label={t('auth.password')}
-          placeholder="Mínimo 8 caracteres"
+          placeholder={t('auth.placeholderPasswordMin')}
           value={password}
           onChangeText={(v) => { setPassword(v); clearError('password'); }}
           type="password"
@@ -135,7 +135,7 @@ export default function RegisterScreen() {
 
         <Input
           label={t('auth.confirmPassword')}
-          placeholder="Repita a senha"
+          placeholder={t('auth.placeholderConfirmPassword')}
           value={confirm}
           onChangeText={(v) => { setConfirm(v); clearError('confirm'); }}
           type="password"

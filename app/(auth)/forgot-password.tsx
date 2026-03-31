@@ -29,7 +29,7 @@ export default function ForgotPasswordScreen() {
 
   const handleReset = async () => {
     if (!email.includes('@')) {
-      setError('Informe um e-mail valido');
+      setError(t('auth.errorInvalidEmail'));
       return;
     }
     setError('');
@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.resetPassword')}</Text>
             <Text style={styles.subtitle}>
-              Enviaremos um link para redefinir sua senha
+              {t('auth.forgotSubtitle')}
             </Text>
           </View>
         </View>
@@ -72,28 +72,28 @@ export default function ForgotPasswordScreen() {
             <View style={styles.sentIconWrap}>
               <Send size={rs(32)} color={colors.accent} strokeWidth={1.5} />
             </View>
-            <Text style={styles.sentTitle}>E-mail enviado!</Text>
+            <Text style={styles.sentTitle}>{t('auth.emailSentTitle')}</Text>
             <Text style={styles.sentText}>
-              Enviamos um link para{' '}
+              {t('auth.emailSentPrefix')}{' '}
               <Text style={styles.sentEmail}>{email}</Text>.{'\n'}
-              Abra o e-mail e clique em "Criar nova senha".
+              {t('auth.emailSentBody')}
             </Text>
             <Alert
               variant="info"
-              message="Nao recebeu? Verifique a pasta de spam ou lixo eletronico."
+              message={t('auth.emailSentHint')}
             />
             <TouchableOpacity
               onPress={() => { setSent(false); }}
               style={styles.resendBtn}
             >
-              <Text style={styles.resendText}>Enviar novamente</Text>
+              <Text style={styles.resendText}>{t('auth.resendEmail')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.back()}
               style={styles.backToLogin}
             >
               <Text style={styles.backToLoginText}>
-                Voltar para o Login
+                {t('auth.backToLogin')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -101,7 +101,7 @@ export default function ForgotPasswordScreen() {
           <>
             <Input
               label={t('auth.email')}
-              placeholder="seu@email.com"
+              placeholder={t('auth.placeholderEmail')}
               value={email}
               onChangeText={(v) => { setEmail(v); setError(''); }}
               type="email"
