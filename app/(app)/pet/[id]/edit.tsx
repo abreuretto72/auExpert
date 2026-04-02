@@ -388,7 +388,7 @@ export default function EditPetScreen() {
                 activeOpacity={0.7}
               >
                 <QrCode size={rs(13)} color={colors.accent} strokeWidth={1.8} />
-                <Text style={S.microchipQrText}>QR</Text>
+                <Text style={S.microchipQrText}>{t('pet.qrCode')}</Text>
               </TouchableOpacity>
             )}
           </View>

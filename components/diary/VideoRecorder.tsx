@@ -185,7 +185,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
             <View style={s.timerRow}>
               {/* Rec dot */}
               <Animated.View style={[s.recDot, { transform: [{ scale: pulseAnim }] }]} />
-              <Text style={s.recLabel}>REC</Text>
+              <Text style={s.recLabel}>{t('diary.recLabel')}</Text>
               <Text style={s.timerText}>
                 {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
                 {' / '}

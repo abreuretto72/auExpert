@@ -25,6 +25,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
 import { rs, fs } from '../hooks/useResponsive';
@@ -270,7 +271,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.versionText}>AuExpert v1.0.0-beta</Text>
+            <Text style={styles.versionText}>auExpert v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
           </View>
         </ScrollView>
       </Animated.View>

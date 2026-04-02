@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { ShieldCheck } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../constants/colors';
 import { rs, fs } from '../hooks/useResponsive';
 
@@ -11,6 +12,7 @@ interface HealthScoreCircleProps {
 }
 
 export function HealthScoreCircle({ score, size: rawSize = 100 }: HealthScoreCircleProps) {
+  const { t } = useTranslation();
   const size = rs(rawSize);
   const value = score ?? 0;
   const strokeWidth = rs(6);
@@ -51,12 +53,12 @@ export function HealthScoreCircle({ score, size: rawSize = 100 }: HealthScoreCir
         {score != null ? (
           <>
             <Text style={[styles.score, { color: scoreColor }]}>{value}</Text>
-            <Text style={styles.label}>saude</Text>
+            <Text style={styles.label}>{t('health.scoreLabel')}</Text>
           </>
         ) : (
           <>
             <ShieldCheck size={rs(24)} color={colors.textDim} strokeWidth={1.5} />
-            <Text style={styles.label}>sem dados</Text>
+            <Text style={styles.label}>{t('health.noData')}</Text>
           </>
         )}
       </View>

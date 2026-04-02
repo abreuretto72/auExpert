@@ -689,7 +689,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                     {/* Condição corporal */}
                     {analysis?.health?.body_condition_score != null && (
                       <View style={styles.bcsRow}>
-                        <Text style={styles.bcsLabel}>BCS</Text>
+                        <Text style={styles.bcsLabel}>{t('health.bcsLabel')}</Text>
                         <View style={styles.bcsBar}>
                           {[1,2,3,4,5,6,7,8,9].map((n) => (
                             <View key={n} style={[

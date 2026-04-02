@@ -320,7 +320,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
 
             <View style={s.timerRow}>
               <Animated.View style={[s.recDot, { transform: [{ scale: pulseAnim }] }]} />
-              <Text style={s.recLabel}>REC</Text>
+              <Text style={s.recLabel}>{t('diary.recLabel')}</Text>
               <Text style={s.timerText}>
                 {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
                 {' / '}
