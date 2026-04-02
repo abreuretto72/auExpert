@@ -12,6 +12,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+
 const LANG_NAMES: Record<string, string> = {
   'pt-BR': 'Brazilian Portuguese', 'pt': 'Brazilian Portuguese',
   'en': 'English', 'en-US': 'English',
@@ -24,6 +26,26 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // ── JWT validation — must be an authenticated user ────────────────────────
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data: { user: authUser }, error: authError } = await anonClient.auth.getUser(token);
+    if (authError || !authUser) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+
     if (!ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
@@ -33,11 +55,13 @@ Deno.serve(async (req: Request) => {
 
     // event_type: 'vaccine' | 'allergy'
     // event_summary: brief clinical summary (e.g. "V10 applied, Dr. Carla, lot XY123")
-    // pet_id, user_id, language
-    const { pet_id, user_id, event_type, event_summary, language = 'pt-BR' } = await req.json();
+    // pet_id, language (user_id is derived from JWT)
+    const { pet_id, user_id: _user_id, event_type, event_summary, language = 'pt-BR' } = await req.json();
+    // Always use the authenticated user's ID — never trust client-supplied user_id
+    const user_id = authUser.id;
     console.log('[bridge-health-to-diary] pet:', pet_id, 'type:', event_type, 'lang:', language);
 
-    if (!pet_id || !user_id || !event_type || !event_summary) {
+    if (!pet_id || !event_type || !event_summary) {
       return new Response(
         JSON.stringify({ error: 'pet_id, user_id, event_type, and event_summary are required' }),
         { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

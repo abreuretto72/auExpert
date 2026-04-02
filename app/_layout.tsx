@@ -10,6 +10,7 @@ import { JetBrainsMono_400Regular, JetBrainsMono_500Medium, JetBrainsMono_600Sem
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import { colors } from '../constants/colors';
+import { rs } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ToastProvider } from '../components/Toast';
 import { NetworkGuard } from '../components/NetworkGuard';
@@ -136,12 +137,12 @@ export default function RootLayout() {
 const splashStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F1923',
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: {
-    width: 260,
-    height: 80,
+    width: rs(260),
+    height: rs(80),
   },
 });

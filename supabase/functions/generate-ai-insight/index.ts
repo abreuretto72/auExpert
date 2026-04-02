@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
+import { validateAuth } from '../_shared/validate-auth.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -42,6 +43,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const authResult = await validateAuth(req, CORS_HEADERS);
+    if (authResult instanceof Response) return authResult;
+
     if (!ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
