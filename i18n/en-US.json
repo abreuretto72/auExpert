@@ -1715,7 +1715,20 @@
     "openedBadge": "Opened",
     "daysShort": "d",
     "aiDiary": "PET DIARY",
-    "aiNote": "My human has some little boxes saved for me... says I can only open them later. The curiosity is huge, but I'll wait! {{name}} knows it'll be worth it."
+    "aiNote": "My human has some little boxes saved for me... says I can only open them later. The curiosity is huge, but I'll wait! {{name}} knows it'll be worth it.",
+    "mock1Title": "First Christmas",
+    "mock1Preview": "It was Rex's first time seeing fake snow...",
+    "mock2Title": "Letter to the future",
+    "mock2Condition": "4th birthday",
+    "mock3Title": "Video at the park",
+    "mock3Preview": "That epic day Rex jumped into the fountain...",
+    "mock4Title": "For when you grow up",
+    "mock4Condition": "New Year 2027",
+    "mock5Title": "Summer memories",
+    "mock5Condition": "Easter 2026",
+    "mockAuthor1": "Ana",
+    "mockAuthor2": "Maria",
+    "mockAuthor3": "Paulo"
   },
   "network": {
     "offline": "No connection",

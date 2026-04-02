@@ -1715,7 +1715,20 @@
     "openedBadge": "Aberta",
     "daysShort": "d",
     "aiDiary": "DIÁRIO DO PET",
-    "aiNote": "Tem umas caixinhas que o meu humano guardou pra mim... diz que só posso abrir depois. A curiosidade é enorme, mas eu espero! {{name}} sabe que vai valer a pena."
+    "aiNote": "Tem umas caixinhas que o meu humano guardou pra mim... diz que só posso abrir depois. A curiosidade é enorme, mas eu espero! {{name}} sabe que vai valer a pena.",
+    "mock1Title": "Primeiro Natal",
+    "mock1Preview": "Foi a primeira vez que o Rex viu neve de mentira...",
+    "mock2Title": "Carta pro futuro",
+    "mock2Condition": "Aniversário 4 anos",
+    "mock3Title": "Vídeo no parque",
+    "mock3Preview": "Aquele dia épico que o Rex pulou na fonte...",
+    "mock4Title": "Para quando crescer",
+    "mock4Condition": "Ano novo 2027",
+    "mock5Title": "Memórias de verão",
+    "mock5Condition": "Páscoa 2026",
+    "mockAuthor1": "Ana",
+    "mockAuthor2": "Maria",
+    "mockAuthor3": "Paulo"
   },
   "network": {
     "offline": "Sem conexão",

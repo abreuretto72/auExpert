@@ -27,13 +27,7 @@ interface Capsule {
   preview?: string;
 }
 
-const MOCK_CAPSULES: Capsule[] = [
-  { id: '1', title: 'Primeiro Natal', author: 'Ana', date: '25 Dez 2023', status: 'opened', preview: 'Foi a primeira vez que o Rex viu neve de mentira...' },
-  { id: '2', title: 'Carta pro futuro', author: 'Ana', date: '10 Jan 2024', status: 'locked', daysUntil: 45, condition: 'Aniversário 4 anos', progress: 72 },
-  { id: '3', title: 'Vídeo no parque', author: 'Maria', date: '14 Fev 2024', status: 'opened', preview: 'Aquele dia épico que o Rex pulou na fonte...' },
-  { id: '4', title: 'Para quando crescer', author: 'Ana', date: '01 Mar 2024', status: 'locked', daysUntil: 180, condition: 'Ano novo 2027', progress: 25 },
-  { id: '5', title: 'Memórias de verão', author: 'Paulo', date: '15 Mar 2024', status: 'locked', daysUntil: 12, condition: 'Páscoa 2026', progress: 95 },
-];
+// Mock data is built inside the component using t() — see useMockCapsules()
 
 export default function CapsulesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,6 +35,14 @@ export default function CapsulesScreen() {
   const { data: pet, isLoading, refetch } = usePet(id!);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<CapsuleStatus>('all');
+
+  const mockCapsules: Capsule[] = [
+    { id: '1', title: t('capsules.mock1Title'), author: t('capsules.mockAuthor1'), date: '25 Dez 2023', status: 'opened', preview: t('capsules.mock1Preview') },
+    { id: '2', title: t('capsules.mock2Title'), author: t('capsules.mockAuthor1'), date: '10 Jan 2024', status: 'locked', daysUntil: 45, condition: t('capsules.mock2Condition'), progress: 72 },
+    { id: '3', title: t('capsules.mock3Title'), author: t('capsules.mockAuthor2'), date: '14 Fev 2024', status: 'opened', preview: t('capsules.mock3Preview') },
+    { id: '4', title: t('capsules.mock4Title'), author: t('capsules.mockAuthor1'), date: '01 Mar 2024', status: 'locked', daysUntil: 180, condition: t('capsules.mock4Condition'), progress: 25 },
+    { id: '5', title: t('capsules.mock5Title'), author: t('capsules.mockAuthor3'), date: '15 Mar 2024', status: 'locked', daysUntil: 12, condition: t('capsules.mock5Condition'), progress: 95 },
+  ];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -59,9 +61,9 @@ export default function CapsulesScreen() {
     );
   }
 
-  const opened = MOCK_CAPSULES.filter((c) => c.status === 'opened');
-  const locked = MOCK_CAPSULES.filter((c) => c.status === 'locked');
-  const filtered = filter === 'all' ? MOCK_CAPSULES : filter === 'locked' ? locked : opened;
+  const opened = mockCapsules.filter((c) => c.status === 'opened');
+  const locked = mockCapsules.filter((c) => c.status === 'locked');
+  const filtered = filter === 'all' ? mockCapsules : filter === 'locked' ? locked : opened;
 
   const filters: { key: CapsuleStatus; label: string }[] = [
     { key: 'all', label: t('capsules.all') },
@@ -84,7 +86,7 @@ export default function CapsulesScreen() {
           <Text style={s.heroLabel}>{t('capsules.created')}</Text>
           <View style={s.heroStatsRow}>
             <View style={s.heroStat}>
-              <Text style={[s.heroStatVal, { color: colors.gold }]}>{MOCK_CAPSULES.length}</Text>
+              <Text style={[s.heroStatVal, { color: colors.gold }]}>{mockCapsules.length}</Text>
               <Text style={s.heroStatLabel}>{t('capsules.total')}</Text>
             </View>
             <View style={s.heroStatDivider} />

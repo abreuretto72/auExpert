@@ -62,7 +62,7 @@ const EMPTY: TutorData = {
   social_network_type: 'whatsapp', social_network_handle: '',
   privacy_profile_public: true, privacy_show_location: true,
   privacy_show_pets: true, privacy_show_social: false,
-  xp: 0, level: 1, title: 'Tutor Iniciante', proof_of_love_tier: 'bronze',
+  xp: 0, level: 1, title: '', proof_of_love_tier: 'bronze',
   created_at: '',
 };
 
