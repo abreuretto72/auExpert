@@ -86,7 +86,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
       stopPulse();
       setIsRecording(false);
       setIsProcessing(true);
-      await onCapture(result.uri, duration);
+      if (result) await onCapture(result.uri, duration);
     } catch {
       if (timerRef.current) clearInterval(timerRef.current);
       stopPulse();

@@ -47,11 +47,11 @@ const QR_TYPES: QrType[] = [
 function IdCardSkeleton() {
   return (
     <View style={s.skeletonWrap}>
-      <Skeleton width="100%" height={rs(220)} borderRadius={rs(22)} />
-      <Skeleton width="100%" height={rs(180)} borderRadius={rs(18)} style={{ marginTop: rs(16) }} />
+      <Skeleton width="100%" height={rs(220)} radius={rs(22)} />
+      <Skeleton width="100%" height={rs(180)} radius={rs(18)} style={{ marginTop: rs(16) }} />
       <View style={s.actionGrid}>
         {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} width="48%" height={rs(80)} borderRadius={rs(14)} />
+          <Skeleton key={i} width="48%" height={rs(80)} radius={rs(14)} />
         ))}
       </View>
     </View>
@@ -83,7 +83,7 @@ function QrPlaceholderGrid() {
 export default function IdCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { pet, isLoading, refetch } = usePet(id!);
+  const { data: pet, isLoading, refetch } = usePet(id!);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -126,7 +126,7 @@ export default function IdCardScreen() {
 
         <Text style={s.idPetName}>{pet?.name ?? '---'}</Text>
         <Text style={s.idBreed}>
-          {pet?.breed ?? t('health.unknown')} · {pet?.age ?? '---'} · {pet?.sex === 'female' ? t('health.female') : t('health.male')}
+          {pet?.breed ?? t('health.unknown')} · {pet?.estimated_age_months != null ? `${Math.floor(pet.estimated_age_months / 12)}a` : '---'} · {pet?.sex === 'female' ? t('health.female') : t('health.male')}
         </Text>
 
         <View style={s.idDivider} />

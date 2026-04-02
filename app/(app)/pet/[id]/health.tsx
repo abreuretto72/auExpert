@@ -40,11 +40,11 @@ import { usePet } from '../../../../hooks/usePets';
 import { useVaccines, useAllergies, useExams, useMedications, useConsultations, useSurgeries } from '../../../../hooks/useHealth';
 import { HealthScoreCircle } from '../../../../components/HealthScoreCircle';
 import { Skeleton } from '../../../../components/Skeleton';
-import AddVaccineModal from '../../../../components/AddVaccineModal';
-import AddExamModal from '../../../../components/AddExamModal';
-import AddMedicationModal from '../../../../components/AddMedicationModal';
-import AddConsultationModal from '../../../../components/AddConsultationModal';
-import AddSurgeryModal from '../../../../components/AddSurgeryModal';
+import AddVaccineModal, { type VaccineData } from '../../../../components/AddVaccineModal';
+import AddExamModal, { type ExamData } from '../../../../components/AddExamModal';
+import AddMedicationModal, { type MedicationData } from '../../../../components/AddMedicationModal';
+import AddConsultationModal, { type ConsultationData } from '../../../../components/AddConsultationModal';
+import AddSurgeryModal, { type SurgeryData } from '../../../../components/AddSurgeryModal';
 import { useToast } from '../../../../components/Toast';
 import { useAuthStore } from '../../../../stores/authStore';
 import { getErrorMessage } from '../../../../utils/errorMessages';
@@ -361,22 +361,18 @@ export default function HealthScreen() {
   // ──────────────────────────────────────
   // TAB: VACCINES
   // ──────────────────────────────────────
-  const handleAddVaccine = useCallback(async (vaccine: Record<string, unknown>) => {
+  const handleAddVaccine = useCallback(async (vaccine: VaccineData) => {
     try {
       await addVaccine({
         pet_id: id!,
         user_id: user?.id ?? '',
-        name: vaccine.name as string,
-        laboratory: (vaccine.laboratory as string) || null,
-        batch_number: (vaccine.batch_number as string) || null,
-        date_administered: vaccine.date_administered as string,
-        next_due_date: (vaccine.next_due_date as string) || null,
-        dose_number: (vaccine.dose_number as string) || null,
-        veterinarian: (vaccine.veterinarian as string) || null,
-        clinic: (vaccine.clinic as string) || null,
-        status: 'up_to_date',
-        source: vaccine.source as string ?? 'manual',
-        notes: (vaccine.notes as string) || null,
+        name: vaccine.name,
+        lot_number: vaccine.batch_number ?? null,
+        date_administered: vaccine.date_administered,
+        next_due_date: vaccine.next_due_date ?? null,
+        veterinarian: vaccine.veterinarian ?? null,
+        clinic: vaccine.clinic ?? null,
+        notes: vaccine.notes ?? null,
       });
       setShowAddVaccine(false);
       toast(t('toast.petCreated', { name: vaccine.name }), 'success');
@@ -385,7 +381,7 @@ export default function HealthScreen() {
     }
   }, [addVaccine, id, user?.id, toast, t]);
 
-  const handleAddExam = useCallback(async (data: Record<string, unknown>) => {
+  const handleAddExam = useCallback(async (data: ExamData) => {
     try {
       await addExam({ ...data, pet_id: id, user_id: user?.id });
       setShowAddExam(false);
@@ -393,7 +389,7 @@ export default function HealthScreen() {
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [addExam, id, user?.id, toast, t]);
 
-  const handleAddMedication = useCallback(async (data: Record<string, unknown>) => {
+  const handleAddMedication = useCallback(async (data: MedicationData) => {
     try {
       await addMedication({ ...data, pet_id: id, user_id: user?.id });
       setShowAddMed(false);
@@ -401,7 +397,7 @@ export default function HealthScreen() {
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [addMedication, id, user?.id, toast, t]);
 
-  const handleAddConsultation = useCallback(async (data: Record<string, unknown>) => {
+  const handleAddConsultation = useCallback(async (data: ConsultationData) => {
     try {
       await addConsultation({ ...data, pet_id: id, user_id: user?.id });
       setShowAddCons(false);
@@ -409,7 +405,7 @@ export default function HealthScreen() {
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [addConsultation, id, user?.id, toast, t]);
 
-  const handleAddSurgery = useCallback(async (data: Record<string, unknown>) => {
+  const handleAddSurgery = useCallback(async (data: SurgeryData) => {
     try {
       await addSurgery({ ...data, pet_id: id, user_id: user?.id });
       setShowAddSurg(false);
@@ -554,9 +550,9 @@ export default function HealthScreen() {
                 }
               >
                 <View style={styles.vaccineDetails}>
-                  {ex.laboratory && <InfoRow label={t('health.laboratory')} value={String(ex.laboratory)} isFirst />}
-                  {ex.veterinarian && <InfoRow label={t('health.vet')} value={String(ex.veterinarian)} isFirst={!ex.laboratory} />}
-                  {ex.notes && <InfoRow label={t('health.notes')} value={String(ex.notes)} />}
+                  {!!ex.laboratory && <InfoRow label={t('health.laboratory')} value={String(ex.laboratory)} isFirst />}
+                  {!!ex.veterinarian && <InfoRow label={t('health.vet')} value={String(ex.veterinarian)} isFirst={!ex.laboratory} />}
+                  {!!ex.notes && <InfoRow label={t('health.notes')} value={String(ex.notes)} />}
                 </View>
               </ExpandableCard>
             );
@@ -596,11 +592,11 @@ export default function HealthScreen() {
                 }
               >
                 <View style={styles.vaccineDetails}>
-                  {m.type && <InfoRow label={t('health.medType')} value={String(m.type)} isFirst />}
-                  {m.end_date && <InfoRow label={t('health.endDate')} value={formatDate(String(m.end_date))} />}
-                  {m.prescribed_by && <InfoRow label={t('health.vet')} value={String(m.prescribed_by)} />}
-                  {m.reason && <InfoRow label={t('health.reason')} value={String(m.reason)} />}
-                  {m.notes && <InfoRow label={t('health.notes')} value={String(m.notes)} />}
+                  {!!m.type && <InfoRow label={t('health.medType')} value={String(m.type)} isFirst />}
+                  {!!m.end_date && <InfoRow label={t('health.endDate')} value={formatDate(String(m.end_date))} />}
+                  {!!m.prescribed_by && <InfoRow label={t('health.vet')} value={String(m.prescribed_by)} />}
+                  {!!m.reason && <InfoRow label={t('health.reason')} value={String(m.reason)} />}
+                  {!!m.notes && <InfoRow label={t('health.notes')} value={String(m.notes)} />}
                 </View>
               </ExpandableCard>
             );
@@ -643,11 +639,11 @@ export default function HealthScreen() {
                 }
               >
                 <View style={styles.vaccineDetails}>
-                  {c.summary && <InfoRow label={t('health.summary')} value={String(c.summary)} isFirst />}
-                  {c.diagnosis && <InfoRow label={t('health.diagnosis')} value={String(c.diagnosis)} />}
-                  {c.prescriptions && <InfoRow label={t('health.prescriptions')} value={String(c.prescriptions)} />}
-                  {c.follow_up_at && <InfoRow label={t('health.followUp')} value={formatDate(String(c.follow_up_at))} />}
-                  {c.notes && <InfoRow label={t('health.notes')} value={String(c.notes)} />}
+                  {!!c.summary && <InfoRow label={t('health.summary')} value={String(c.summary)} isFirst />}
+                  {!!c.diagnosis && <InfoRow label={t('health.diagnosis')} value={String(c.diagnosis)} />}
+                  {!!c.prescriptions && <InfoRow label={t('health.prescriptions')} value={String(c.prescriptions)} />}
+                  {!!c.follow_up_at && <InfoRow label={t('health.followUp')} value={formatDate(String(c.follow_up_at))} />}
+                  {!!c.notes && <InfoRow label={t('health.notes')} value={String(c.notes)} />}
                 </View>
               </ExpandableCard>
             );
@@ -690,10 +686,10 @@ export default function HealthScreen() {
                 }
               >
                 <View style={styles.vaccineDetails}>
-                  {s.veterinarian && <InfoRow label={t('health.vet')} value={String(s.veterinarian)} isFirst />}
-                  {s.clinic && <InfoRow label={t('health.clinic')} value={String(s.clinic)} isFirst={!s.veterinarian} />}
-                  {s.anesthesia && <InfoRow label={t('health.anesthesia')} value={String(s.anesthesia)} />}
-                  {s.notes && <InfoRow label={t('health.notes')} value={String(s.notes)} />}
+                  {!!s.veterinarian && <InfoRow label={t('health.vet')} value={String(s.veterinarian)} isFirst />}
+                  {!!s.clinic && <InfoRow label={t('health.clinic')} value={String(s.clinic)} isFirst={!s.veterinarian} />}
+                  {!!s.anesthesia && <InfoRow label={t('health.anesthesia')} value={String(s.anesthesia)} />}
+                  {!!s.notes && <InfoRow label={t('health.notes')} value={String(s.notes)} />}
                 </View>
               </ExpandableCard>
             );

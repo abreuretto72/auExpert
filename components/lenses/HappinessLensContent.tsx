@@ -213,11 +213,11 @@ export function HappinessLensContent({ petId }: HappinessLensContentProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingWrap}>
-        <Skeleton width="100%" height={rs(110)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(110)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(100)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(100)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(120)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(120)} radius={radii.card} />
       </View>
     );
   }

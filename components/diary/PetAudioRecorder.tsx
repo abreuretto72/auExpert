@@ -59,7 +59,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isAvailable] = useState(() => AvModule !== null);
 
-  const recordingRef = useRef<InstanceType<AudioModule['Recording']> | null>(null);
+  const recordingRef = useRef<InstanceType<AudioModule['Audio']['Recording']> | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
   const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

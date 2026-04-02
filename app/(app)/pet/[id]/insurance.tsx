@@ -270,7 +270,7 @@ function AiInsight({ t, petName }: { t: (k: string, o?: Record<string, unknown>)
 export default function InsuranceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { pet, isLoading } = usePet(id ?? '');
+  const { data: pet, isLoading } = usePet(id ?? '');
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {

@@ -28,8 +28,8 @@ export function useSyncQueue() {
   const { isOnline } = useNetworkStatus();
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const processQueue = useCallback(async () => {
     if (isSyncing || !isOnline || !user?.id) return;

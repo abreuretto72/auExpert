@@ -281,11 +281,11 @@ export function NutritionLensContent({ petId }: NutritionLensContentProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingWrap}>
-        <Skeleton width="100%" height={rs(100)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(100)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(80)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(80)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(80)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(80)} radius={radii.card} />
       </View>
     );
   }

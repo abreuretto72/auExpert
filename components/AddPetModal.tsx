@@ -246,16 +246,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
 
         // Pré-preencher campos editáveis (atalhos top-level)
         if (result.breed?.name) setEditBreed(result.breed.name);
-        if (result.estimated_age_months != null) {
-          const m = result.estimated_age_months;
-          if (m >= 12) {
-            const y = Math.floor(m / 12);
-            const rem = m % 12;
-            setEditAge(rem > 0 ? `${y}a${rem}m` : `${y}a`);
-          } else {
-            setEditAge(`${m}m`);
-          }
-        }
+        // estimated_age_months is saved to DB via analysis result; no local state field for age
         if (result.estimated_weight_kg != null) setEditWeight(String(result.estimated_weight_kg));
         if (result.size) setEditSize(result.size);
         if (result.color) setEditColor(result.color);
@@ -279,8 +270,8 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
           if (result.health.nails?.observation) healthObs.push(result.health.nails.observation);
         }
         // Fallback legado
-        if (healthObs.length === 0 && Array.isArray((result as Record<string, unknown>).health_observations)) {
-          const legacy = (result as Record<string, unknown>).health_observations as unknown[];
+        if (healthObs.length === 0 && Array.isArray((result as unknown as Record<string, unknown>).health_observations)) {
+          const legacy = (result as unknown as Record<string, unknown>).health_observations as unknown[];
           for (const h of legacy) {
             if (typeof h === 'string') healthObs.push(h);
             else if (h && typeof h === 'object' && 'observation' in h) healthObs.push((h as { observation: string }).observation);

@@ -107,7 +107,7 @@ export async function fetchDiaryEntries(petId: string, page = 1, perPage = 20): 
     return (rpc as DiaryEntry[]) ?? [];
   }
 
-  return (data as DiaryEntry[]) ?? [];
+  return (data as unknown as DiaryEntry[]) ?? [];
 }
 
 export interface CreateDiaryParams {

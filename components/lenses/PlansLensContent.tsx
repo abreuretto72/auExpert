@@ -219,11 +219,11 @@ export function PlansLensContent({ petId }: PlansLensContentProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingWrap}>
-        <Skeleton width="100%" height={rs(96)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(96)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(108)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(108)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(108)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(108)} radius={radii.card} />
       </View>
     );
   }

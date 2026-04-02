@@ -115,7 +115,7 @@ export default function VoiceDiaryScreen() {
 
   // ── STT event plumbing ─────────────────────────────────────────────────────
 
-  const noopHook = (_event: string, _cb: (...args: unknown[]) => void) => {};
+  const noopHook = (_event: string, _cb: (event: never) => void) => {};
   const useEvent = useSpeechEvent ?? noopHook;
 
   useEvent('result', (event: { results: { transcript: string }[]; isFinal: boolean }) => {

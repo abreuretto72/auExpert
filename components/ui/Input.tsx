@@ -42,7 +42,7 @@ export function Input(props: InputProps) {
   const isPassword = type === 'password';
 
   // STT events (no-op se módulo indisponível)
-  const noopHook = (_event: string, _cb: (...args: unknown[]) => void) => {};
+  const noopHook = (_event: string, _cb: (event: never) => void) => {};
   const useEvent = useSpeechEvent ?? noopHook;
 
   useEvent('result', (event: { results: { transcript: string }[] }) => {

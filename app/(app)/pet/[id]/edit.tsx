@@ -95,9 +95,6 @@ export default function EditPetScreen() {
         }
         if (analysis.estimated_age_months != null) {
           const months = analysis.estimated_age_months;
-          setAge(months >= 12
-            ? `${Math.floor(months / 12)}a${months % 12 ? months % 12 + 'm' : ''}`
-            : `${months}m`);
           updates.estimated_age_months = months;
         }
         if (analysis.estimated_weight_kg != null) {

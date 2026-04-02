@@ -22,6 +22,8 @@ const Notifications: typeof NotificationsType | null = IS_EXPO_GO
             shouldShowAlert: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
           }),
         });
         return N;

@@ -92,7 +92,6 @@ export default function DiaryScreen() {
         onNewEntry={handleNewEntry}
         onEditEntry={handleEditEntry}
         onRetryEntry={handleRetryEntry}
-        onOpenPdf={handleOpenPdf}
       />
 
       <PdfExportModal

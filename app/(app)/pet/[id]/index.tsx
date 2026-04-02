@@ -138,7 +138,7 @@ export default function PetScreen() {
 
   if (isLoading || !pet) {
     return (
-      <View style={s.container}>
+      <View style={s.safe}>
         <View style={s.loadingCenter}>
           <Skeleton width={rs(90)} height={rs(90)} radius={rs(28)} />
           <Skeleton width={rs(160)} height={rs(24)} style={{ marginTop: rs(16) }} />

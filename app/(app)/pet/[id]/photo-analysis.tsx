@@ -181,7 +181,7 @@ export default function PhotoAnalysisScreen() {
         {analyses.map((analysis) => {
           const f = analysis.findings;
           const breed = f?.breed ?? f?.identification?.breed;
-          const breedName = breed?.name ?? breed?.primary ?? '—';
+          const breedName = (breed as { name?: string; primary?: string } | undefined)?.name ?? (breed as { name?: string; primary?: string } | undefined)?.primary ?? '—';
           const breedConf = breed?.confidence ?? 0;
           const mood = f?.mood;
           const moodName = mood?.primary ?? (mood as unknown as { id: string })?.id ?? null;
@@ -268,7 +268,7 @@ export default function PhotoAnalysisScreen() {
                     )}
                   </View>
                   {['skin_coat', 'eyes', 'ears', 'mouth_teeth', 'posture_body'].map((cat) => {
-                    const items = (health as Record<string, unknown>)[cat];
+                    const items = (health as unknown as Record<string, unknown>)[cat];
                     if (!Array.isArray(items) || items.length === 0) return null;
                     return items.map((item: { observation: string; severity: string }, i: number) => (
                       <View key={`${cat}-${i}`} style={s.healthItem}>

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   Shield, Check, AlertCircle, UserCheck, Star,
   AlertTriangle, Pill, Apple, ShieldAlert,
@@ -65,7 +66,7 @@ function SectionLabel({ text }: { text: string }) {
   return <Text style={styles.sectionLabel}>{text}</Text>;
 }
 
-function ProtectionStatus({ t }: { t: (k: string) => string }) {
+function ProtectionStatus({ t }: { t: TFunction }) {
   return (
     <View style={styles.card}>
       <View style={styles.protectionHeader}>
@@ -97,7 +98,7 @@ function Checklist({ t, items }: { t: (k: string) => string; items: ChecklistIte
     <View style={styles.card}>
       <SectionLabel text={t('testament.checklist')} />
       <Text style={styles.checklistCount}>
-        {t('testament.checklistProgress', { done: doneCount, total: items.length })}
+        {(t as (k: string, opts: Record<string, unknown>) => string)('testament.checklistProgress', { done: doneCount, total: items.length })}
       </Text>
       {items.map((item) => (
         <View key={item.id} style={styles.checkRow}>
@@ -124,7 +125,7 @@ function Checklist({ t, items }: { t: (k: string) => string; items: ChecklistIte
   );
 }
 
-function BackupGuardian({ t }: { t: (k: string) => string }) {
+function BackupGuardian({ t }: { t: TFunction }) {
   return (
     <View style={styles.card}>
       <SectionLabel text={t('testament.guardianSection')} />
@@ -171,7 +172,7 @@ function CriticalInfo({ t, items }: { t: (k: string) => string; items: CriticalC
   );
 }
 
-function PersonalLetter({ t }: { t: (k: string) => string }) {
+function PersonalLetter({ t }: { t: TFunction }) {
   return (
     <View style={[styles.card, { borderColor: `${colors.rose}30`, borderWidth: 1 }]}>
       <View style={styles.letterHeader}>
@@ -187,7 +188,7 @@ function PersonalLetter({ t }: { t: (k: string) => string }) {
   );
 }
 
-function Verification({ t }: { t: (k: string) => string }) {
+function Verification({ t }: { t: TFunction }) {
   return (
     <View style={styles.card}>
       <View style={styles.verificationRow}>
@@ -213,7 +214,7 @@ function Verification({ t }: { t: (k: string) => string }) {
 export default function TestamentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { pet, isLoading } = usePet(id!);
+  const { data: pet, isLoading } = usePet(id!);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {

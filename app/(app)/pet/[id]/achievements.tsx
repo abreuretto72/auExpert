@@ -21,7 +21,7 @@ export default function AchievementsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const { pet, isLoading } = usePet(id);
+  const { data: pet, isLoading } = usePet(id);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -34,11 +34,11 @@ export default function AchievementsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.content}>
-          <Skeleton width="100%" height={rs(80)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(80)} radius={radii.card} />
           <View style={{ height: spacing.md }} />
-          <Skeleton width="100%" height={rs(60)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(60)} radius={radii.card} />
           <View style={{ height: spacing.md }} />
-          <Skeleton width="100%" height={rs(140)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(140)} radius={radii.card} />
         </View>
       </View>
     );

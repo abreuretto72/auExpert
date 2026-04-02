@@ -17,7 +17,7 @@ export default function AgendaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const { pet, isLoading } = usePet(id);
+  const { data: pet, isLoading } = usePet(id);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -33,9 +33,9 @@ export default function AgendaScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.content}>
-          <Skeleton width="100%" height={rs(260)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(260)} radius={radii.card} />
           <View style={{ height: spacing.md }} />
-          <Skeleton width="100%" height={rs(120)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(120)} radius={radii.card} />
         </View>
       </View>
     );

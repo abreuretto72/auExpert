@@ -93,7 +93,7 @@ async function executeMutation(mutation: QueuedMutation): Promise<void> {
 
     // ── Diary ──
     case 'createDiaryEntry':
-      await api.createDiaryEntry(payload as Parameters<typeof api.createDiaryEntry>[0]);
+      await api.createDiaryEntry(payload as unknown as Parameters<typeof api.createDiaryEntry>[0]);
       break;
 
     case 'updateDiaryEntry': {

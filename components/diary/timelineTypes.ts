@@ -162,7 +162,7 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
   // input_type takes precedence over entry_type for newer entries
   const inputType = entry.input_type;
   const timelineType =
-    (inputType && INPUT_TYPE_TO_TIMELINE[inputType])
+    (inputType ? INPUT_TYPE_TO_TIMELINE[inputType] : undefined)
     ?? ENTRY_TYPE_TO_TIMELINE[entry.entry_type ?? 'manual']
     ?? 'diary';
 
@@ -188,8 +188,8 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     audioDuration: entry.audio_duration ?? null,
     petAudioAnalysis: entry.pet_audio_analysis ?? null,
     processingStatus: entry.processing_status ?? 'done',
-    classifications: Array.isArray((entry as Record<string, unknown>).classifications)
-      ? (entry as Record<string, unknown>).classifications as TimelineEvent['classifications']
+    classifications: Array.isArray((entry as unknown as Record<string, unknown>).classifications)
+      ? (entry as unknown as Record<string, unknown>).classifications as TimelineEvent['classifications']
       : null,
     modules: (entry.expenses || entry.vaccines || entry.consultations || entry.clinical_metrics || entry.medications || entry.nutrition_records)
       ? {

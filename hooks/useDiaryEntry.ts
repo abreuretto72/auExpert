@@ -1249,7 +1249,7 @@ export function useDiaryEntry(petId: string) {
       linked_photo_analysis_id: null,
       entry_date: new Date().toISOString().split('T')[0],
       is_active: true,
-      processing_status: (onlineManager.isOnline() ? 'processing' : 'pending') as 'processing' | 'pending',
+      processing_status: 'processing' as const,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

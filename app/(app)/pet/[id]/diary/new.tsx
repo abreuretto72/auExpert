@@ -136,7 +136,7 @@ export default function NewDiaryEntryScreen() {
 
   // ── STT event handlers ───────────────────────────────────────────────────
 
-  const noopHook = (_event: string, _cb: (...args: unknown[]) => void) => {};
+  const noopHook = (_event: string, _cb: (event: never) => void) => {};
   const useEvent = useSpeechEvent ?? noopHook;
 
   useEvent('result', (event: { results: { transcript: string }[]; isFinal: boolean }) => {
@@ -468,7 +468,7 @@ export default function NewDiaryEntryScreen() {
     } catch (err) { toast(getErrorMessage(err), 'error'); }
   }, [attachments, canAddAttachment, toast, t]);
 
-  const onPetAudioCaptured = useCallback((uri: string, duration: number) => {
+  const onPetAudioCaptured = useCallback(async (uri: string, duration: number) => {
     setAttachments((prev) => [...prev, {
       id:       `audio-${Date.now()}`,
       type:     'audio' as const,

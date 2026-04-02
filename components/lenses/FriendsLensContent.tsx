@@ -144,11 +144,11 @@ export function FriendsLensContent({ petId }: FriendsLensContentProps) {
   if (isLoading) {
     return (
       <View style={styles.loadingWrap}>
-        <Skeleton width="100%" height={rs(72)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(72)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(90)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(90)} radius={radii.card} />
         <View style={{ height: spacing.sm }} />
-        <Skeleton width="100%" height={rs(90)} borderRadius={radii.card} />
+        <Skeleton width="100%" height={rs(90)} radius={radii.card} />
       </View>
     );
   }

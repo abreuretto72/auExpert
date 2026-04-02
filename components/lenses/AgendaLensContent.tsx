@@ -539,8 +539,8 @@ function DayPanel({
         {/* Items */}
         {isLoading ? (
           <View style={styles.dayLoadingWrap}>
-            <Skeleton width="100%" height={rs(52)} borderRadius={radii.lg} />
-            <Skeleton width="100%" height={rs(52)} borderRadius={radii.lg} />
+            <Skeleton width="100%" height={rs(52)} radius={radii.lg} />
+            <Skeleton width="100%" height={rs(52)} radius={radii.lg} />
           </View>
         ) : filtered.length === 0 ? (
           <Text style={styles.noneText}>{t('agenda.noOccurrences')}</Text>
@@ -622,7 +622,7 @@ export function AgendaLensContent({ petId, petName }: AgendaLensContentProps) {
         />
         <WeekdayRow />
         {isLoading
-          ? <Skeleton width="100%" height={rs(160)} borderRadius={radii.lg} />
+          ? <Skeleton width="100%" height={rs(160)} radius={radii.lg} />
           : <CalendarGrid
               year={year}
               month={month}

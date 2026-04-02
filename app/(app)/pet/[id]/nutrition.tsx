@@ -151,7 +151,7 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 export default function NutritionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
-  const { pet, isLoading, refetch } = usePet(id);
+  const { data: pet, isLoading, refetch } = usePet(id);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('records');
 
@@ -168,11 +168,11 @@ export default function NutritionScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.content}>
-          <Skeleton width="100%" height={rs(80)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(80)} radius={radii.card} />
           <View style={{ height: spacing.md }} />
-          <Skeleton width="100%" height={rs(200)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(200)} radius={radii.card} />
           <View style={{ height: spacing.md }} />
-          <Skeleton width="100%" height={rs(160)} borderRadius={radii.card} />
+          <Skeleton width="100%" height={rs(160)} radius={radii.card} />
         </View>
       </View>
     );
@@ -200,7 +200,7 @@ export default function NutritionScreen() {
           </View>
           <View style={styles.breedTextWrap}>
             <Text style={styles.breedName}>
-              {pet?.breed ?? t('health.unknown')} {' \u00B7 '} {pet?.weight ? `${pet.weight} kg` : ''}
+              {pet?.breed ?? t('health.unknown')} {' \u00B7 '} {pet?.weight_kg ? `${pet.weight_kg} kg` : ''}
             </Text>
             <Text style={styles.breedGoal}>
               {t('nutrition.goalLabel', { kcal: goalKcal })}

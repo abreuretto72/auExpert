@@ -121,7 +121,7 @@ const GridButton = React.memo(function GridButton({
       onPress={onPress}
     >
       <LinearGradient
-        colors={method.gradient as unknown as string[]}
+        colors={method.gradient as unknown as [string, string]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[
@@ -214,7 +214,7 @@ function HelpModal({
               return (
                 <View key={item.key} style={styles.helpRow}>
                   <LinearGradient
-                    colors={item.gradient as unknown as string[]}
+                    colors={item.gradient as unknown as [string, string]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.helpIconBox}
