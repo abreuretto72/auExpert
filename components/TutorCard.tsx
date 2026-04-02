@@ -49,7 +49,6 @@ const TutorCard: React.FC<TutorCardProps> = ({
   const { t } = useTranslation();
   const xpPct = xpNext > 0 ? Math.min((xp / xpNext) * 100, 100) : 0;
   const location = [city, state].filter(Boolean).join(', ');
-  console.log('[TutorCard] avatarUrl:', avatarUrl ? avatarUrl.substring(0, 60) + '...' : 'NULL');
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>

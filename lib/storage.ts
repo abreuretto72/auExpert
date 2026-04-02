@@ -58,9 +58,7 @@ export async function uploadPetMedia(
   uri: string,
   mediaType: MediaType,
 ): Promise<string> {
-  console.log('[Storage] uploadPetMedia — type:', mediaType, 'uri:', uri.slice(-40));
   const bytes = await readFileAsBytes(uri);
-  console.log('[Storage] File read OK — size:', bytes.length, 'bytes');
 
   const ext = mediaType === 'video' ? 'mp4' : 'webp';
   const path = `${userId}/${petId}/${Date.now()}_diary.${ext}`;
@@ -74,7 +72,6 @@ export async function uploadPetMedia(
     console.error('[Storage] Upload FAILED →', error.message);
     throw error;
   }
-  console.log('[Storage] Upload OK → path:', data.path);
   return data.path;
 }
 

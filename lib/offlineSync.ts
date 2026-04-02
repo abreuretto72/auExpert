@@ -153,7 +153,6 @@ export async function retryFailed(): Promise<number> {
     await addToQueue({ type: item.type, payload: item.payload });
   }
   await clearFailedQueue();
-  console.log('[offlineSync] Moved', failed.length, 'failed items back to main queue');
 
   // Process immediately
   const result = await processQueue();

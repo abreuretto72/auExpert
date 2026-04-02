@@ -121,18 +121,15 @@ export async function getTranslation(lang: string): Promise<Record<string, unkno
   // 1. Tentar cache local
   const cached = await getCachedTranslation(lang);
   if (cached) {
-    console.log(`[i18n] Usando cache para "${lang}"`);
     return cached;
   }
 
   // 2. Buscar via Edge Function
-  console.log(`[i18n] Traduzindo para "${lang}" via IA...`);
   const translated = await fetchTranslation(lang);
 
   if (translated) {
     // 3. Salvar no cache para próximas vezes
     await setCachedTranslation(lang, translated);
-    console.log(`[i18n] Tradução para "${lang}" salva no cache`);
     return translated;
   }
 

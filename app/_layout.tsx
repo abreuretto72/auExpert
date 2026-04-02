@@ -28,7 +28,6 @@ function SyncQueueActivator() {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  console.log('[RootLayout] Renderizando...');
   const router = useRouter();
 
   const [fontsLoaded] = useFonts({

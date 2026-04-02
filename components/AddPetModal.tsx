@@ -222,8 +222,6 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
           encoding: 'base64',
         });
 
-        console.log('[AddPet] Sending photo for analysis, base64 size:', Math.round(base64.length / 1024), 'KB');
-
         const { data, error } = await supabase.functions.invoke('analyze-pet-photo', {
           body: {
             photo_base64: base64,
@@ -243,7 +241,6 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
           throw new Error(data.error);
         }
 
-        console.log('[AddPet] Analysis result received, keys:', Object.keys(data));
         const result = data as PhotoAnalysisResponse;
         setAnalysis(result);
 

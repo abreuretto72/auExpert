@@ -24,7 +24,6 @@ import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
 
 export default function LoginScreen() {
-  console.log('[LoginScreen] Renderizando...');
   const { t } = useTranslation();
   const { toast } = useToast();
   const [email, setEmail] = useState('');

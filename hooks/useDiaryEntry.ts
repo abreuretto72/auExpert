@@ -1022,8 +1022,6 @@ export function useDiaryEntry(petId: string) {
   // ── Step 1: Classify (send to AI, get classifications + narration) ──
   const classifyMutation = useMutation({
     mutationFn: async (params: SubmitEntryParams): Promise<ClassifyDiaryResponse> => {
-      console.log('[useDiaryEntry] classify — input:', params.inputType, 'text_len:', params.text?.length ?? 0, 'photos:', params.photosBase64?.length ?? 0);
-
       if (!onlineManager.isOnline()) {
         // Offline fallback: return basic classification without AI
         return {
@@ -1064,7 +1062,6 @@ export function useDiaryEntry(petId: string) {
       audioDuration?: number;
     }) => {
       const { text, inputType, classification, photos, videoUri, videoDuration, audioUri, audioDuration } = params;
-      console.log('[useDiaryEntry] save — primary:', classification.primary_type, 'mood:', classification.mood);
 
       const entryData = {
         pet_id: petId,

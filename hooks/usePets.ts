@@ -21,9 +21,7 @@ export function usePets() {
 
   const addMutation = useMutation({
     mutationFn: async (pet: Omit<Pet, 'id' | 'created_at' | 'updated_at' | 'is_active'>) => {
-      console.log('[usePets] addMutation chamado, online:', onlineManager.isOnline());
       if (!onlineManager.isOnline()) {
-        console.log('[usePets] OFFLINE — salvando na fila');
         await addToQueue({ type: 'createPet', payload: pet as Record<string, unknown> });
         const tempPet: Pet = {
           ...pet,
@@ -34,13 +32,10 @@ export function usePets() {
         } as Pet;
         return tempPet;
       }
-      console.log('[usePets] ONLINE — chamando api.createPet');
       const result = await api.createPet(pet);
-      console.log('[usePets] createPet OK, id:', result.id);
       return result;
     },
     onSuccess: (newPet) => {
-      console.log('[usePets] onSuccess, pet:', newPet.id);
       qc.setQueryData<Pet[]>(PETS_KEY, (old) =>
         old ? [newPet, ...old] : [newPet],
       );

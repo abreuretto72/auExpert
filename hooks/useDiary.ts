@@ -93,7 +93,6 @@ export function useDiary(petId: string) {
       }
 
       // Create entry via DB function (also creates mood_log)
-      console.log('[useDiary] addEntry — creating entry, content_len:', params.content.length, 'mood:', params.mood_id, 'hasNarration:', !!params.narration);
       const entryId = await api.createDiaryEntry({
         pet_id: petId,
         user_id: user!.id,
@@ -109,12 +108,9 @@ export function useDiary(petId: string) {
         linked_photo_analysis_id: params.linked_photo_analysis_id,
       });
 
-      console.log('[useDiary] addEntry — entryId:', entryId);
       // If narration was generated, update it
       if (params.narration) {
-        console.log('[useDiary] addEntry — saving narration, length:', params.narration.length);
         await api.updateDiaryNarration(entryId, params.narration, params.mood_score, params.tags);
-        console.log('[useDiary] addEntry — narration saved OK');
       }
 
       // Generate RAG embedding for this pet's memory (non-blocking)

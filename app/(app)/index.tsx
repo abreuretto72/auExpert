@@ -50,7 +50,6 @@ interface TutorProfile {
 }
 
 export default function HubScreen() {
-  console.log('[HubScreen] Renderizando...');
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -112,7 +111,6 @@ export default function HubScreen() {
 
   const userName = user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Tutor';
   const userEmail = user?.email ?? '';
-  console.log('[Hub] user:', { id: user?.id, name: userName, hasAvatar: !!tutorProfile?.avatar_url });
 
   const petCards: PetCardData[] = pets.map((p) => ({
     id: p.id,
@@ -149,12 +147,6 @@ export default function HubScreen() {
 
   const handleAddPetSubmit = useCallback(
     async (data: AddPetData) => {
-      console.log('[Hub] handleAddPetSubmit called:', JSON.stringify({
-        name: data.name, species: data.species, breed: data.breed,
-        age: data.estimated_age_months, weight: data.weight_kg,
-        size: data.size, color: data.color, mood: data.mood,
-        hasAnalysis: !!data.full_analysis, userId: user?.id,
-      }));
       try {
         // Upload da foto comprimida como avatar do pet no Supabase Storage
         let avatarUrl: string | null = null;
@@ -167,7 +159,6 @@ export default function HubScreen() {
             for (let i = 0; i < binaryStr.length; i++) {
               bytes[i] = binaryStr.charCodeAt(i);
             }
-            console.log('[Hub] Pet photo size:', Math.round(bytes.length / 1024), 'KB');
 
             const fileName = `${user.id}/${Date.now()}_pet_avatar.jpg`;
             const { data: uploadData, error: uploadErr } = await supabase.storage
@@ -179,7 +170,6 @@ export default function HubScreen() {
             } else if (uploadData?.path) {
               const { data: urlData } = supabase.storage.from('pets').getPublicUrl(uploadData.path);
               avatarUrl = urlData.publicUrl;
-              console.log('[Hub] Pet avatar uploaded:', avatarUrl);
             }
           } catch (e) {
             console.warn('[Hub] Pet avatar upload failed:', e);
@@ -200,9 +190,7 @@ export default function HubScreen() {
           avatar_url: avatarUrl,
           user_id: user?.id ?? '',
         };
-        console.log('[Hub] Creating pet with avatar:', !!avatarUrl);
         const newPet = await addPet(petPayload as Parameters<typeof addPet>[0]);
-        console.log('[Hub] Pet created:', newPet?.id);
 
         // Salvar análise completa da IA na tabela photo_analyses
         if (data.full_analysis && newPet?.id && user?.id) {

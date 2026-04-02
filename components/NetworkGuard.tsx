@@ -61,20 +61,8 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
       const connected = state.isConnected === true;
       const elapsed = Date.now() - startTime.current;
 
-      console.log('[NetworkGuard]', {
-        isConnected: state.isConnected,
-        isInternetReachable: state.isInternetReachable,
-        type: state.type,
-        connected,
-        elapsed: `${elapsed}ms`,
-        hasInitialized: hasInitialized.current,
-        currentState: isConnected,
-        showOffline,
-      });
-
       // Ignorar primeiros 5 segundos — NetInfo e instavel no startup
       if (elapsed < 5000) {
-        console.log('[NetworkGuard] IGNORANDO — ainda no startup (<5s)');
         setIsConnected(connected);
         return;
       }
@@ -82,19 +70,16 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
       if (!hasInitialized.current) {
         hasInitialized.current = true;
         setIsConnected(connected);
-        console.log('[NetworkGuard] Primeira checagem apos 5s — connected:', connected);
         return;
       }
 
       if (!connected && isConnected !== false) {
-        console.log('[NetworkGuard] >>> FICOU OFFLINE — mostrando balao');
         setIsConnected(false);
         persistQueryCache(queryClient);
         setShowOffline(true);
         animateIn(offlineOpacity, offlineScale);
         refreshPendingCount();
       } else if (connected && isConnected === false) {
-        console.log('[NetworkGuard] >>> VOLTOU ONLINE — escondendo balao');
         setIsConnected(true);
         animateOut(offlineOpacity, offlineScale, () => setShowOffline(false));
         setShowOnline(true);

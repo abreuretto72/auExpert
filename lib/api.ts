@@ -30,7 +30,6 @@ export async function fetchPetById(id: string): Promise<Pet> {
 export async function createPet(
   pet: Omit<Pet, 'id' | 'created_at' | 'updated_at' | 'is_active'>,
 ): Promise<Pet> {
-  console.log('[api.createPet] INSERT payload keys:', Object.keys(pet));
   const { data, error } = await supabase
     .from('pets')
     .insert(pet)
@@ -41,7 +40,6 @@ export async function createPet(
     console.error('[api.createPet] ERRO Supabase:', error.message, error.code, error.details, error.hint);
     throw error;
   }
-  console.log('[api.createPet] OK, id:', data?.id);
   return data as Pet;
 }
 
@@ -128,7 +126,6 @@ export interface CreateDiaryParams {
 }
 
 export async function createDiaryEntry(params: CreateDiaryParams): Promise<string> {
-  console.log('[api.createDiaryEntry] params →', JSON.stringify({ pet_id: params.pet_id, mood_id: params.mood_id, input_method: params.input_method, content_len: params.content?.length }));
   // Try using the DB function (atomic: creates entry + mood_log)
   const { data, error } = await supabase.rpc('fn_create_diary_entry', {
     p_pet_id: params.pet_id,
@@ -147,7 +144,6 @@ export async function createDiaryEntry(params: CreateDiaryParams): Promise<strin
 
   if (error) {
     console.warn('[api.createDiaryEntry] rpc fn_create_diary_entry failed →', error.code, error.message);
-    console.log('[api.createDiaryEntry] Fallback: direct insert');
     // Fallback to direct insert — only columns that exist in the table
     const { data: fallback, error: fbError } = await supabase
       .from('diary_entries')
@@ -169,11 +165,9 @@ export async function createDiaryEntry(params: CreateDiaryParams): Promise<strin
       console.error('[api.createDiaryEntry] Fallback ALSO failed →', fbError.code, fbError.message, fbError.details);
       throw fbError;
     }
-    console.log('[api.createDiaryEntry] Fallback OK — id:', (fallback as { id: string }).id);
     return (fallback as { id: string }).id;
   }
 
-  console.log('[api.createDiaryEntry] rpc OK — entryId:', data);
   return data as string;
 }
 
@@ -271,7 +265,6 @@ export async function fetchVaccines(petId: string): Promise<Vaccine[]> {
 export async function createVaccine(
   vaccine: Omit<Vaccine, 'id' | 'created_at' | 'is_active'>,
 ): Promise<Vaccine> {
-  console.log('[api.createVaccine] INSERT:', Object.keys(vaccine));
   const { data, error } = await supabase
     .from('vaccines')
     .insert(vaccine)

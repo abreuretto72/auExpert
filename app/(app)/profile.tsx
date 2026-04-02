@@ -128,7 +128,6 @@ export default function ProfileScreen() {
       const current = JSON.stringify(d);
       if (current === initialDataRef.current) return; // Nada mudou
 
-      console.log('[Profile] Auto-saving on exit...');
       const s = (v: string | null | undefined) => v?.trim() || null;
       supabase.from('users').update({
         full_name: s(d.full_name) ?? '', phone: s(d.phone),
@@ -141,7 +140,6 @@ export default function ProfileScreen() {
         privacy_show_pets: d.privacy_show_pets, privacy_show_social: d.privacy_show_social,
       }).eq('id', uid).then(({ error }) => {
         if (error) console.warn('[Profile] Auto-save failed:', error.message);
-        else console.log('[Profile] Auto-saved OK');
       });
     };
   }, []);
@@ -154,7 +152,6 @@ export default function ProfileScreen() {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const [addr] = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       if (addr) {
-        console.log('[GPS] reverseGeocode result:', JSON.stringify(addr));
         setData((prev) => ({
           ...prev,
           address_street: addr.street ?? addr.name ?? prev.address_street,
@@ -176,7 +173,6 @@ export default function ProfileScreen() {
       const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'], copyToCacheDirectory: true });
       if (result.canceled || !result.assets?.[0]) return;
       const uri = result.assets[0].uri;
-      console.log('[Profile] Photo selected:', uri);
 
       // Ler como base64 e converter para Uint8Array para upload
       const FileSystem = require('expo-file-system/legacy');
@@ -188,20 +184,16 @@ export default function ProfileScreen() {
       }
 
       const fileName = `${user?.id}/${Date.now()}_avatar.jpg`;
-      console.log('[Profile] Uploading avatar:', fileName, 'size:', Math.round(bytes.length / 1024), 'KB');
       const { data: upData, error } = await supabase.storage.from('tutores').upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
       if (error) {
         console.error('[Profile] Upload error:', error.message);
         throw error;
       }
       const { data: urlData } = supabase.storage.from('tutores').getPublicUrl(upData.path);
-      console.log('[Profile] Avatar URL:', urlData.publicUrl);
       await supabase.from('users').update({ avatar_url: urlData.publicUrl }).eq('id', user?.id ?? '');
       setData((prev) => ({ ...prev, avatar_url: urlData.publicUrl }));
       toast(t('tutor.profileSaved'), 'success');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('[Profile] Photo upload failed:', msg);
       toast(getErrorMessage(err), 'error');
     }
   }, [user?.id, toast, t]);

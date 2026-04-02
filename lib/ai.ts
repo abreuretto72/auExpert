@@ -7,7 +7,6 @@ export async function generateDiaryNarration(
   moodId: string,
   language: 'pt-BR' | 'en-US' = 'pt-BR',
 ): Promise<DiaryNarrationResponse> {
-  console.log('[ai] generateDiaryNarration — pet:', petId, 'mood:', moodId, 'lang:', language);
   const { data, error } = await supabase.functions.invoke('generate-diary-narration', {
     body: { pet_id: petId, content, mood_id: moodId, language },
   });
@@ -15,7 +14,6 @@ export async function generateDiaryNarration(
     console.error('[ai] generateDiaryNarration ERRO →', error);
     throw error;
   }
-  console.log('[ai] generateDiaryNarration OK — narration length:', data?.narration?.length);
   return data as DiaryNarrationResponse;
 }
 
@@ -35,7 +33,6 @@ export async function generatePersonality(
   petId: string,
   language: string = 'pt-BR',
 ): Promise<{ personality: string | null; traits: string[]; entries_analyzed: number }> {
-  console.log('[ai] generatePersonality — pet:', petId, 'lang:', language);
   const { data, error } = await supabase.functions.invoke('generate-personality', {
     body: { pet_id: petId, language },
   });
@@ -43,7 +40,6 @@ export async function generatePersonality(
     console.error('[ai] generatePersonality ERRO →', error);
     throw error;
   }
-  console.log('[ai] generatePersonality OK — personality:', data?.personality?.slice(0, 60), 'entries:', data?.entries_analyzed);
   return data as { personality: string | null; traits: string[]; entries_analyzed: number };
 }
 
@@ -122,8 +118,6 @@ export async function classifyDiaryEntry(
   language: string = 'pt-BR',
   pdfBase64?: string,
 ): Promise<ClassifyDiaryResponse> {
-  console.log('[ai] classifyDiaryEntry — pet:', petId, 'input:', inputType, 'text_len:', text?.length ?? 0, 'photos:', photosBase64?.length ?? 0, 'pdf:', !!pdfBase64);
-
   const { data, error } = await supabase.functions.invoke('classify-diary-entry', {
     body: {
       pet_id: petId,
@@ -139,14 +133,6 @@ export async function classifyDiaryEntry(
     console.error('[ai] classifyDiaryEntry ERRO →', error);
     throw error;
   }
-
-  console.log('[ai] classifyDiaryEntry OK —',
-    'primary:', data?.primary_type,
-    'mood:', data?.mood,
-    'classifications:', data?.classifications?.length,
-    'narration_len:', data?.narration?.length,
-    'tokens:', data?.tokens_used,
-  );
 
   return data as ClassifyDiaryResponse;
 }

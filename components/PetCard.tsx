@@ -49,7 +49,6 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
   const { t } = useTranslation();
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
-  if (pet.avatar_url) console.log('[PetCard]', pet.name, 'avatar:', pet.avatar_url.substring(0, 60) + '...');
   const mood = pet.current_mood
     ? moods.find((m) => m.id === pet.current_mood)
     : null;
