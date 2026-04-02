@@ -19,6 +19,7 @@ import {
   Trophy, Smile, Plane, CalendarDays,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { useRouter } from 'expo-router';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
@@ -55,7 +56,7 @@ function useAgendaBadge(petId: string) {
 // ── Badge formatting helpers ──────────────────────────────────────────────────
 
 function formatCurrency(val: number) {
-  return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `R$ ${val.toLocaleString(i18n.language, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 // ── LensCard ──────────────────────────────────────────────────────────────────

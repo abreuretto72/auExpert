@@ -1,4 +1,5 @@
 import * as Print from 'expo-print';
+import i18n from '../i18n';
 import { shareAsync } from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
@@ -35,7 +36,7 @@ export interface PdfOptions {
 
 function getDateTimeStr(): string {
   const now = new Date();
-  return now.toLocaleString('pt-BR', {
+  return now.toLocaleString(i18n.language, {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
