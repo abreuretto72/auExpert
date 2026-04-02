@@ -38,6 +38,128 @@ interface PetRow {
   weight_kg: number | null;
 }
 
+// ── Translations ───────────────────────────────────────────────────────────
+
+const TRANSLATIONS: Record<string, Record<string, string>> = {
+  'pt-BR': {
+    // weight
+    'weight.noRecordTitle':  '{{name}} não tem peso registrado',
+    'weight.noRecordBody':   'Registre o peso de {{name}} regularmente para acompanhar a saúde. Pesar a cada 3 meses é o ideal.',
+    'weight.noRecordAction': 'Registrar peso',
+    'weight.outdatedTitle':  '{{name}} está há {{days}} dias sem ser pesada',
+    'weight.outdatedBody':   'A última pesagem de {{name}} foi há {{days}} dias. Pesar a cada 3 meses ajuda a monitorar a saúde.',
+    'weight.gainTitle':      '{{name}} ganhou {{pct}}% de peso em {{days}} dias',
+    'weight.gainBody':       '{{name}} pesava {{old}} kg e agora pesa {{new}} kg. Controle a alimentação e consulte o veterinário se necessário.',
+    'weight.lossTitle':      '{{name}} perdeu {{pct}}% de peso em {{days}} dias',
+    'weight.lossBody':       '{{name}} pesava {{old}} kg e agora pesa {{new}} kg. Perda rápida de peso pode indicar problema de saúde. Consulte o veterinário.',
+    'weight.viewHealth':     'Ver saúde',
+    // mood
+    'mood.negativeTitle':    '{{name}} está com humor {{mood}} com frequência',
+    'mood.negativeBody':     '{{name}} apresentou humor negativo {{count}} vezes nos últimos 7 dias. Pode ser sinal de ansiedade ou problema de saúde. Avalie com o veterinário.',
+    'mood.viewDiary':        'Ver diário',
+    // symptom
+    'symptom.recurringTitle':  '{{name}} apresentou sintomas {{count}} vezes em 30 dias',
+    'symptom.recurringBody':   'Sintomas recorrentes detectados para {{name}}. Recomendamos consulta veterinária para avaliação completa.',
+    'symptom.viewHealth':      'Ver saúde',
+    'symptom.digestiveTitle':  'Combinação de sintomas preocupante em {{name}}',
+    'symptom.digestiveBody':   'Apatia e falta de apetite simultâneas podem indicar problema sistêmico em {{name}}. Recomendamos consulta veterinária.',
+    'symptom.renalTitle':      'Sinais de alerta renal/metabólico em {{name}}',
+    'symptom.renalBody':       'Polidipsia e poliúria simultâneas são sinais de alerta para doença renal ou diabetes. Consulte o veterinário com urgência.',
+    'symptom.cardiacTitle':    'URGENTE: Sinais cardíacos em {{name}}',
+    'symptom.cardiacBody':     'Tosse, cansaço e abdômen distendido podem indicar problema cardíaco em {{name}}. Procure veterinário com urgência!',
+    'symptom.depressionTitle': 'Possível depressão ou dor crônica em {{name}}',
+    'symptom.depressionBody':  'Combinação de humor negativo persistente, inatividade e falta de apetite em {{name}}. Avaliação veterinária e comportamental recomendada.',
+    // diary
+    'diary.inactiveTitle': 'Você não registra sobre {{name}} há {{days}} dias',
+    'diary.inactiveBody':  'O diário de {{name}} está quieto. Como ela está? Conte o que aconteceu!',
+    'diary.addEntry':      'Fazer registro',
+    // antiparasitic
+    'anti.dueTitle':      'Proteção antipulgas de {{name}} pode estar vencida',
+    'anti.dueBody':       'A última aplicação de antipulgas de {{name}} foi há {{days}} dias{{product}}. Verifique a proteção antiparasitária.',
+    'anti.productSuffix': ' (produto: {{product}})',
+    'anti.addEntry':      'Registrar aplicação',
+    // preventive
+    'prev.annualTitle':  '{{name}} está há mais de 1 ano sem consulta de rotina',
+    'prev.annualBody':   'Check-up anual é recomendado para pets adultos saudáveis. Agende a consulta de rotina de {{name}}.',
+    'prev.annualAction': 'Agendar consulta',
+    'prev.seniorTitle':  'Cuidados sênior para {{name}}',
+    'prev.seniorBody':   '{{name}} é um pet sênior e merece check-up semestral, hemograma e bioquímica a cada 6 meses, e avaliação de dor articular.',
+    'prev.puppyTitle':   'Fase essencial de {{name}}: vacinação e socialização',
+    'prev.puppyBody':    '{{name}} está na fase filhote — período crítico para completar o esquema vacinal e a socialização. Consulte o veterinário sobre o calendário completo.',
+    'prev.viewHealth':   'Ver saúde',
+  },
+  'en': {
+    // weight
+    'weight.noRecordTitle':  '{{name}} has no weight recorded',
+    'weight.noRecordBody':   "Record {{name}}'s weight regularly to track health. Weighing every 3 months is ideal.",
+    'weight.noRecordAction': 'Record weight',
+    'weight.outdatedTitle':  "{{name}} hasn't been weighed in {{days}} days",
+    'weight.outdatedBody':   "{{name}}'s last weigh-in was {{days}} days ago. Weighing every 3 months helps monitor health.",
+    'weight.gainTitle':      '{{name}} gained {{pct}}% weight in {{days}} days',
+    'weight.gainBody':       '{{name}} weighed {{old}} kg and now weighs {{new}} kg. Control their diet and consult the vet if needed.',
+    'weight.lossTitle':      '{{name}} lost {{pct}}% weight in {{days}} days',
+    'weight.lossBody':       '{{name}} weighed {{old}} kg and now weighs {{new}} kg. Rapid weight loss may indicate a health issue. Consult your vet.',
+    'weight.viewHealth':     'View health',
+    // mood
+    'mood.negativeTitle':    '{{name}} frequently shows {{mood}} mood',
+    'mood.negativeBody':     '{{name}} showed negative mood {{count}} times in the last 7 days. This may indicate anxiety or a health issue. Consult your vet.',
+    'mood.viewDiary':        'View diary',
+    // symptom
+    'symptom.recurringTitle':  '{{name}} showed symptoms {{count}} times in 30 days',
+    'symptom.recurringBody':   'Recurring symptoms detected for {{name}}. We recommend a vet consultation for a full evaluation.',
+    'symptom.viewHealth':      'View health',
+    'symptom.digestiveTitle':  'Concerning symptom combination in {{name}}',
+    'symptom.digestiveBody':   'Simultaneous lethargy and loss of appetite may indicate a systemic issue in {{name}}. We recommend a vet visit.',
+    'symptom.renalTitle':      'Renal/metabolic warning signs in {{name}}',
+    'symptom.renalBody':       'Simultaneous polydipsia and polyuria are warning signs for kidney disease or diabetes. Consult your vet urgently.',
+    'symptom.cardiacTitle':    'URGENT: Cardiac signs in {{name}}',
+    'symptom.cardiacBody':     'Cough, fatigue and distended abdomen may indicate a cardiac issue in {{name}}. Seek vet care urgently!',
+    'symptom.depressionTitle': 'Possible depression or chronic pain in {{name}}',
+    'symptom.depressionBody':  'Persistent negative mood, inactivity and loss of appetite in {{name}}. Veterinary and behavioral evaluation recommended.',
+    // diary
+    'diary.inactiveTitle': "You haven't logged about {{name}} in {{days}} days",
+    'diary.inactiveBody':  "{{name}}'s diary has been quiet. How are they doing? Tell us what happened!",
+    'diary.addEntry':      'Add entry',
+    // antiparasitic
+    'anti.dueTitle':      "{{name}}'s flea protection may be overdue",
+    'anti.dueBody':       "{{name}}'s last flea treatment was {{days}} days ago{{product}}. Check their antiparasitic protection.",
+    'anti.productSuffix': ' (product: {{product}})',
+    'anti.addEntry':      'Record application',
+    // preventive
+    'prev.annualTitle':  "{{name}} hasn't had a routine checkup in over 1 year",
+    'prev.annualBody':   "Annual checkups are recommended for healthy adult pets. Schedule {{name}}'s routine consultation.",
+    'prev.annualAction': 'Schedule appointment',
+    'prev.seniorTitle':  'Senior care for {{name}}',
+    'prev.seniorBody':   '{{name}} is a senior pet and deserves biannual checkups, blood panel every 6 months, and joint pain evaluation.',
+    'prev.puppyTitle':   'Essential phase for {{name}}: vaccination and socialization',
+    'prev.puppyBody':    '{{name}} is in the puppy/kitten phase — critical period to complete the vaccination schedule and socialization. Consult your vet about the full calendar.',
+    'prev.viewHealth':   'View health',
+  },
+};
+
+function t(lang: string, key: string, vars?: Record<string, string | number>): string {
+  const map = TRANSLATIONS[lang.startsWith('pt') ? 'pt-BR' : 'en'] ?? TRANSLATIONS['pt-BR'];
+  let str = map[key] ?? TRANSLATIONS['pt-BR'][key] ?? key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      str = str.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v));
+    }
+  }
+  return str;
+}
+
+// ── User language cache ────────────────────────────────────────────────────
+
+const userLangCache = new Map<string, string>();
+
+async function getUserLanguage(sb: SB, userId: string): Promise<string> {
+  if (userLangCache.has(userId)) return userLangCache.get(userId)!;
+  const { data } = await sb.from('users').select('language').eq('id', userId).single();
+  const lang = (data as { language?: string } | null)?.language ?? 'pt-BR';
+  userLangCache.set(userId, lang);
+  return lang;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function daysAgo(n: number): string {
@@ -78,7 +200,7 @@ function ageMonths(pet: PetRow): number {
 
 // ── Weight trend ───────────────────────────────────────────────────────────
 
-async function analyzeWeight(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeWeight(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const { data: weights } = await sb
     .from('clinical_metrics')
     .select('value, measured_at')
@@ -94,10 +216,11 @@ async function analyzeWeight(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'reminder', urgency: 'low',
-      title: `${pet.name} não tem peso registrado`,
-      body:  `Registre o peso de ${pet.name} regularmente para acompanhar a saúde. Pesar a cada 3 meses é o ideal.`,
+      title: t(lang, 'weight.noRecordTitle', { name: pet.name }),
+      body:  t(lang, 'weight.noRecordBody',  { name: pet.name }),
       source: 'cron_weight_missing',
-      action_label: 'Registrar peso', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'weight.noRecordAction'),
+      action_route: `/pet/${pet.id}/health`,
     });
     return;
   }
@@ -110,10 +233,11 @@ async function analyzeWeight(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'reminder', urgency: 'low',
-      title: `${pet.name} está há ${daysSince} dias sem ser pesada`,
-      body:  `A última pesagem de ${pet.name} foi há ${daysSince} dias. Pesar a cada 3 meses ajuda a monitorar a saúde.`,
+      title: t(lang, 'weight.outdatedTitle', { name: pet.name, days: daysSince }),
+      body:  t(lang, 'weight.outdatedBody',  { name: pet.name, days: daysSince }),
       source: 'cron_weight_outdated',
-      action_label: 'Registrar peso', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'weight.noRecordAction'),
+      action_route: `/pet/${pet.id}/health`,
     });
     return;
   }
@@ -133,27 +257,29 @@ async function analyzeWeight(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'trend', urgency: 'medium',
-      title: `${pet.name} ganhou ${pctChange.toFixed(1)}% de peso em ${daySpan} dias`,
-      body:  `${pet.name} pesava ${oldest} kg e agora pesa ${newest} kg. Controle a alimentação e consulte o veterinário se necessário.`,
+      title: t(lang, 'weight.gainTitle', { name: pet.name, pct: pctChange.toFixed(1), days: daySpan }),
+      body:  t(lang, 'weight.gainBody',  { name: pet.name, old: oldest, new: newest }),
       source: 'cron_weight_gain',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'weight.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   } else if (pctChange < -10 && daySpan <= 30) {
     if (await alreadyExists(sb, pet.id, 'cron_weight_loss', 14)) return;
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'alert', urgency: 'high',
-      title: `${pet.name} perdeu ${Math.abs(pctChange).toFixed(1)}% de peso em ${daySpan} dias`,
-      body:  `${pet.name} pesava ${oldest} kg e agora pesa ${newest} kg. Perda rápida de peso pode indicar problema de saúde. Consulte o veterinário.`,
+      title: t(lang, 'weight.lossTitle', { name: pet.name, pct: Math.abs(pctChange).toFixed(1), days: daySpan }),
+      body:  t(lang, 'weight.lossBody',  { name: pet.name, old: oldest, new: newest }),
       source: 'cron_weight_loss',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'weight.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 }
 
 // ── Mood patterns ──────────────────────────────────────────────────────────
 
-async function analyzeMood(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeMood(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const { data: entries } = await sb
     .from('diary_entries')
     .select('mood_id, created_at')
@@ -177,16 +303,17 @@ async function analyzeMood(sb: SB, pet: PetRow): Promise<void> {
   await insertInsight(sb, {
     pet_id: pet.id, user_id: pet.user_id,
     type: 'trend', urgency: 'medium',
-    title: `${pet.name} está com humor ${topMood} com frequência`,
-    body:  `${pet.name} apresentou humor negativo ${last7.length} vezes nos últimos 7 dias. Pode ser sinal de ansiedade ou problema de saúde. Avalie com o veterinário.`,
+    title: t(lang, 'mood.negativeTitle', { name: pet.name, mood: topMood }),
+    body:  t(lang, 'mood.negativeBody',  { name: pet.name, count: last7.length }),
     source: 'cron_mood_negative',
-    action_label: 'Ver diário', action_route: `/pet/${pet.id}/diary`,
+    action_label: t(lang, 'mood.viewDiary'),
+    action_route: `/pet/${pet.id}/diary`,
   });
 }
 
 // ── Recurring symptoms ─────────────────────────────────────────────────────
 
-async function analyzeSymptoms(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeSymptoms(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const { data: entries } = await sb
     .from('diary_entries')
     .select('classifications, created_at')
@@ -215,16 +342,17 @@ async function analyzeSymptoms(sb: SB, pet: PetRow): Promise<void> {
   await insertInsight(sb, {
     pet_id: pet.id, user_id: pet.user_id,
     type: 'alert', urgency: 'high',
-    title: `${pet.name} apresentou sintomas ${entries.length} vezes em 30 dias`,
-    body:  `Sintomas recorrentes detectados para ${pet.name}. Recomendamos consulta veterinária para avaliação completa.`,
+    title: t(lang, 'symptom.recurringTitle', { name: pet.name, count: entries.length }),
+    body:  t(lang, 'symptom.recurringBody',  { name: pet.name }),
     source: 'cron_symptom_recurring',
-    action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+    action_label: t(lang, 'symptom.viewHealth'),
+    action_route: `/pet/${pet.id}/health`,
   });
 }
 
 // ── Dangerous symptom combinations ────────────────────────────────────────
 
-async function analyzeSymptomCombinations(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeSymptomCombinations(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const { data: entries } = await sb
     .from('diary_entries')
     .select('classifications, input_text, mood_id, created_at')
@@ -246,10 +374,11 @@ async function analyzeSymptomCombinations(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'alert', urgency: 'high',
-      title: `Combinação de sintomas preocupante em ${pet.name}`,
-      body:  `Apatia e falta de apetite simultâneas podem indicar problema sistêmico em ${pet.name}. Recomendamos consulta veterinária.`,
+      title: t(lang, 'symptom.digestiveTitle', { name: pet.name }),
+      body:  t(lang, 'symptom.digestiveBody',  { name: pet.name }),
       source: source + '_digestive',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'symptom.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 
@@ -258,10 +387,11 @@ async function analyzeSymptomCombinations(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'alert', urgency: 'high',
-      title: `Sinais de alerta renal/metabólico em ${pet.name}`,
-      body:  `Polidipsia e poliúria simultâneas são sinais de alerta para doença renal ou diabetes. Consulte o veterinário com urgência.`,
+      title: t(lang, 'symptom.renalTitle', { name: pet.name }),
+      body:  t(lang, 'symptom.renalBody',  { name: pet.name }),
       source: source + '_renal',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'symptom.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 
@@ -270,10 +400,11 @@ async function analyzeSymptomCombinations(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'alert', urgency: 'critical',
-      title: `URGENTE: Sinais cardíacos em ${pet.name}`,
-      body:  `Tosse, cansaço e abdômen distendido podem indicar problema cardíaco em ${pet.name}. Procure veterinário com urgência!`,
+      title: t(lang, 'symptom.cardiacTitle', { name: pet.name }),
+      body:  t(lang, 'symptom.cardiacBody',  { name: pet.name }),
       source: source + '_cardiac',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'symptom.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 
@@ -283,17 +414,18 @@ async function analyzeSymptomCombinations(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'alert', urgency: 'high',
-      title: `Possível depressão ou dor crônica em ${pet.name}`,
-      body:  `Combinação de humor negativo persistente, inatividade e falta de apetite em ${pet.name}. Avaliação veterinária e comportamental recomendada.`,
+      title: t(lang, 'symptom.depressionTitle', { name: pet.name }),
+      body:  t(lang, 'symptom.depressionBody',  { name: pet.name }),
       source: source + '_depression',
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'symptom.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 }
 
 // ── Diary inactivity ───────────────────────────────────────────────────────
 
-async function analyzeDiaryInactivity(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeDiaryInactivity(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const { data: last } = await sb
     .from('diary_entries')
     .select('created_at')
@@ -311,16 +443,17 @@ async function analyzeDiaryInactivity(sb: SB, pet: PetRow): Promise<void> {
   await insertInsight(sb, {
     pet_id: pet.id, user_id: pet.user_id,
     type: 'reminder', urgency: 'low',
-    title: `Você não registra sobre ${pet.name} há ${days} dias`,
-    body:  `O diário de ${pet.name} está quieto. Como ela está? Conte o que aconteceu!`,
+    title: t(lang, 'diary.inactiveTitle', { name: pet.name, days }),
+    body:  t(lang, 'diary.inactiveBody',  { name: pet.name }),
     source: 'cron_diary_inactive',
-    action_label: 'Fazer registro', action_route: `/pet/${pet.id}/diary/new`,
+    action_label: t(lang, 'diary.addEntry'),
+    action_route: `/pet/${pet.id}/diary/new`,
   });
 }
 
 // ── Antiparasitic due ──────────────────────────────────────────────────────
 
-async function analyzeAntiparasitic(sb: SB, pet: PetRow): Promise<void> {
+async function analyzeAntiparasitic(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const keywords = ['%antipulgas%', '%frontline%', '%nexgard%', '%bravecto%', '%simparica%', '%seresto%'];
   let lastDate: Date | null = null;
   let product = '';
@@ -353,19 +486,22 @@ async function analyzeAntiparasitic(sb: SB, pet: PetRow): Promise<void> {
   if (!daysSince || daysSince < threshold) return;
   if (await alreadyExists(sb, pet.id, 'cron_antiparasitic', 14)) return;
 
+  const productSuffix = product ? t(lang, 'anti.productSuffix', { product }) : '';
+
   await insertInsight(sb, {
     pet_id: pet.id, user_id: pet.user_id,
     type: 'reminder', urgency: 'medium',
-    title: `Proteção antipulgas de ${pet.name} pode estar vencida`,
-    body:  `A última aplicação de antipulgas de ${pet.name} foi há ${daysSince} dias${product ? ' (produto: ' + product + ')' : ''}. Verifique a proteção antiparasitária.`,
+    title: t(lang, 'anti.dueTitle', { name: pet.name }),
+    body:  t(lang, 'anti.dueBody',  { name: pet.name, days: daysSince, product: productSuffix }),
     source: 'cron_antiparasitic',
-    action_label: 'Registrar aplicação', action_route: `/pet/${pet.id}/diary/new`,
+    action_label: t(lang, 'anti.addEntry'),
+    action_route: `/pet/${pet.id}/diary/new`,
   });
 }
 
 // ── Preventive care by age ─────────────────────────────────────────────────
 
-async function analyzePreventive(sb: SB, pet: PetRow): Promise<void> {
+async function analyzePreventive(sb: SB, pet: PetRow, lang: string): Promise<void> {
   const months = ageMonths(pet);
   const source = `cron_preventive_${pet.id}_${today().slice(0, 7)}`; // monthly dedup
   if (await alreadyExists(sb, pet.id, source, 25)) return;
@@ -387,10 +523,11 @@ async function analyzePreventive(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'preventive', urgency: 'medium',
-      title: `${pet.name} está há mais de 1 ano sem consulta de rotina`,
-      body:  `Check-up anual é recomendado para pets adultos saudáveis. Agende a consulta de rotina de ${pet.name}.`,
+      title: t(lang, 'prev.annualTitle', { name: pet.name }),
+      body:  t(lang, 'prev.annualBody',  { name: pet.name }),
       source,
-      action_label: 'Agendar consulta', action_route: `/pet/${pet.id}?tab=agenda`,
+      action_label: t(lang, 'prev.annualAction'),
+      action_route: `/pet/${pet.id}?tab=agenda`,
     });
     return;
   }
@@ -400,10 +537,11 @@ async function analyzePreventive(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'preventive', urgency: 'low',
-      title: `Cuidados sênior para ${pet.name}`,
-      body:  `${pet.name} é um pet sênior e merece check-up semestral, hemograma e bioquímica a cada 6 meses, e avaliação de dor articular.`,
+      title: t(lang, 'prev.seniorTitle', { name: pet.name }),
+      body:  t(lang, 'prev.seniorBody',  { name: pet.name }),
       source,
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'prev.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
     return;
   }
@@ -413,10 +551,11 @@ async function analyzePreventive(sb: SB, pet: PetRow): Promise<void> {
     await insertInsight(sb, {
       pet_id: pet.id, user_id: pet.user_id,
       type: 'preventive', urgency: 'low',
-      title: `Fase essencial de ${pet.name}: vacinação e socialização`,
-      body:  `${pet.name} está na fase filhote — período crítico para completar o esquema vacinal e a socialização. Consulte o veterinário sobre o calendário completo.`,
+      title: t(lang, 'prev.puppyTitle', { name: pet.name }),
+      body:  t(lang, 'prev.puppyBody',  { name: pet.name }),
       source,
-      action_label: 'Ver saúde', action_route: `/pet/${pet.id}/health`,
+      action_label: t(lang, 'prev.viewHealth'),
+      action_route: `/pet/${pet.id}/health`,
     });
   }
 }
@@ -440,14 +579,15 @@ Deno.serve(async (req: Request) => {
 
     let processed = 0;
     for (const pet of pets ?? []) {
+      const lang = await getUserLanguage(sb, pet.user_id);
       await Promise.allSettled([
-        analyzeWeight(sb, pet),
-        analyzeMood(sb, pet),
-        analyzeSymptoms(sb, pet),
-        analyzeSymptomCombinations(sb, pet),
-        analyzeDiaryInactivity(sb, pet),
-        analyzeAntiparasitic(sb, pet),
-        analyzePreventive(sb, pet),
+        analyzeWeight(sb, pet, lang),
+        analyzeMood(sb, pet, lang),
+        analyzeSymptoms(sb, pet, lang),
+        analyzeSymptomCombinations(sb, pet, lang),
+        analyzeDiaryInactivity(sb, pet, lang),
+        analyzeAntiparasitic(sb, pet, lang),
+        analyzePreventive(sb, pet, lang),
       ]);
       processed++;
     }
