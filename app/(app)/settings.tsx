@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { rs, fs } from '../../hooks/useResponsive';
 import { useAuthStore } from '../../stores/authStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
 import { useConsent } from '../../hooks/useConsent';
@@ -40,8 +41,10 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { toast, confirm } = useToast();
   const logout = useAuthStore((s) => s.logout);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [biometricEnabled, setBiometricEnabled] = useState(true);
+  const notificationsEnabled = useUIStore((s) => s.notificationsEnabled);
+  const biometricEnabled = useUIStore((s) => s.biometricEnabled);
+  const setNotificationsEnabled = useUIStore((s) => s.setNotificationsEnabled);
+  const setBiometricEnabled = useUIStore((s) => s.setBiometricEnabled);
   const { granted: aiTrainingGranted, setConsent: setAiTraining, isUpdating: aiTrainingUpdating } = useConsent('ai_training_anonymous');
 
   const handleLogout = async () => {
