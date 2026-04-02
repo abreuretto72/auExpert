@@ -373,12 +373,12 @@ export default function HubScreen() {
         <View style={styles.insightCard}>
           <View style={styles.insightHeader}>
             <Sparkles size={rs(18)} color={colors.purple} strokeWidth={1.8} />
-            <Text style={styles.insightLabel}>INSIGHT DA IA</Text>
+            <Text style={styles.insightLabel}>{t('pets.insightLabel')}</Text>
           </View>
           <Text style={styles.insightText}>
             {pets.length > 0
-              ? 'Seus pets estao bem cuidados. Continue registrando o diario para insights mais detalhados.'
-              : 'Cadastre seu primeiro pet para receber insights personalizados da IA.'}
+              ? t('pets.insightWithPets')
+              : t('pets.insightNoPets')}
           </Text>
         </View>
 
@@ -429,7 +429,7 @@ export default function HubScreen() {
               style={styles.emptyBtnGradient}
             >
               <Plus size={rs(20)} color="#fff" strokeWidth={2} />
-              <Text style={styles.emptyBtnText}>Cadastrar meu pet</Text>
+              <Text style={styles.emptyBtnText}>{t('pets.registerFirstPet')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

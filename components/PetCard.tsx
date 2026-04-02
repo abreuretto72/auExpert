@@ -151,7 +151,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
           <Text style={[styles.statValue, { color: healthColor }]}>
             {healthScore || '--'}
           </Text>
-          <Text style={styles.statLabel}>Saude</Text>
+          <Text style={styles.statLabel}>{t('pets.healthScore')}</Text>
         </View>
         <TouchableOpacity style={styles.statBox} onPress={onPressHappiness} activeOpacity={onPressHappiness ? 0.7 : 1}>
           <Heart size={16} color={colors.accent} strokeWidth={1.8} />

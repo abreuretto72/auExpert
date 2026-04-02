@@ -378,7 +378,7 @@ export default function EditPetScreen() {
             <TextInput style={S.input} value={color} onChangeText={setColor} onBlur={doSave} placeholder={t('editPet.colorPlaceholder')} placeholderTextColor={colors.placeholder} />
           </View>
 
-          <Text style={S.label}>Microchip</Text>
+          <Text style={S.label}>{t('health.microchip')}</Text>
           <View style={[S.inputWrap, S.microchipWrap]}>
             <TextInput style={[S.input, S.microchipInput]} value={microchip} onChangeText={setMicrochip} onBlur={doSave} placeholder={t('editPet.microchipPlaceholder')} placeholderTextColor={colors.placeholder} />
             {microchip.trim().length > 0 && (

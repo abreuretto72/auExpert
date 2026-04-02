@@ -14,6 +14,7 @@ import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
 import { spacing } from '../../../../constants/spacing';
 import { usePet } from '../../../../hooks/usePets';
+import { useAuthStore } from '../../../../stores/authStore';
 import { Skeleton } from '../../../../components/Skeleton';
 
 interface QuickAction {
@@ -84,6 +85,7 @@ export default function IdCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const { data: pet, isLoading, refetch } = usePet(id!);
+  const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -134,7 +136,7 @@ export default function IdCardScreen() {
         <View style={s.idInfoRow}>
           <View style={s.idInfoCol}>
             <Text style={s.idInfoLabel}>{t('idCard.tutorLabel')}</Text>
-            <Text style={s.idInfoValue}>Ana Martins</Text>
+            <Text style={s.idInfoValue}>{user?.full_name ?? user?.email ?? '—'}</Text>
           </View>
           <View style={s.idInfoCol}>
             <Text style={s.idInfoLabel}>{t('idCard.idNumber')}</Text>
