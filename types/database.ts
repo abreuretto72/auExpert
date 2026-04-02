@@ -38,6 +38,8 @@ export interface Pet {
   size: 'small' | 'medium' | 'large' | null;
   color: string | null;
   microchip_id: string | null;
+  blood_type: string | null;
+  neutered: boolean;
   avatar_url: string | null;
   health_score: number | null;
   happiness_score: number | null;
@@ -45,6 +47,7 @@ export interface Pet {
   current_mood_updated_at: string | null;
   total_diary_entries: number;
   total_photos: number;
+  xp_total: number;
   ai_personality: string | null;
   personality_summary: string | null;
   is_active: boolean;
@@ -66,8 +69,16 @@ export interface DiaryEntry {
   tags: string[];
   photos: string[];
   is_special: boolean;
+  is_registration_entry: boolean;
   linked_photo_analysis_id: string | null;
+  input_type?: string;
+  primary_type?: string;
+  classifications?: Array<{ type: string; confidence: number; extracted_data: Record<string, unknown> }> | null;
+  urgency?: 'none' | 'low' | 'medium' | 'high';
+  mood_confidence?: number | null;
   entry_date: string;
+  processing_status?: 'processing' | 'done' | 'error';
+  narration_outdated?: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -124,6 +135,82 @@ export interface Allergy {
   diagnosed_by: string | null;
   is_active: boolean;
   created_at: string;
+}
+
+export interface Exam {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  name: string;
+  date: string;
+  status: 'normal' | 'attention' | 'abnormal' | 'critical' | 'pending';
+  results: unknown[];
+  laboratory: string | null;
+  veterinarian: string | null;
+  notes: string | null;
+  photo_url: string | null;
+  source: 'manual' | 'ocr' | 'voice' | 'ai';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Medication {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  name: string;
+  type: 'antiparasitic' | 'supplement' | 'antibiotic' | 'anti_inflammatory' | 'analgesic' | 'antifungal' | 'vermifuge' | 'other';
+  dosage: string | null;
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  active: boolean;
+  reason: string | null;
+  prescribed_by: string | null;
+  notes: string | null;
+  source: 'manual' | 'ocr' | 'voice' | 'ai';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Consultation {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  date: string;
+  time: string | null;
+  type: 'routine' | 'emergency' | 'specialist' | 'surgery' | 'follow_up';
+  veterinarian: string;
+  clinic: string | null;
+  summary: string;
+  diagnosis: string | null;
+  prescriptions: string | null;
+  follow_up_at: string | null;
+  cost: number | null;
+  source: 'manual' | 'ocr' | 'voice' | 'ai';
+  photo_url: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Surgery {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  name: string;
+  date: string;
+  veterinarian: string | null;
+  clinic: string | null;
+  anesthesia: string | null;
+  status: 'scheduled' | 'recovering' | 'recovered' | 'complications';
+  notes: string | null;
+  source: 'manual' | 'ocr' | 'voice' | 'ai';
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PetEmbedding {

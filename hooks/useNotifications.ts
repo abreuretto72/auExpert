@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
+import type { EventSubscription } from 'expo-notifications';
 import {
   registerForPushNotifications,
   addNotificationListener,
@@ -7,8 +7,8 @@ import {
 } from '../lib/notifications';
 
 export function useNotifications() {
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
+  const notificationListener = useRef<EventSubscription | null>(null);
+  const responseListener = useRef<EventSubscription | null>(null);
 
   useEffect(() => {
     registerForPushNotifications();
@@ -22,12 +22,8 @@ export function useNotifications() {
     });
 
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, []);
 }

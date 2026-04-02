@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Animated,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +25,13 @@ import {
   Stethoscope,
   Scissors,
   AlertTriangle,
+  Droplet,
+  Info,
+  X,
+  TrendingUp,
 } from 'lucide-react-native';
+import MetricsCharts from '../../../../components/lenses/MetricsCharts';
+import ExpensesLens from '../../../../components/lenses/ExpensesLens';
 
 import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
@@ -42,7 +50,7 @@ import { useAuthStore } from '../../../../stores/authStore';
 import { getErrorMessage } from '../../../../utils/errorMessages';
 import { formatAge, formatWeight, formatDate } from '../../../../utils/format';
 
-type TabId = 'general' | 'vaccines' | 'exams' | 'medications' | 'consultations' | 'surgeries';
+type TabId = 'general' | 'vaccines' | 'exams' | 'medications' | 'consultations' | 'surgeries' | 'metrics' | 'expenses';
 
 interface TabDef {
   id: TabId;
@@ -51,11 +59,13 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'general', labelKey: 'health.tabGeneral' },
+  { id: 'consultations', labelKey: 'health.tabConsultations' },
   { id: 'vaccines', labelKey: 'health.tabVaccines' },
   { id: 'exams', labelKey: 'health.tabExams' },
   { id: 'medications', labelKey: 'health.tabMedications' },
-  { id: 'consultations', labelKey: 'health.tabConsultations' },
   { id: 'surgeries', labelKey: 'health.tabSurgeries' },
+  { id: 'metrics', labelKey: 'health.tabMetrics' },
+  { id: 'expenses', labelKey: 'health.tabExpenses' },
 ];
 
 // ──────────────────────────────────────────
@@ -177,9 +187,11 @@ function SeverityBadge({ severity, t }: { severity: string; t: (key: string) => 
 // MAIN SCREEN
 // ══════════════════════════════════════════
 export default function HealthScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabId>('general');
+  const validTabs: TabId[] = ['general', 'vaccines', 'exams', 'medications', 'consultations', 'surgeries', 'metrics', 'expenses'];
+  const initialTab: TabId = (tab && validTabs.includes(tab as TabId)) ? (tab as TabId) : 'general';
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: pet, isLoading: petLoading, refetch: refetchPet } = usePet(id!);
@@ -196,6 +208,7 @@ export default function HealthScreen() {
   const [showAddMed, setShowAddMed] = useState(false);
   const [showAddCons, setShowAddCons] = useState(false);
   const [showAddSurg, setShowAddSurg] = useState(false);
+  const [showBloodTypeInfo, setShowBloodTypeInfo] = useState(false);
 
   const isLoading = petLoading || vaccinesLoading || allergiesLoading;
 
@@ -255,27 +268,16 @@ export default function HealthScreen() {
           </View>
         </View>
 
-        {/* Pet Info Grid */}
-        <Text style={styles.sectionLabel}>{t('health.petInfo').toUpperCase()}</Text>
-        <View style={styles.infoCard}>
-          <InfoRow
-            label={t('health.species')}
-            value={isDog ? t('pets.dog') : t('pets.cat')}
-            isFirst
-          />
-          <InfoRow label={t('health.breed')} value={pet.breed ?? t('health.unknown')} />
-          <InfoRow
-            label={t('health.age')}
-            value={pet.estimated_age_months ? formatAge(pet.estimated_age_months) : t('health.unknown')}
-          />
-          <InfoRow
-            label={t('health.weight')}
-            value={pet.weight_kg ? formatWeight(pet.weight_kg) : t('health.unknown')}
-          />
-          <InfoRow
-            label={t('health.microchip')}
-            value={pet.microchip_id ?? t('health.notRegistered')}
-          />
+        {/* Blood Type */}
+        <Text style={styles.sectionLabel}>{t('health.bloodType').toUpperCase()}</Text>
+        <View style={styles.bloodTypeCard}>
+          <Droplet size={rs(20)} color={colors.danger} strokeWidth={1.8} />
+          <Text style={styles.bloodTypeValue}>
+            {pet.blood_type ?? t('health.bloodTypeUnknown')}
+          </Text>
+          <TouchableOpacity onPress={() => setShowBloodTypeInfo(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Info size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
 
         {/* Allergies */}
@@ -520,21 +522,45 @@ export default function HealthScreen() {
   // TAB: EXAMS (empty state)
   // ──────────────────────────────────────
   const renderExams = useCallback(() => {
+    const STATUS_COLORS: Record<string, string> = {
+      normal: colors.success, attention: colors.warning, abnormal: colors.danger,
+      critical: colors.danger, pending: colors.textDim,
+    };
     return (
       <>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowAddExam(true)} activeOpacity={0.7}>
           <FileText size={rs(18)} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>{t('health.addExam', 'Adicionar exame')}</Text>
+          <Text style={styles.addButtonText}>{t('health.addExam')}</Text>
         </TouchableOpacity>
         {exams.length === 0 ? (
           <EmptyState message={t('health.emptyExams')} hint={t('health.emptyHint')} />
         ) : (
-          exams.map((ex: Record<string, unknown>, i: number) => (
-            <View key={String(ex.id ?? i)} style={styles.simpleCard}>
-              <Text style={styles.simpleCardTitle}>{String(ex.name ?? '')}</Text>
-              <Text style={styles.simpleCardSub}>{formatDate(String(ex.date ?? ''))}</Text>
-            </View>
-          ))
+          exams.map((ex: Record<string, unknown>, i: number) => {
+            const statusColor = STATUS_COLORS[String(ex.status ?? 'normal')] ?? colors.textDim;
+            return (
+              <ExpandableCard
+                key={String(ex.id ?? i)}
+                header={
+                  <View style={styles.vaccineHeaderRow}>
+                    <FileText size={rs(16)} color={statusColor} strokeWidth={1.8} />
+                    <View style={styles.vaccineHeaderInfo}>
+                      <Text style={styles.vaccineHeaderName}>{String(ex.name ?? '')}</Text>
+                      <Text style={styles.vaccineHeaderDate}>{formatDate(String(ex.date ?? ''))}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
+                      <Text style={[styles.statusBadgeText, { color: statusColor }]}>{String(ex.status ?? 'normal')}</Text>
+                    </View>
+                  </View>
+                }
+              >
+                <View style={styles.vaccineDetails}>
+                  {ex.laboratory && <InfoRow label={t('health.laboratory')} value={String(ex.laboratory)} isFirst />}
+                  {ex.veterinarian && <InfoRow label={t('health.vet')} value={String(ex.veterinarian)} isFirst={!ex.laboratory} />}
+                  {ex.notes && <InfoRow label={t('health.notes')} value={String(ex.notes)} />}
+                </View>
+              </ExpandableCard>
+            );
+          })
         )}
       </>
     );
@@ -545,64 +571,145 @@ export default function HealthScreen() {
       <>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowAddMed(true)} activeOpacity={0.7}>
           <Pill size={rs(18)} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>{t('health.addMedication', 'Adicionar remédio')}</Text>
+          <Text style={styles.addButtonText}>{t('health.addMedication')}</Text>
         </TouchableOpacity>
         {medications.length === 0 ? (
           <EmptyState message={t('health.emptyMedications')} hint={t('health.emptyHint')} />
         ) : (
-          medications.map((m: Record<string, unknown>, i: number) => (
-            <View key={String(m.id ?? i)} style={styles.simpleCard}>
-              <Text style={styles.simpleCardTitle}>{String(m.name ?? '')}</Text>
-              <Text style={styles.simpleCardSub}>{String(m.frequency ?? '')} · {formatDate(String(m.start_date ?? ''))}</Text>
-            </View>
-          ))
+          medications.map((m: Record<string, unknown>, i: number) => {
+            const isActive = m.active !== false;
+            const statusColor = isActive ? colors.success : colors.textDim;
+            return (
+              <ExpandableCard
+                key={String(m.id ?? i)}
+                header={
+                  <View style={styles.vaccineHeaderRow}>
+                    <Pill size={rs(16)} color={statusColor} strokeWidth={1.8} />
+                    <View style={styles.vaccineHeaderInfo}>
+                      <Text style={styles.vaccineHeaderName}>{String(m.name ?? '')}{m.dosage ? ` ${String(m.dosage)}` : ''}</Text>
+                      <Text style={styles.vaccineHeaderDate}>{String(m.frequency ?? '')} · {formatDate(String(m.start_date ?? ''))}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
+                      <Text style={[styles.statusBadgeText, { color: statusColor }]}>{isActive ? t('health.active') : t('health.inactive')}</Text>
+                    </View>
+                  </View>
+                }
+              >
+                <View style={styles.vaccineDetails}>
+                  {m.type && <InfoRow label={t('health.medType')} value={String(m.type)} isFirst />}
+                  {m.end_date && <InfoRow label={t('health.endDate')} value={formatDate(String(m.end_date))} />}
+                  {m.prescribed_by && <InfoRow label={t('health.vet')} value={String(m.prescribed_by)} />}
+                  {m.reason && <InfoRow label={t('health.reason')} value={String(m.reason)} />}
+                  {m.notes && <InfoRow label={t('health.notes')} value={String(m.notes)} />}
+                </View>
+              </ExpandableCard>
+            );
+          })
         )}
       </>
     );
   }, [medications, t]);
 
   const renderConsultations = useCallback(() => {
+    const TYPE_COLORS: Record<string, string> = {
+      routine: colors.petrol, emergency: colors.danger, specialist: colors.purple,
+      surgery: colors.warning, follow_up: colors.sky,
+    };
     return (
       <>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowAddCons(true)} activeOpacity={0.7}>
           <Stethoscope size={rs(18)} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>{t('health.addConsultation', 'Adicionar consulta')}</Text>
+          <Text style={styles.addButtonText}>{t('health.addConsultation')}</Text>
         </TouchableOpacity>
         {consultations.length === 0 ? (
           <EmptyState message={t('health.emptyConsultations')} hint={t('health.emptyHint')} />
         ) : (
-          consultations.map((c: Record<string, unknown>, i: number) => (
-            <View key={String(c.id ?? i)} style={styles.simpleCard}>
-              <Text style={styles.simpleCardTitle}>{String(c.veterinarian ?? '')} — {String(c.type ?? '')}</Text>
-              <Text style={styles.simpleCardSub}>{formatDate(String(c.date ?? ''))}</Text>
-              {c.summary ? <Text style={styles.simpleCardBody}>{String(c.summary)}</Text> : null}
-            </View>
-          ))
+          consultations.map((c: Record<string, unknown>, i: number) => {
+            const typeColor = TYPE_COLORS[String(c.type ?? 'routine')] ?? colors.petrol;
+            return (
+              <ExpandableCard
+                key={String(c.id ?? i)}
+                header={
+                  <View style={styles.vaccineHeaderRow}>
+                    <Stethoscope size={rs(16)} color={typeColor} strokeWidth={1.8} />
+                    <View style={styles.vaccineHeaderInfo}>
+                      <Text style={styles.vaccineHeaderName}>{String(c.veterinarian ?? '')}</Text>
+                      <Text style={styles.vaccineHeaderDate}>{formatDate(String(c.date ?? ''))}{c.clinic ? ` · ${String(c.clinic)}` : ''}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: typeColor + '15' }]}>
+                      <Text style={[styles.statusBadgeText, { color: typeColor }]}>{String(c.type ?? '')}</Text>
+                    </View>
+                  </View>
+                }
+              >
+                <View style={styles.vaccineDetails}>
+                  {c.summary && <InfoRow label={t('health.summary')} value={String(c.summary)} isFirst />}
+                  {c.diagnosis && <InfoRow label={t('health.diagnosis')} value={String(c.diagnosis)} />}
+                  {c.prescriptions && <InfoRow label={t('health.prescriptions')} value={String(c.prescriptions)} />}
+                  {c.follow_up_at && <InfoRow label={t('health.followUp')} value={formatDate(String(c.follow_up_at))} />}
+                  {c.notes && <InfoRow label={t('health.notes')} value={String(c.notes)} />}
+                </View>
+              </ExpandableCard>
+            );
+          })
         )}
       </>
     );
   }, [consultations, t]);
 
   const renderSurgeries = useCallback(() => {
+    const STATUS_COLORS: Record<string, string> = {
+      recovered: colors.success, recovering: colors.warning,
+      scheduled: colors.petrol, complications: colors.danger,
+    };
     return (
       <>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowAddSurg(true)} activeOpacity={0.7}>
           <Scissors size={rs(18)} color="#fff" strokeWidth={2} />
-          <Text style={styles.addButtonText}>{t('health.addSurgery', 'Adicionar cirurgia')}</Text>
+          <Text style={styles.addButtonText}>{t('health.addSurgery')}</Text>
         </TouchableOpacity>
         {surgeries.length === 0 ? (
           <EmptyState message={t('health.emptySurgeries')} hint={t('health.emptyHint')} />
         ) : (
-          surgeries.map((s: Record<string, unknown>, i: number) => (
-            <View key={String(s.id ?? i)} style={styles.simpleCard}>
-              <Text style={styles.simpleCardTitle}>{String(s.name ?? '')}</Text>
-              <Text style={styles.simpleCardSub}>{formatDate(String(s.date ?? ''))} · {String(s.status ?? '')}</Text>
-            </View>
-          ))
+          surgeries.map((s: Record<string, unknown>, i: number) => {
+            const statusColor = STATUS_COLORS[String(s.status ?? 'recovered')] ?? colors.textDim;
+            return (
+              <ExpandableCard
+                key={String(s.id ?? i)}
+                header={
+                  <View style={styles.vaccineHeaderRow}>
+                    <Scissors size={rs(16)} color={statusColor} strokeWidth={1.8} />
+                    <View style={styles.vaccineHeaderInfo}>
+                      <Text style={styles.vaccineHeaderName}>{String(s.name ?? '')}</Text>
+                      <Text style={styles.vaccineHeaderDate}>{formatDate(String(s.date ?? ''))}</Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
+                      <Text style={[styles.statusBadgeText, { color: statusColor }]}>{String(s.status ?? '')}</Text>
+                    </View>
+                  </View>
+                }
+              >
+                <View style={styles.vaccineDetails}>
+                  {s.veterinarian && <InfoRow label={t('health.vet')} value={String(s.veterinarian)} isFirst />}
+                  {s.clinic && <InfoRow label={t('health.clinic')} value={String(s.clinic)} isFirst={!s.veterinarian} />}
+                  {s.anesthesia && <InfoRow label={t('health.anesthesia')} value={String(s.anesthesia)} />}
+                  {s.notes && <InfoRow label={t('health.notes')} value={String(s.notes)} />}
+                </View>
+              </ExpandableCard>
+            );
+          })
         )}
       </>
     );
   }, [surgeries, t]);
+
+  const renderMetrics = useCallback(() => (
+    <MetricsCharts petId={id} />
+  ), [id]);
+
+  const renderExpenses = useCallback(() => (
+    <ExpensesLens petId={id} />
+  ), [id]);
 
   // ──────────────────────────────────────
   // Tab content renderer
@@ -621,10 +728,14 @@ export default function HealthScreen() {
         return renderConsultations();
       case 'surgeries':
         return renderSurgeries();
+      case 'metrics':
+        return renderMetrics();
+      case 'expenses':
+        return renderExpenses();
       default:
         return null;
     }
-  }, [activeTab, renderGeneral, renderVaccines, renderExams, renderMedications, renderConsultations, renderSurgeries]);
+  }, [activeTab, renderGeneral, renderVaccines, renderExams, renderMedications, renderConsultations, renderSurgeries, renderMetrics, renderExpenses]);
 
   // ──────────────────────────────────────
   // Loading state
@@ -741,6 +852,58 @@ export default function HealthScreen() {
         userId={user?.id ?? ''}
         isSubmitting={isAddingSurg}
       />
+
+      {/* Blood Type Info Modal */}
+      <Modal visible={showBloodTypeInfo} transparent animationType="slide" onRequestClose={() => setShowBloodTypeInfo(false)}>
+        <Pressable style={styles.btOverlay} onPress={() => setShowBloodTypeInfo(false)}>
+          <Pressable style={styles.btSheet} onPress={() => {}}>
+            <View style={styles.btHandle} />
+            <View style={styles.btHeader}>
+              <Droplet size={rs(20)} color={colors.danger} strokeWidth={1.8} />
+              <Text style={styles.btTitle}>{t('health.bloodTypeTitle')}</Text>
+              <TouchableOpacity onPress={() => setShowBloodTypeInfo(false)} style={{ marginLeft: 'auto' }}>
+                <X size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Dog types */}
+              <Text style={styles.btSectionLabel}>{t('health.bloodTypeDog')}</Text>
+              {[
+                { type: 'DEA 1.1+', freq: '40-60%', desc: 'Universal recipient' },
+                { type: 'DEA 1.1-', freq: '40-60%', desc: 'Universal donor' },
+                { type: 'DEA 1.2', freq: '20%', desc: 'Common' },
+                { type: 'DEA 3', freq: '6%', desc: 'Rare' },
+                { type: 'DEA 4', freq: '98%', desc: 'Very common, low antigenicity' },
+                { type: 'DEA 5', freq: '25%', desc: 'Uncommon' },
+                { type: 'DEA 7', freq: '45%', desc: 'Common' },
+              ].map((bt) => (
+                <View key={bt.type} style={styles.btRow}>
+                  <Text style={styles.btType}>{bt.type}</Text>
+                  <Text style={styles.btFreq}>{bt.freq}</Text>
+                  <Text style={styles.btDesc}>{isDog ? bt.desc : ''}</Text>
+                </View>
+              ))}
+
+              {/* Cat types */}
+              <Text style={[styles.btSectionLabel, { marginTop: rs(16) }]}>{t('health.bloodTypeCat')}</Text>
+              {[
+                { type: 'A', freq: '85-95%', desc: 'Most common worldwide' },
+                { type: 'B', freq: '5-15%', desc: 'More common in some breeds (British, Devon Rex)' },
+                { type: 'AB', freq: '<1%', desc: 'Very rare, universal recipient' },
+              ].map((bt) => (
+                <View key={bt.type} style={styles.btRow}>
+                  <Text style={styles.btType}>{bt.type}</Text>
+                  <Text style={styles.btFreq}>{bt.freq}</Text>
+                  <Text style={styles.btDesc}>{bt.desc}</Text>
+                </View>
+              ))}
+
+              <Text style={styles.btDisclaimer}>{t('health.bloodTypeDisclaimer')}</Text>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -909,6 +1072,97 @@ const styles = StyleSheet.create({
   },
 
   // ── Info Card ──
+  // Blood Type
+  bloodTypeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: rs(14),
+    padding: rs(14),
+    marginBottom: rs(16),
+  },
+  bloodTypeValue: {
+    flex: 1,
+    fontFamily: 'JetBrainsMono_700Bold',
+    fontSize: fs(16),
+    color: colors.text,
+  },
+  // Blood Type Info Modal
+  btOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(11, 18, 25, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  btSheet: {
+    backgroundColor: colors.bgCard,
+    borderTopLeftRadius: rs(26),
+    borderTopRightRadius: rs(26),
+    padding: rs(20),
+    paddingBottom: rs(40),
+    maxHeight: '80%',
+  },
+  btHandle: {
+    width: rs(40),
+    height: rs(5),
+    borderRadius: rs(3),
+    backgroundColor: colors.textGhost,
+    alignSelf: 'center',
+    marginBottom: rs(16),
+  },
+  btHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
+    marginBottom: rs(16),
+  },
+  btTitle: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(17),
+    color: colors.text,
+  },
+  btSectionLabel: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(12),
+    color: colors.accent,
+    letterSpacing: 0.5,
+    marginBottom: rs(8),
+  },
+  btRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: rs(8),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  btType: {
+    fontFamily: 'JetBrainsMono_700Bold',
+    fontSize: fs(13),
+    color: colors.text,
+    width: rs(80),
+  },
+  btFreq: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: fs(11),
+    color: colors.petrol,
+    width: rs(60),
+  },
+  btDesc: {
+    flex: 1,
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(10),
+    color: colors.textDim,
+  },
+  btDisclaimer: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(9),
+    color: colors.textGhost,
+    textAlign: 'center',
+    marginTop: rs(16),
+    lineHeight: fs(14),
+  },
   infoCard: {
     backgroundColor: colors.card,
     borderWidth: 1,

@@ -8,7 +8,7 @@
     "icon": "./assets/images/icon_app_ok.png",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/images/logotipotrans.png",
+      "image": "./assets/images/icon_app_ok.png",
       "resizeMode": "contain",
       "backgroundColor": "#0F1923"
     },
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/images/icon_app_ok.png"
       },
       "splash": {
-        "image": "./assets/images/logotipotrans.png",
+        "image": "./assets/images/icon_app_ok.png",
         "resizeMode": "contain",
         "backgroundColor": "#0F1923"
       },
@@ -50,8 +50,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0F1923",
-          "image": "./assets/images/logotipotrans.png",
-          "imageWidth": 280
+          "image": "./assets/images/icon_app_ok.png",
+          "imageWidth": 220
         }
       ],
       [
@@ -80,7 +80,9 @@
           "microphonePermission": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
           "speechRecognitionPermission": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-sqlite"
     ],
     "extra": {
       "router": {},

@@ -1,3 +1,5 @@
+// DEPRECATED 01/04/2026 — ClassificationCards removed from diary entry flow.
+// Only used in OCRResultScreen. Will be removed once OCR is refactored.
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -201,7 +203,7 @@ const ClassificationCard: React.FC<ClassificationCardProps> = ({
         <View style={styles.dataContainer}>
           {dataEntries.map(([key, value]) => (
             <View key={key} style={styles.dataRow}>
-              <Text style={styles.dataKey}>{key}</Text>
+              <Text style={styles.dataKey}>{t(`diary.field_${key}`, { defaultValue: key })}</Text>
               <Text style={styles.dataValue}>{formatDataValue(value)}</Text>
             </View>
           ))}

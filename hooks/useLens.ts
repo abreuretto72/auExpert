@@ -606,7 +606,7 @@ export async function fetchDayItems(
   const [diaryRes, eventsRes] = await Promise.all([
     supabase
       .from('diary_entries')
-      .select('id, primary_type, narration, mood_id, entry_date, created_at, extracted_data')
+      .select('id, primary_type, narration, mood_id, entry_date, created_at, classifications')
       .eq('pet_id', petId)
       .eq('entry_date', dateStr)
       .eq('is_active', true)
@@ -624,9 +624,9 @@ export async function fetchDayItems(
   const diaryItems: AgendaItem[] = (diaryRes.data ?? []).map((e: {
     id: string; primary_type: string; narration: string | null;
     mood_id: string | null; entry_date: string; created_at: string;
-    extracted_data: Record<string, unknown> | null;
+    classifications: Array<{ type: string; confidence: number; extracted_data: Record<string, unknown> }> | null;
   }) => {
-    const d = (e.extracted_data ?? {}) as Record<string, unknown>;
+    const d = (e.classifications?.[0]?.extracted_data ?? {}) as Record<string, unknown>;
     const category = PRIMARY_TO_CAT[e.primary_type] ?? 'momento';
     const time = e.created_at.slice(11, 16);
 

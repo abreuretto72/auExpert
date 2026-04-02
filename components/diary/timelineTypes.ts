@@ -73,6 +73,23 @@ export interface TimelineEvent {
     intensity: 'low' | 'medium' | 'high';
     pattern_notes: string;
   } | null;
+  // Optimistic UI processing state
+  processingStatus?: 'pending' | 'processing' | 'done' | 'error';
+  // AI classifications attached to this entry
+  classifications?: Array<{
+    type: string;
+    confidence: number;
+    extracted_data: Record<string, unknown>;
+  }> | null;
+  // Module rows joined from DB (populated when fetched with module selects)
+  modules?: {
+    expenses?: Array<{ id: string; amount: number | null; currency: string | null; category: string | null; description: string | null; merchant_name: string | null }>;
+    vaccines?: Array<{ id: string; vaccine_name: string | null; laboratory: string | null; vet_name: string | null; clinic: string | null; applied_at: string | null; next_due_date: string | null; lot_number: string | null }>;
+    consultations?: Array<{ id: string; vet_name: string | null; clinic: string | null; reason: string | null; diagnosis: string | null; date: string | null }>;
+    clinical_metrics?: Array<{ id: string; metric_type: string | null; value: number | null; unit: string | null; measured_at: string | null }>;
+    medications?: Array<{ id: string; medication_name: string | null; dosage: string | null; frequency: string | null; vet_name: string | null }>;
+    nutrition_records?: Array<{ id: string; product_name: string | null; brand: string | null; record_type: string | null; quantity: string | null }>;
+  } | null;
 }
 
 // ── Filters ──
@@ -125,6 +142,8 @@ const INPUT_TYPE_TO_TIMELINE: Record<string, TimelineEventType> = {
   pet_audio: 'audio_analysis',
 };
 
+type ModuleField<K extends keyof NonNullable<TimelineEvent['modules']>> = NonNullable<TimelineEvent['modules']>[K];
+
 export function diaryEntryToEvent(entry: DiaryEntry & {
   input_type?: string;
   video_url?: string | null;
@@ -133,6 +152,12 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
   audio_url?: string | null;
   audio_duration?: number | null;
   pet_audio_analysis?: TimelineEvent['petAudioAnalysis'];
+  expenses?: ModuleField<'expenses'>;
+  vaccines?: ModuleField<'vaccines'>;
+  consultations?: ModuleField<'consultations'>;
+  clinical_metrics?: ModuleField<'clinical_metrics'>;
+  medications?: ModuleField<'medications'>;
+  nutrition_records?: ModuleField<'nutrition_records'>;
 }): TimelineEvent {
   // input_type takes precedence over entry_type for newer entries
   const inputType = entry.input_type;
@@ -149,10 +174,10 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     moodId: entry.mood_id ?? undefined,
     content: entry.content,
     narration: entry.narration,
-    tags: entry.tags ?? [],
+    tags: Array.isArray(entry.tags) ? entry.tags : [],
     isSpecial: entry.is_special ?? false,
     isRegistrationEntry: entry.is_registration_entry ?? false,
-    photos: entry.photos ?? [],
+    photos: Array.isArray(entry.photos) ? entry.photos : [],
     title: entry.entry_type !== 'manual' ? entry.content : undefined,
     detail: entry.entry_type !== 'manual' ? entry.narration ?? undefined : undefined,
     score: entry.mood_score ?? undefined,
@@ -162,6 +187,20 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     audioUrl: entry.audio_url ?? null,
     audioDuration: entry.audio_duration ?? null,
     petAudioAnalysis: entry.pet_audio_analysis ?? null,
+    processingStatus: entry.processing_status ?? 'done',
+    classifications: Array.isArray((entry as Record<string, unknown>).classifications)
+      ? (entry as Record<string, unknown>).classifications as TimelineEvent['classifications']
+      : null,
+    modules: (entry.expenses || entry.vaccines || entry.consultations || entry.clinical_metrics || entry.medications || entry.nutrition_records)
+      ? {
+          expenses:        entry.expenses ?? undefined,
+          vaccines:        entry.vaccines ?? undefined,
+          consultations:   entry.consultations ?? undefined,
+          clinical_metrics: entry.clinical_metrics ?? undefined,
+          medications:     entry.medications ?? undefined,
+          nutrition_records: entry.nutrition_records ?? undefined,
+        }
+      : null,
   };
 }
 

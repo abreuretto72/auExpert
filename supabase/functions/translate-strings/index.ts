@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { getAIConfig } from '../_shared/ai-config.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
@@ -46,15 +47,16 @@ TRANSLATION RULES:
 - Return ONLY a valid JSON object with the exact same structure as the input
 - Do NOT add any explanation, markdown, or text outside the JSON`;
 
+    const cfg = await getAIConfig();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': cfg.anthropic_version,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: cfg.model_simple,
         max_tokens: 8192,
         system: systemPrompt,
         messages: [{

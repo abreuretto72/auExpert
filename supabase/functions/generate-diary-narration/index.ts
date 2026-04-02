@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { getAIConfig } from '../_shared/ai-config.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -32,12 +33,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { pet_id, content, mood_id, language = 'pt-BR' } = await req.json();
-    console.log('[generate-diary-narration] pet_id:', pet_id, 'mood:', mood_id, 'lang:', language, 'content length:', content?.length);
+    const { pet_id, content, mood_id, language = 'pt-BR', context = 'diary' } = await req.json();
+    console.log('[generate-diary-narration] pet_id:', pet_id, 'mood:', mood_id, 'lang:', language, 'context:', context, 'content length:', content?.length);
 
-    if (!pet_id || !content || !mood_id) {
+    if (!pet_id || !content) {
       return new Response(
-        JSON.stringify({ error: 'pet_id, content, and mood_id are required' }),
+        JSON.stringify({ error: 'pet_id and content are required' }),
+        { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+    // mood_id is optional for pet_registration context
+    if (context !== 'pet_registration' && !mood_id) {
+      return new Response(
+        JSON.stringify({ error: 'mood_id is required for diary context' }),
         { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
       );
     }
@@ -90,6 +98,85 @@ Deno.serve(async (req: Request) => {
     };
     const moodDesc = MOOD_MAP[mood_id] ?? mood_id;
 
+    // ── pet_registration context: 3rd person intro narration ───────────────────
+    if (context === 'pet_registration') {
+      const registrationSystemPrompt = `You are a warm storyteller writing the first diary entry for a newly registered pet.
+Write in THIRD PERSON about ${petName}, a ${petSex} ${species} (${breedDesc}).
+Format: "Hoje ${petName} foi cadastrado no auExpert. [description of the pet based on the provided analysis, max 60 words, 3rd person, warm tone]"
+RULES:
+- Start with "Hoje ${petName} foi cadastrado no auExpert."
+- Use the analysis data provided to describe the pet (breed, mood, appearance, health highlights)
+- Maximum 60 words total
+- Warm, celebratory tone — this is a special moment
+- Respond ONLY in ${lang}
+- Return ONLY valid JSON, no markdown wrapping
+
+Return this exact JSON:
+{
+  "narration": "narration text here",
+  "mood_detected": "happy",
+  "tags_suggested": ["registration", "primeiro_dia"],
+  "mood_score": 80
+}`;
+
+      const cfg = await getAIConfig();
+      const regResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': cfg.anthropic_version,
+        },
+        body: JSON.stringify({
+          model: cfg.model_narrate,
+          max_tokens: 512,
+          system: registrationSystemPrompt,
+          messages: [{
+            role: 'user',
+            content: `Pet analysis summary:\n\n${content}`,
+          }],
+        }),
+      });
+
+      if (!regResponse.ok) {
+        const errorBody = await regResponse.text();
+        console.error('[generate-diary-narration] registration narration error:', regResponse.status, errorBody);
+        return new Response(
+          JSON.stringify({ error: 'AI narration failed', status: regResponse.status }),
+          { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+        );
+      }
+
+      const regAiResponse = await regResponse.json();
+      const regTextContent = regAiResponse.content?.find((c: { type: string }) => c.type === 'text');
+      if (!regTextContent?.text) {
+        return new Response(
+          JSON.stringify({ error: 'Empty AI response' }),
+          { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+        );
+      }
+      let regJsonText = regTextContent.text.trim();
+      if (regJsonText.startsWith('```')) {
+        regJsonText = regJsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+      const regResult = JSON.parse(regJsonText);
+      const regTokens = regAiResponse.usage?.output_tokens ?? 0;
+      console.log('[generate-diary-narration] registration narration OK, tokens:', regTokens);
+
+      return new Response(
+        JSON.stringify({
+          narration: regResult.narration,
+          mood_detected: regResult.mood_detected ?? 'happy',
+          language,
+          tokens_used: regTokens,
+          tags_suggested: regResult.tags_suggested ?? ['registration'],
+          mood_score: regResult.mood_score ?? 80,
+        }),
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
+      );
+    }
+    // ── regular diary narration (1st person) ────────────────────────────────────
+
     const systemPrompt = `You are ${petName}, a ${petSex} ${species} (${breedDesc}, ${ageDesc}).
 You narrate diary entries in first person, as if YOU (the pet) are telling your tutor (owner) what happened.
 ${genderNote}
@@ -114,15 +201,16 @@ Return this exact JSON:
   "mood_score": number (0-100, matching the mood intensity)
 }`;
 
+    const cfg2 = await getAIConfig();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': cfg2.anthropic_version,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: cfg2.model_narrate,
         max_tokens: 1024,
         system: systemPrompt,
         messages: [{

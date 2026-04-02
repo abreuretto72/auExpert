@@ -5,16 +5,17 @@
  */
 
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import {
-  Camera, Calendar, Gift, Heart, Lightbulb, Lock,
-  Mic, PawPrint, Pencil, ShieldCheck, Sparkles, Star, Trophy, Video,
+  AlertCircle, Camera, Calendar, Gift, Heart, Lightbulb, Lock,
+  Mic, PawPrint, Pencil, RefreshCw, ShieldCheck, Star, Trophy, Video, WifiOff,
 } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { getPublicUrl } from '../../lib/storage';
-import PawIcon from '../PawIcon';
 import type { TimelineEvent } from './timelineTypes';
+import { DiaryModuleCard, DiaryModuleSeparator, type ModuleRow } from './DiaryModuleCard';
+import DiaryNarration from './DiaryNarration';
 
 // ── Shared types ──
 
@@ -27,6 +28,36 @@ interface DiaryCardProps extends CardProps {
   petName: string;
   getMoodData: (id: string | null | undefined) => { label: string; color: string } | null;
   onEdit: (id: string) => void;
+  onRetry?: (id: string) => void;
+  onNarrationUpdated?: (entryId: string, narration: string) => void;
+  onModuleUpdated?: (entryId: string, moduleId: string, updates: Record<string, unknown>) => void;
+}
+
+// ── Helper: match classification type → module row ──
+
+const MODULE_TYPE_TO_KEY: Record<string, keyof NonNullable<TimelineEvent['modules']>> = {
+  vaccine:       'vaccines',
+  consultation:  'consultations',
+  return_visit:  'consultations',
+  expense:       'expenses',
+  weight:        'clinical_metrics',
+  medication:    'medications',
+  food:          'nutrition_records',
+};
+
+function resolveModuleRow(
+  type: string,
+  index: number,
+  modules: TimelineEvent['modules'],
+): ModuleRow | undefined {
+  if (!modules) return undefined;
+  const key = MODULE_TYPE_TO_KEY[type];
+  if (!key) return undefined;
+  const arr = modules[key] as ModuleRow[] | undefined;
+  if (!arr || arr.length === 0) return undefined;
+  // Match by index within same type (most entries have only 1 per type)
+  const sameTypeIndex = index; // caller already filtered by type confidence
+  return arr[sameTypeIndex] ?? arr[0];
 }
 
 // ── MonthSummaryCard ──
@@ -62,11 +93,66 @@ export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
 
 // ── DiaryCard ──
 
-export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit }: DiaryCardProps) => {
+export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, onRetry, onNarrationUpdated, onModuleUpdated }: DiaryCardProps) => {
   const moodData = getMoodData(event.moodId);
   const dateObj = new Date(event.date);
   const dateStr = dateObj.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // ── Pending state (saved offline, waiting for sync) ───────────────────────
+  if (event.processingStatus === 'pending') {
+    return (
+      <View style={[styles.cardBase, styles.pendingCard]}>
+        <View style={styles.pendingRow}>
+          <WifiOff size={rs(14)} color={colors.warning} strokeWidth={1.8} />
+          <Text style={styles.pendingText}>{t('diary.pendingSync')}</Text>
+        </View>
+        {!!event.content && event.content !== '(media)' && (
+          <Text style={styles.processingContent} numberOfLines={2}>{event.content}</Text>
+        )}
+      </View>
+    );
+  }
+
+  // ── Processing state ──────────────────────────────────────────────────────
+  if (event.processingStatus === 'processing') {
+    return (
+      <View style={[styles.cardBase, styles.processingCard]}>
+        <View style={styles.processingRow}>
+          <ActivityIndicator size="small" color={colors.purple} />
+          <Text style={styles.processingText}>{t('diary.processingEntry')}</Text>
+        </View>
+        {!!event.content && event.content !== '(media)' && (
+          <Text style={styles.processingContent} numberOfLines={2}>{event.content}</Text>
+        )}
+      </View>
+    );
+  }
+
+  // ── Error state ────────────────────────────────────────────────────────────
+  if (event.processingStatus === 'error') {
+    return (
+      <View style={[styles.cardBase, styles.errorCard]}>
+        <View style={styles.errorRow}>
+          <AlertCircle size={rs(16)} color={colors.danger} strokeWidth={1.8} />
+          <Text style={styles.errorText}>{t('diary.processingError')}</Text>
+        </View>
+        {!!event.content && event.content !== '(media)' && (
+          <Text style={styles.errorContent} numberOfLines={3}>{event.content}</Text>
+        )}
+        {onRetry && (
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => onRetry(event.id)}
+            activeOpacity={0.7}
+          >
+            <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+            <Text style={styles.retryText}>{t('diary.retryEntry')}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.cardBase}>
@@ -128,15 +214,38 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit }:
       )}
 
       {event.narration ? (
-        <View style={styles.narrationSection}>
-          <View style={styles.narrationHeader}>
-            <PawIcon size={rs(16)} color={colors.accent} />
-            <Text style={styles.narrationTitle}>{t('diary.petNarrates', { name: petName })}</Text>
-            <Sparkles size={rs(14)} color={colors.purple} strokeWidth={1.8} />
-          </View>
-          <Text style={styles.narrationText}>{event.narration}</Text>
+        <View style={styles.narrationWrapper}>
+          <DiaryNarration
+            entryId={event.id}
+            narration={event.narration}
+            petName={petName}
+            onUpdated={(narration) => onNarrationUpdated?.(event.id, narration)}
+          />
         </View>
       ) : null}
+
+      {/* Module cards — AI-classified health/finance data */}
+      {event.classifications && event.classifications.filter((c) => c.confidence >= 0.5).length > 0 && (
+        <View style={styles.moduleSection}>
+          <DiaryModuleSeparator t={t} />
+          <View style={styles.moduleList}>
+            {event.classifications
+              .filter((c) => c.confidence >= 0.5)
+              .map((cls, idx) => {
+                const moduleRow = resolveModuleRow(cls.type, idx, event.modules);
+                return (
+                  <DiaryModuleCard
+                    key={`${cls.type}-${idx}`}
+                    classification={cls}
+                    moduleRow={moduleRow}
+                    onUpdated={(moduleId, updates) => onModuleUpdated?.(event.id, moduleId, updates)}
+                    t={t}
+                  />
+                );
+              })}
+          </View>
+        </View>
+      )}
 
       {event.tags && event.tags.length > 0 && (
         <View style={styles.tagsRow}>
@@ -488,6 +597,9 @@ const styles = StyleSheet.create({
   narrationHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) },
   narrationTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.accent, flex: 1 },
   narrationText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: rs(27), fontStyle: 'italic' },
+  narrationWrapper: { marginTop: rs(10) },
+  moduleSection: { marginTop: rs(10) },
+  moduleList: { gap: rs(6) },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(6), marginTop: rs(10) },
   tagChip: { backgroundColor: colors.bgCard, borderRadius: rs(8), paddingHorizontal: rs(10), paddingVertical: rs(4) },
   tagText: { fontFamily: 'Sora_500Medium', fontSize: fs(10), color: colors.textDim },
@@ -536,4 +648,19 @@ const styles = StyleSheet.create({
   capsuleMessage: { fontFamily: 'Caveat_400Regular', fontSize: fs(16), color: colors.textSec, fontStyle: 'italic', lineHeight: rs(28), marginTop: rs(8) },
   capsuleDates: { marginTop: rs(8), gap: rs(4) },
   capsuleDateText: { fontFamily: 'JetBrainsMono_400Regular', fontSize: fs(10), color: colors.textDim },
+
+  // Pending / processing / error states
+  pendingCard: { borderLeftWidth: rs(3), borderLeftColor: colors.warning },
+  pendingRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(6) },
+  pendingText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.warning },
+  processingCard: { borderLeftWidth: rs(3), borderLeftColor: colors.purple },
+  processingRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(6) },
+  processingText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.purple },
+  processingContent: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim, fontStyle: 'italic', lineHeight: fs(18) },
+  errorCard: { borderLeftWidth: rs(3), borderLeftColor: colors.danger },
+  errorRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(6) },
+  errorText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.danger },
+  errorContent: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, lineHeight: fs(18), marginBottom: rs(10) },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), alignSelf: 'flex-start', paddingVertical: rs(6), paddingHorizontal: rs(12), backgroundColor: colors.accentGlow, borderRadius: rs(8) },
+  retryText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
 });

@@ -1,7 +1,61 @@
 # CLAUDE.md — auExpert Project Rules (v7)
-# Última atualização: 29/03/2026
+# Última atualização: 31/03/2026
 
 > Fonte de verdade para o Claude Code. Toda decisão segue estas diretrizes.
+
+---
+
+> # ⛔ LEIA ISTO ANTES DE ESCREVER QUALQUER LINHA DE CÓDIGO
+>
+> ## REGRAS QUE NÃO PODEM SER VIOLADAS — NUNCA — EM NENHUMA CIRCUNSTÂNCIA
+>
+> ### ⛔ 1. STRINGS HARDCODED SÃO ABSOLUTAMENTE PROIBIDAS
+>
+> **ANTES de escrever qualquer `<Text>`, `placeholder`, `title`, `toast()` ou `Alert`:**
+> pergunte a si mesmo: *"este texto vai aparecer na tela do tutor?"*
+> Se a resposta for SIM → ele vai para o i18n. PONTO FINAL.
+>
+> ```typescript
+> // ⛔ ISTO QUEBRA O APP PARA USUÁRIOS EM OUTROS IDIOMAS — NUNCA FAZER
+> <Text>Diário do Rex</Text>
+> <Text>Nenhuma ocorrência nesta categoria</Text>
+> placeholder="O que aconteceu hoje?"
+> toast('Salvo com sucesso', 'success')
+> Alert.alert('Erro ao salvar')
+>
+> // ✅ ÚNICO JEITO CORRETO DE FAZER
+> <Text>{t('diary.title', { name: pet.name })}</Text>
+> <Text>{t('diary.noResults')}</Text>
+> placeholder={t('diary.placeholder', { name: pet.name })}
+> toast(t('toast.entrySaved'), 'success')
+> ```
+>
+> **Se você escrever uma string hardcoded você está:**
+> - Violando a regra mais fundamental deste projeto
+> - Quebrando a experiência de todos os usuários não-BR
+> - Criando dívida técnica que outro dev vai ter que limpar
+>
+> **Não existe exceção. Não existe "só por enquanto". Não existe "é só um teste".**
+> Todo texto visível → i18n. Sempre. Sem discussão.
+>
+> ---
+>
+> ### ⛔ 2. Alert.alert() É PROIBIDO
+> Usar SEMPRE `toast()` ou `confirm()` do componente Toast com patinhas.
+> Ver seção 4 (Comunicação com o Tutor).
+>
+> ### ⛔ 3. EMOJIS NO CÓDIGO SÃO PROIBIDOS
+> Usar SEMPRE ícones Lucide React Native. Ver seção 3.
+>
+> ### ⛔ 4. DELETE FÍSICO É PROIBIDO
+> Usar SEMPRE soft delete com `is_active = false`. Ver seção 7.
+>
+> ### ⛔ 5. NARRAÇÃO SEMPRE EM 3ª PESSOA
+> "O Rex foi ao parque" ✅ — "Fui ao parque" ⛔ — "Meu dono..." ⛔
+>
+> ---
+>
+> **Especificação completa de cada regra nas seções 3, 4, 6.1, 7 e 10.2.**
 
 ---
 
@@ -715,6 +769,29 @@ E:\aa_projetos_claude\auExpert\
 | Push | Expo Notifications |
 | Biometria | Expo LocalAuthentication |
 | Câmera | Expo Camera |
+
+---
+
+## 6.1 REGRAS DE CÓDIGO — OBRIGATÓRIAS
+
+### STRINGS HARDCODED SÃO PROIBIDAS — REGRA INVIOLÁVEL
+
+> **Nenhum texto visível ao usuário pode estar escrito diretamente no código. NENHUM. ZERO. JAMAIS.**
+
+```typescript
+// ERRADO — PROIBIDO
+<Text>Diário do Rex</Text>
+<TextInput placeholder="O que aconteceu hoje?" />
+toast('Salvo com sucesso', 'success')
+
+// CERTO — OBRIGATÓRIO
+<Text>{t('diary.title', { name: pet.name })}</Text>
+<TextInput placeholder={t('diary.placeholder', { name: pet.name })} />
+toast(t('toast.entrySaved'), 'success')
+```
+
+Todo texto vai para `i18n/pt-BR.json` e `i18n/en-US.json`.
+Ver especificação completa e estrutura de chaves na **seção 10.2**.
 
 ---
 
@@ -1470,6 +1547,80 @@ A ordem dos providers no `app/_layout.tsx` é CRÍTICA e DEVE ser mantida:
 | `lib/offlineSync.ts` | Processar fila — executar mutacoes pendentes na API |
 | `hooks/useNetwork.ts` | Hook para verificar conexao em qualquer componente |
 | `components/NetworkGuard.tsx` | UI de monitoramento + sync automatico |
+
+---
+
+## 12.8 Relatórios PDF — Especificação Obrigatória
+
+> **Todo dado do app DEVE poder ser exportado como PDF.**
+> O tutor tem direito de ter seus dados fora do app a qualquer momento.
+
+### Biblioteca
+
+- **expo-print** — gera HTML → PDF e abre print preview nativo
+- **expo-sharing** — compartilha o PDF gerado como arquivo
+
+### Template PDF (`lib/pdf.ts`)
+
+Todo relatório PDF do app DEVE usar o template padrão via `previewPdf()` ou `sharePdf()`.
+
+**Cabeçalho (header):**
+```
+┌─────────────────────────────────────────────────┐
+│  [Logo auExpert]  Título do Relatório    Data/Hora│
+│                   Subtítulo (opcional)            │
+├─────────────────────────────────────────────────┤
+```
+- Logo: `assets/images/logotipotrans.png` (carregado como base64)
+- Título: Sora 700, 16px, cor `bg`
+- Subtítulo: 10px, cinza
+- Data/hora: canto direito, 9px
+- Linha separadora: 2px cor `accent`
+
+**Corpo (body):**
+- HTML livre — cada relatório monta seu `bodyHtml`
+- Cards com borda, border-radius 8, page-break-inside: avoid
+- Fontes do sistema (não carrega Sora no PDF)
+
+**Rodapé (footer):**
+```
+────────────────────────────────────────────────
+         Multiverso Digital © 2026 — auExpert
+```
+- Fixo em todas as páginas
+- Centralizado, 8px, cinza claro
+
+### Regras obrigatórias para TODO relatório PDF:
+
+1. **SEMPRE usar `previewPdf()`** — abre o print preview nativo do sistema
+   - O tutor pode imprimir, salvar como PDF, ou compartilhar
+   - NUNCA gerar PDF silenciosamente sem mostrar ao tutor
+2. Para compartilhar como arquivo: usar `sharePdf(fileName)`
+3. Logo no cabeçalho é OBRIGATÓRIO
+4. Rodapé "Multiverso Digital © 2026" é OBRIGATÓRIO
+5. Data e hora da geração no cabeçalho é OBRIGATÓRIO
+6. Título e subtítulo via i18n (NUNCA hardcoded)
+7. O botão de exportar PDF deve usar ícone `Download` (laranja, clicável)
+
+### Relatórios disponíveis (implementar progressivamente):
+
+| Relatório | Tela | Dados |
+|-----------|------|-------|
+| Diário completo | diary.tsx | Todas as entradas filtradas (texto + narração + humor + tags + fotos) |
+| Prontuário de saúde | health.tsx | Vacinas, alergias, exames, medicações, consultas, cirurgias |
+| Análise de foto IA | photo-analysis.tsx | Resultado da análise (raça, humor, saúde, ambiente) |
+| Carteirinha do pet | id-card.tsx | Dados do pet, microchip, QR code |
+| Perfil do pet | index.tsx | Todos os dados cadastrais do pet |
+
+### API (`lib/pdf.ts`):
+
+```typescript
+// Preview (print dialog nativo)
+await previewPdf({ title, subtitle?, bodyHtml, language? });
+
+// Compartilhar como arquivo
+await sharePdf({ title, subtitle?, bodyHtml, language? }, 'diario_mana.pdf');
+```
 
 ---
 

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { getAIConfig } from '../_shared/ai-config.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -145,15 +146,16 @@ Return this exact JSON:
 
     console.log('[generate-personality] Calling Anthropic — entries:', entries.length, 'moods:', dominantMoods.join(', '));
 
+    const cfg = await getAIConfig();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': cfg.anthropic_version,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: cfg.model_chat,
         max_tokens: 512,
         system: systemPrompt,
         messages: [{

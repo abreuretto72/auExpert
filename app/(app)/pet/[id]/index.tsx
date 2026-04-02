@@ -125,7 +125,9 @@ export default function PetScreen() {
     router.push(`/pet/${id}/diary/new`);
   }, [router, id]);
 
-  const handleEditEntry = useCallback((_entryId: string) => {}, []);
+  const handleEditEntry = useCallback((entryId: string) => {
+    router.push(`/pet/${id}/diary/${entryId}/edit` as never);
+  }, [router, id]);
 
   const handleOpenPdf = useCallback(() => {
     if (timelineEvents.length === 0) { toast(t('diary.emptyTitle'), 'warning'); return; }

@@ -39,48 +39,59 @@ export default function PetTabLayout() {
     }
   };
 
+  // Show nav ONLY for the exact tab root routes — NOT for sub-routes like
+  // diary/new, diary/voice, diary/[entryId]/edit, health/*, etc.
+  // Each sub-route manages its own header and back button.
+  const showNav = TABS.filter((t) => t.key !== 'index').some(
+    (t) => pathname === `/pet/${id}/${t.key}` || pathname === `/pet/${id}/${t.key}/`,
+  );
+
   return (
-    <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>{pet?.name ?? '...'}</Text>
-        <View style={s.backBtn} />
-      </View>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      {/* Header — hidden on index and form routes */}
+      {showNav && (
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle} numberOfLines={1}>{pet?.name ?? '...'}</Text>
+          <View style={s.backBtn} />
+        </View>
+      )}
 
       {/* Conteúdo da aba ativa */}
       <View style={s.content}>
         <Slot />
       </View>
 
-      {/* Bottom Tab Bar */}
-      <View style={s.tabBar}>
-        <View style={s.tabBarInner}>
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            const Icon = tab.icon;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[s.tab, isActive && s.tabActive]}
-                onPress={() => navigateTab(tab.key)}
-                activeOpacity={0.7}
-              >
-                <Icon
-                  size={rs(20)}
-                  color={isActive ? colors.accent : colors.textDim}
-                  strokeWidth={isActive ? 2 : 1.8}
-                />
-                <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>
-                  {t(tab.labelKey)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+      {/* Bottom Tab Bar — hidden on index and form routes */}
+      {showNav && (
+        <View style={s.tabBar}>
+          <View style={s.tabBarInner}>
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const Icon = tab.icon;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[s.tab, isActive && s.tabActive]}
+                  onPress={() => navigateTab(tab.key)}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    size={rs(20)}
+                    color={isActive ? colors.accent : colors.textDim}
+                    strokeWidth={isActive ? 2 : 1.8}
+                  />
+                  <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>
+                    {t(tab.labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 }

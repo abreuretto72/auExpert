@@ -51,7 +51,7 @@ interface TutorProfile {
 
 export default function HubScreen() {
   console.log('[HubScreen] Renderizando...');
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [addPetVisible, setAddPetVisible] = useState(false);
@@ -122,12 +122,11 @@ export default function HubScreen() {
     breed: p.breed,
     weight_kg: p.weight_kg,
     health_score: p.health_score,
-    happiness_score: null,
+    happiness_score: p.happiness_score,
+    xp_total: p.xp_total,
     current_mood: null,
     user_id: p.user_id,
     estimated_age_months: p.estimated_age_months,
-    diary_count: 0,
-    photo_count: 0,
     vaccine_status: 'up_to_date' as const,
     last_activity: p.updated_at,
     avatar_url: p.avatar_url,
@@ -222,6 +221,71 @@ export default function HubScreen() {
           }
         }
 
+        // Gravar entrada no diário de registro se houver foto + análise
+        if (data.full_analysis && newPet?.id && user?.id && avatarUrl) {
+          try {
+            const fa = data.full_analysis;
+            const breedName = fa.breed?.name ?? fa.identification?.breed?.primary ?? null;
+            const mood = fa.mood?.primary ?? null;
+            const ageMonths = fa.estimated_age_months ?? fa.identification?.estimated_age_months ?? null;
+            const weight = fa.estimated_weight_kg ?? fa.identification?.estimated_weight_kg ?? null;
+            const color = fa.color ?? fa.identification?.coat?.color ?? null;
+            const size = fa.size ?? fa.identification?.size ?? null;
+
+            // Monta resumo da análise para a narração
+            const parts: string[] = [];
+            if (breedName) parts.push(`Breed: ${breedName}`);
+            if (ageMonths != null) parts.push(`Age: ~${ageMonths} months`);
+            if (weight != null) parts.push(`Weight: ~${weight} kg`);
+            if (size) parts.push(`Size: ${size}`);
+            if (color) parts.push(`Coat: ${color}`);
+            if (mood) parts.push(`Mood: ${mood}`);
+            const analysisSummary = parts.join(', ');
+
+            // Gera narração em 3ª pessoa via Edge Function
+            let narration: string | null = null;
+            try {
+              const { data: narData } = await supabase.functions.invoke('generate-diary-narration', {
+                body: {
+                  pet_id: newPet.id,
+                  content: analysisSummary,
+                  mood_id: mood ?? 'happy',
+                  language: i18n.language,
+                  context: 'pet_registration',
+                },
+              });
+              narration = narData?.narration ?? null;
+            } catch (e) {
+              console.warn('[Hub] registration narration failed (non-blocking):', e);
+            }
+
+            // Só insere se tiver narração
+            if (narration) {
+              await supabase.from('diary_entries').insert({
+                pet_id: newPet.id,
+                user_id: user.id,
+                content: analysisSummary,
+                input_type: 'photo',
+                input_method: 'photo',
+                primary_type: 'moment',
+                entry_type: 'photo_analysis',
+                narration,
+                mood_id: mood ?? 'happy',
+                mood_score: 80,
+                mood_source: 'ai_suggested',
+                photos: [avatarUrl],
+                tags: ['registration'],
+                is_special: true,
+                is_registration_entry: true,
+                is_active: true,
+                entry_date: new Date().toISOString().split('T')[0],
+              });
+            }
+          } catch (e) {
+            console.warn('[Hub] registration diary_entry failed (non-blocking):', e);
+          }
+        }
+
         setAddPetVisible(false);
         toast(t('toast.petCreated', { name: data.name }), 'success');
       } catch (err: unknown) {
@@ -230,7 +294,7 @@ export default function HubScreen() {
         toast(getErrorMessage(err), 'error');
       }
     },
-    [addPet, user?.id, toast, t],
+    [addPet, user?.id, toast, t, i18n.language],
   );
 
   // ── Header da lista ──────────────────────────────
@@ -344,7 +408,13 @@ export default function HubScreen() {
 
   const renderPetCard = useCallback(
     ({ item }: { item: PetCardData }) => (
-      <PetCard pet={item} onPress={() => handlePetPress(item.id)} onEdit={() => handleEditPet(item.id)} />
+      <PetCard
+        pet={item}
+        onPress={() => handlePetPress(item.id)}
+        onEdit={() => handleEditPet(item.id)}
+        onPressHappiness={() => handlePetPress(item.id)}
+        onPressXp={() => handlePetPress(item.id)}
+      />
     ),
     [handlePetPress, handleEditPet],
   );

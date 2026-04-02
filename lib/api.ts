@@ -73,27 +73,40 @@ export async function deletePet(id: string): Promise<void> {
 // DIARY
 // ══════════════════════════════════════
 
+const DIARY_MODULE_SELECT = `
+  *,
+  expenses(id, amount, currency, category, description, merchant_name),
+  vaccines(id, vaccine_name, laboratory, vet_name, clinic, applied_at, next_due_date, lot_number),
+  consultations(id, vet_name, clinic, reason, diagnosis, date),
+  clinical_metrics(id, metric_type, value, unit, measured_at),
+  medications(id, medication_name, dosage, frequency, vet_name),
+  nutrition_records(id, product_name, brand, record_type, quantity)
+`.trim();
+
 export async function fetchDiaryEntries(petId: string, page = 1, perPage = 20): Promise<DiaryEntry[]> {
+  // Direct query with module JOINs — richer than the RPC (which doesn't have module data)
+  const from = (page - 1) * perPage;
+  const to = page * perPage - 1;
+
   const { data, error } = await supabase
-    .rpc('fn_get_diary_timeline', {
-      p_pet_id: petId,
-      p_page: page,
-      p_per_page: perPage,
-    });
+    .from('diary_entries')
+    .select(DIARY_MODULE_SELECT)
+    .eq('pet_id', petId)
+    .eq('is_active', true)
+    .order('entry_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .range(from, to);
 
   if (error) {
-    // Fallback to direct query if function not deployed yet
-    const { data: fallback, error: fbError } = await supabase
-      .from('diary_entries')
-      .select('*')
-      .eq('pet_id', petId)
-      .eq('is_active', true)
-      .order('entry_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range((page - 1) * perPage, page * perPage - 1);
-
-    if (fbError) throw fbError;
-    return (fallback as DiaryEntry[]) ?? [];
+    // Fallback to RPC if direct query fails (e.g. missing FK relationships)
+    const { data: rpc, error: rpcError } = await supabase
+      .rpc('fn_get_diary_timeline', {
+        p_pet_id: petId,
+        p_page: page,
+        p_per_page: perPage,
+      });
+    if (rpcError) throw rpcError;
+    return (rpc as DiaryEntry[]) ?? [];
   }
 
   return (data as DiaryEntry[]) ?? [];
@@ -168,12 +181,38 @@ export async function updateDiaryEntry(
   id: string,
   updates: Partial<Pick<DiaryEntry, 'content' | 'narration' | 'mood_id' | 'mood_score' | 'tags' | 'photos' | 'is_special'>>,
 ): Promise<DiaryEntry> {
+  // Only send columns that exist in the actual DB table
+  // mood_score may not exist if migration 009 hasn't been applied
+  const safeUpdates: Record<string, unknown> = {};
+  if (updates.content !== undefined) safeUpdates.content = updates.content;
+  if (updates.narration !== undefined) safeUpdates.narration = updates.narration;
+  if (updates.mood_id !== undefined) safeUpdates.mood_id = updates.mood_id;
+  if (updates.tags !== undefined) safeUpdates.tags = updates.tags;
+  if (updates.photos !== undefined) safeUpdates.photos = updates.photos;
+  if (updates.is_special !== undefined) safeUpdates.is_special = updates.is_special;
+
+  // Try with mood_score first, fallback without it
+  if (updates.mood_score !== undefined) safeUpdates.mood_score = updates.mood_score;
+
   const { data, error } = await supabase
     .from('diary_entries')
-    .update(updates)
+    .update(safeUpdates)
     .eq('id', id)
     .select()
     .single();
+
+  if (error?.code === 'PGRST204' && safeUpdates.mood_score !== undefined) {
+    // mood_score column doesn't exist yet — retry without it
+    delete safeUpdates.mood_score;
+    const { data: fallback, error: fbError } = await supabase
+      .from('diary_entries')
+      .update(safeUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (fbError) throw fbError;
+    return fallback as DiaryEntry;
+  }
 
   if (error) throw error;
   return data as DiaryEntry;

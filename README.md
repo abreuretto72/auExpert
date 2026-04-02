@@ -1,14 +1,28 @@
 # AuExpert
 
-**Uma inteligencia unica para o seu pet**
+**Uma inteligência única para o seu pet**
 
-App mobile AI-first para tutores de caes e gatos. Diario inteligente com narracao na voz do pet, analise de fotos por IA, prontuario de saude e notificacoes automaticas.
+App mobile AI-first para tutores de cães e gatos. Diário inteligente com narração na voz do pet, análise de fotos por IA, prontuário de saúde e notificações automáticas.
+
+**📖 Documentação:** Leia os [Codemaps](./docs/CODEMAPS/INDEX.md) para entender a arquitetura, i18n e responsividade.
 
 ---
 
 ## Status do Desenvolvimento
 
 ### Concluido
+
+#### i18n — Todas as Strings Migradas (REGRA OBRIGATÓRIA)
+- **Eliminação de hardcodes** — 100% das strings visíveis ao tutor migradas para `i18n/{pt-BR,en-US}.json`
+- **Arquivos atualizados:** `app/(auth)/{login,register,forgot-password,reset-password}.tsx`, `components/{ErrorBoundary,AddPetModal,diary/PdfExportModal}.tsx`
+- **Chaves adicionadas:** `auth.*`, `errors.{unexpectedTitle,unexpectedBody}`, `addPet.placeholderWeight`, `common.placeholderDate`, `diary.{helpModalTitle,helpModalSub,helpPanelNote}`, `diary.help{Voice,Photo,Scanner,Document,Video,Gallery,Listen,Text}`
+- **ErrorBoundary class component** — usa `i18n.t()` diretamente sem hooks (suporta crash recovery)
+- **Toast messages** — tom de voz do pet em PT-BR e EN-US (empático, nunca técnico)
+
+#### Hooks React — Regra OBRIGATÓRIA
+- **Hooks declarados ANTES de early returns** — fix em `app/(app)/pet/[id]/index.tsx` — `handleOpenPdf` movido antes da verificação `if (isLoading || !pet)`
+- **Responsividade em hooks:** `useResponsive.ts` com `rs()`, `fs()`, `wp()`, `hp()` — NUNCA pixels fixos
+- **Layout helpers:** `useContentWidth`, `useCalendarCellWidth`, `useGridColumnWidth`, `useSafeBottom`, `useFontScale` em `lib/responsive.ts`
 
 #### Arquitetura & Infraestrutura
 - **Arquitetura em camadas** documentada no CLAUDE.md (secao 11) — Telas > Hooks > Stores > API > Lib
@@ -29,7 +43,7 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
   - Deep link `auexpert://reset-password` para abrir o app
   - Tela de redefinicao de senha com validacao + PasswordMeter
   - Tela de sucesso com botao "Ir para o Login"
-- **Mensagens de erro humanas** — nunca mostra erro tecnico ao tutor (`utils/errorMessages.ts`)
+- **Mensagens de erro humanas** — nunca mostra erro tecnico ao tutor (`utils/errorMessages.ts` + i18n `errors.*`)
 - **i18n** em todas as mensagens de erro (PT-BR + EN-US)
 
 #### Tela Principal (Hub Meus Pets)
@@ -78,22 +92,27 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - **Conectado** com `usePets().addPet` + toast de sucesso/erro
 
 #### Sistema de Componentes
-- **ErrorBoundary** global — captura crashes, mostra tela amigavel com "Tentar novamente"
-- **ToastProvider** — 4 variantes (success, error, warning, info) com animacao
-- **Skeleton** — componente base + PetCardSkeleton + HubSkeleton
-- **Input** — label, icone, mic STT (exceto senha), erro, focus glow
+- **ErrorBoundary** global — captura crashes, mostra tela amigavel com "Tentar novamente" (usa i18n, suporta class components)
+- **ToastProvider** — 4 variantes (success, error, warning, info) com animacao + pata colorida
+- **Skeleton** — componente base + PetCardSkeleton + HubSkeleton + responsivo
+- **Input** — label, icone, mic STT (exceto senha), erro, focus glow, todas as props com `rs()`
 - **Button** — primary (gradiente), secondary, danger, loading state
 - **AuExpertLogo** — 3 tamanhos (large, normal, small), proporcional
+- **PetBottomNav** — fixed tab navigation com safe area insets (home indicator clearance no iPhone)
+- **DrawerMenu** — animado com Animated.View, usa `useWindowDimensions` (reativo), não `Dimensions.get()`
+- **InputSelector** — modal com 8 métodos entrada, help modal, cards grandes para voz/foto
 
 #### Diario Inteligente
 - **Separacao Diario vs Prontuario** — diario = vida emocional, prontuario = saude clinica
-- **3 modos de entrada**: Falar (STT nativo), Foto (IA analisa e narra), Digitar
-- **Barra de midia** em todos os modos: camera, galeria, video, microfone — todos funcionais
+- **8 modos de entrada** (InputSelector): Voz (STT), Foto (Camera), Galeria, Video, Scanner (OCR), Documento, Ausculta (audio recording), Digitar
+- **Componente InputSelector reescrito** — cards grandes para Voz + Foto (hierarquia visual), HelpModal com 8 modos explicados, rodapé com safe area
+- **Barra de midia** em todos os modos: camera, galeria, video, microfone, scanner, documento, gravador
 - **STT nativo** via `expo-speech-recognition` (development build)
 - **Narracao IA** na voz do pet (Claude claude-sonnet-4-20250514, max 50 palavras, genero gramatical correto)
 - **Filtros**: Momentos, IA, Marcos, Capsulas (sem filtro Saude — dados clinicos ficam no Prontuario)
 - **Ponte Prontuario→Diario**: vacinas/alergias geram entrada emocional automatica via IA
 - **Edge Functions**: `generate-diary-narration`, `bridge-health-to-diary`
+- **i18n keys**: `diary.{helpModalTitle,helpModalSub,helpPanelNote,helpVoice,helpPhoto,helpScanner,helpDocument,helpVideo,helpGallery,helpListen,helpText}`
 
 #### Utilities
 - `utils/format.ts` — formatDate, formatRelativeDate, formatWeight, formatAge, truncateText, getHealthLevel, locale-aware date input (parseDateInput, formatDateInput, getDatePlaceholder)
@@ -126,6 +145,39 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 - Logotipo AuExpert sobre fundo `#0F1923` (azul petroleo)
 - Sem retangulo cinza — imagem PNG transparente
 
+### Mudanças Recentes (Session 2026-03-31)
+
+#### i18n Migration — Eliminação de Hardcodes
+- **Escopo:** 30+ chaves i18n adicionadas a `i18n/{pt-BR,en-US}.json`
+- **Arquivos atualizados:**
+  - `app/(auth)/{login,register,forgot-password,reset-password}.tsx` — todos os `t()` calls
+  - `components/ErrorBoundary.tsx` — classe component usa `i18n.t()` direto (sem hooks)
+  - `components/AddPetModal.tsx` — labels, placeholders, validações
+  - `components/diary/PdfExportModal.tsx` — títulos relatório
+  - `components/diary/InputSelector.tsx` — 8 modos entrada + help modal
+- **Garantia:** ZERO strings hardcoded visíveis ao tutor em PT-BR ou EN-US
+
+#### React Hooks Best Practices
+- **Bug fix:** `app/(app)/pet/[id]/index.tsx` — hook `handleOpenPdf` movido ANTES early return `if (isLoading || !pet)`
+- **Problema:** Hooks declarados após early return causam "Rendered more hooks than during the previous render"
+- **Solução:** Reordenar todos os hooks ANTES de qualquer return condicional
+- **Impacto:** Elimina crash ao carregar tela do pet em estado de loading
+
+#### Responsiveness System
+- **Base:** iPhone 14 (390px) — tudo escala proporcionalmente
+- **Arquivo:** `lib/responsive.ts` com helpers: `useContentWidth`, `useCalendarCellWidth`, `useGridColumnWidth`, `useSafeBottom`, `useFontScale`
+- **Uso obrigatório:** `rs()` para dimensões, `fs()` para fontes, `wp()`/`hp()` para percentuais
+- **Arquivos atualizados:**
+  - `components/layout/PetBottomNav.tsx` — safe area insets (home indicator clearance)
+  - `components/DrawerMenu.tsx` — `useWindowDimensions` (reativo) em vez de `Dimensions.get()`
+  - `app/(app)/pet/[id]/index.tsx` — verificação `edges={['bottom']}` duplicada removida
+
+#### InputSelector Rewrite
+- **Componente:** `components/diary/InputSelector.tsx` — modal com 8 modos entrada
+- **Layout novo:** Cards grandes para Voz + Foto (prioridade visual), Help modal com explicações
+- **i18n keys:** `diary.help{Voice,Photo,Scanner,Document,Video,Gallery,Listen,Text}`
+- **Safe area:** Footer com safe bottom inset (iPhone home indicator)
+
 ### Pendente (MVP)
 - Notificacoes push (vaccine reminders, diary reminders)
 - Build de producao (EAS Build para lojas)
@@ -141,13 +193,16 @@ App mobile AI-first para tutores de caes e gatos. Diario inteligente com narraca
 | Estado | Zustand (UI) + React Query (servidor) |
 | Cache | React Query — staleTime 5min, gcTime 30min |
 | i18n | react-i18next (PT-BR / EN-US) |
-| Icones | Lucide React Native |
+| Icones | Lucide React Native (nunca emojis) |
 | Backend | Supabase (PostgreSQL + pgvector + Auth + Storage + Edge Functions) |
 | IA | Claude API claude-sonnet-4-20250514 |
 | Push | Expo Notifications |
 | Biometria | Expo LocalAuthentication |
 | Camera | Expo Camera |
 | Validacao | Zod |
+| Responsividade | hooks/useResponsive.ts (rs, fs, wp, hp) |
+| PDF Export | expo-print + expo-sharing |
+| Redes sociais | @react-native-community/netinfo |
 
 ## Arquitetura
 
@@ -158,6 +213,55 @@ Telas (app/)  →  Hooks  →  Stores (Zustand) / API  →  Lib  →  Supabase
 ```
 
 **Regra:** Telas nunca importam `lib/` diretamente — sempre via hooks.
+
+### Responsividade — OBRIGATÓRIA
+
+**NUNCA hardcode pixels.** Todas as dimensões devem usar funções responsivas de `hooks/useResponsive.ts`:
+
+```typescript
+import { rs, fs, wp, hp } from '../hooks/useResponsive';
+
+// rs(size)  — Responsive Size — padding, margin, borderRadius, width, height, gap, icon size
+// fs(size)  — Font Size — com limites de acessibilidade
+// wp(pct)   — Width Percentage — larguras baseadas em % da tela
+// hp(pct)   — Height Percentage — alturas baseadas em % da tela
+```
+
+Design base: iPhone 14 (390px). Tudo escala proporcionalmente.
+
+| Dispositivo | Largura | Escala |
+|---|---|---|
+| iPhone SE / Android compacto | 320px | 0.82x |
+| iPhone 14 / maioria | 390px | 1.0x (base) |
+| iPhone Pro Max | 428px | 1.10x |
+| iPad Mini | 744px | 1.91x |
+
+**Exceções (NÃO precisam de rs/fs):**
+- `flex: 1`, `'100%'` — valores de flex/percentuais
+- `borderWidth: 1` — bordas finas (1-2px)
+- Cores, opacidade
+
+### i18n — OBRIGATÓRIA
+
+**Nenhuma string visível ao tutor pode estar hardcoded.** Toda string é chave i18n.
+
+Estrutura de chaves:
+```
+common.*      — Salvar, Cancelar, Voltar, placeholderDate
+auth.*        — Login, cadastro, reset, biometria
+pets.*        — Listagem, dados, espécies, vacinas
+addPet.*      — Modal adicionar pet
+diary.*       — Entrada, narração, filtros, help
+health.*      — Prontuário, vacinas, alergias
+settings.*    — Configurações
+toast.*       — Mensagens de balão (voz do pet)
+errors.*      — Mensagens técnicas → humanas (i18n)
+```
+
+Tom das mensagens: **voz do pet** — empático, nunca técnico. Exemplos:
+- "Opa, caí da rede! Verifica o Wi-Fi e tenta de novo?"
+- "Xi, algo deu errado. Tenta de novo?"
+- "Sem espaço aqui! Libera um cantinho no celular?"
 
 ## Filosofia AI-First
 
@@ -198,17 +302,76 @@ eas build --platform android --profile preview
 
 ```
 app/              Expo Router (auth + app screens)
-components/       UI primitivos + feature components + ErrorBoundary + Toast + Skeleton
-  ui/             Input, Button, Card, Badge, Alert, Modal
-constants/        Design tokens (colors, fonts, spacing, shadows, moods, breeds)
-hooks/            useAuth, usePets, useNotifications
-stores/           Zustand (authStore, petStore, uiStore)
-lib/              supabase, auth, api, ai, rag, storage, notifications, queryClient
-i18n/             PT-BR e EN-US (incluindo mensagens de erro)
-types/            TypeScript interfaces (database + AI)
-utils/            format, errorMessages
-supabase/         Migrations (8), Edge Functions (10), seed
-docs/             Prototipos (25), email templates
+  (auth)/         Login, register, forgot-password, reset-password
+  (app)/          Hub, settings, help
+  pet/[id]/       Dashboard, diary, health, edit, achievements, etc.
+
+components/       UI primitivos + feature components
+  ui/             Input, Button, Card, Badge, Alert, Modal, Skeleton
+  ErrorBoundary   Class component com i18n recovery
+  Toast           Balão centralizado com patinha colorida + ToastProvider
+  AuExpertLogo    3 tamanhos: large, normal, small
+  NetworkGuard    Monitora conexão, banner offline/online
+  diary/          DiaryTimeline, PdfExportModal, InputSelector
+  layout/         PetHeader, PetBottomNav, DrawerMenu
+  pet/            LentesTab, IATab, PetCard
+  lenses/         AgendaLensContent
+
+constants/        Design tokens
+  colors.ts       Dark theme (azul petróleo + laranja)
+  spacing.ts      Responsive spacing + radii
+  shadows.ts      Shadows com cores semânticas
+  fonts.ts        Sora, JetBrains Mono, Caveat
+  moods.ts        8 humores com cores + labels i18n
+  breeds.ts       Raças por espécie
+
+hooks/            React Hooks + React Query
+  useResponsive.ts  rs(), fs(), wp(), hp() responsivos
+  useAuth.ts        Auth state + biometria
+  usePets.ts        CRUD pets + cache
+  useDiary.ts       Diary entries + mutations
+  useHealth.ts      Vaccines, allergies, moods
+  useNotifications  Push + scheduling
+
+stores/           Zustand (estado de UI APENAS)
+  authStore.ts    User, session, tokens
+  uiStore.ts      Drawer open, selectedPet, language
+
+lib/              Integrações externas
+  supabase.ts     Client Supabase + RLS
+  api.ts          Funções fetch puras (pets, diary, vaccines, etc)
+  responsive.ts   Layout helpers (useContentWidth, etc)
+  queryClient.ts  React Query setup (staleTime, retry, etc)
+  ai.ts           Claude API calls
+  rag.ts          Busca vetorial de memórias
+  notifications.ts Expo Push Notifications + scheduling
+  errorMessages.ts Mapa erros técnicos → humanos
+  offline*.ts     Cache persistente + fila de mutações
+
+i18n/             Internacionalização (PT-BR + EN-US)
+  pt-BR.json      ~1400 chaves em português
+  en-US.json      ~1400 chaves em inglês
+  (Estrutura: common, auth, pets, addPet, diary, health, errors, toast, etc)
+
+types/            TypeScript interfaces
+  database.ts     User, Pet, DiaryEntry, Vaccine, etc (gerados do Supabase)
+  api.ts          API responses, payloads
+
+utils/            Funções helper puras
+  format.ts       formatDate, formatAge, formatWeight, formatRelativeDate
+  errorMessages.ts getErrorMessage(error) → chave i18n + mensagem humana
+
+supabase/         Banco de dados
+  migrations/     13 migrations (usuarios, pets, diario, vacinas, alergias, saude, etc)
+  functions/      Edge Functions Deno (narração IA, análise foto, OCR, etc)
+  seed.sql        Dados iniciais
+
+docs/             Documentação + protótipos
+  CLAUDE.md       Spec completa (identidade, design, regras, prompts, banco de dados)
+  Tabelas.md      Schema detalhado
+  prototypes/     JSX de referência de tela (25+ arquivos)
+  email-templates HTML templates para Supabase Auth
+  especificacao/  Specs da Aldeia, prontuário, novas features
 ```
 
 ## Banco de Dados
@@ -221,6 +384,10 @@ docs/             Prototipos (25), email templates
 - **Tipografia:** Sora (UI) + JetBrains Mono (dados) + Caveat (narracao IA)
 - **Icones:** Lucide React Native (nunca emojis)
 - **Cores semanticas:** accent (acao), petrol (info), purple (IA), success (saude), danger (erro)
+
+#Compatibilidade
+Android: qualquer celular com Android 7.0 (Nougat) ou superior — lançado a partir de 2016.
+iPhone: qualquer modelo a partir do iPhone 6s com iOS 15.1 ou superior.
 
 ## Licenca
 

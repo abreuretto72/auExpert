@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
-  ChevronLeft, Camera, Dog, Cat,
+  ChevronLeft, Camera, Dog, Cat, QrCode,
 } from 'lucide-react-native';
 import { colors } from '../../../../constants/colors';
 import { rs, fs } from '../../../../hooks/useResponsive';
@@ -39,6 +39,7 @@ export default function EditPetScreen() {
   const [color, setColor] = useState('');
   const [sex, setSex] = useState('');
   const [microchip, setMicrochip] = useState('');
+  const [bloodType, setBloodType] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -52,6 +53,7 @@ export default function EditPetScreen() {
     setColor(pet.color ?? '');
     setSex(pet.sex ?? '');
     setMicrochip(pet.microchip_id ?? '');
+    setBloodType(pet.blood_type ?? '');
     setInitialized(true);
   }
 
@@ -156,13 +158,13 @@ export default function EditPetScreen() {
   // ── Auto-save (ref-based to avoid dependency loops) ──
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dataRef = useRef({ name, breed, birthDate, weight, size, color, sex, microchip });
+  const dataRef = useRef({ name, breed, birthDate, weight, size, color, sex, microchip, bloodType });
   const lastSavedSnap = useRef('');
   const updatePetRef = useRef(updatePet);
   const isSaving = useRef(false);
 
   // Keep refs in sync — no effects, no re-renders
-  dataRef.current = { name, breed, birthDate, weight, size, color, sex, microchip };
+  dataRef.current = { name, breed, birthDate, weight, size, color, sex, microchip, bloodType };
   updatePetRef.current = updatePet;
 
   // Capture initial snapshot once loaded
@@ -186,6 +188,7 @@ export default function EditPetScreen() {
       color: data.color.trim() || null,
       sex: (data.sex as 'male' | 'female') || null,
       microchip_id: data.microchip.trim() || null,
+      blood_type: data.bloodType.trim() || null,
     };
   }, [i18n.language]);
 
@@ -216,7 +219,7 @@ export default function EditPetScreen() {
     saveTimer.current = setTimeout(doSave, 800);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, breed, birthDate, weight, color, sex, microchip, initialized]);
+  }, [name, breed, birthDate, weight, color, sex, microchip, bloodType, initialized]);
 
   // Immediate save when size changes
   const handleSizeChange = useCallback((newSize: string) => {
@@ -379,8 +382,35 @@ export default function EditPetScreen() {
           </View>
 
           <Text style={S.label}>Microchip</Text>
-          <View style={S.inputWrap}>
-            <TextInput style={S.input} value={microchip} onChangeText={setMicrochip} onBlur={doSave} placeholder={t('editPet.microchipPlaceholder')} placeholderTextColor={colors.placeholder} />
+          <View style={[S.inputWrap, S.microchipWrap]}>
+            <TextInput style={[S.input, S.microchipInput]} value={microchip} onChangeText={setMicrochip} onBlur={doSave} placeholder={t('editPet.microchipPlaceholder')} placeholderTextColor={colors.placeholder} />
+            {microchip.trim().length > 0 && (
+              <TouchableOpacity
+                style={S.microchipQrBtn}
+                onPress={() => router.push(`/pet/${id}/id-card` as never)}
+                activeOpacity={0.7}
+              >
+                <QrCode size={rs(13)} color={colors.accent} strokeWidth={1.8} />
+                <Text style={S.microchipQrText}>QR</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <Text style={S.label}>{t('health.bloodType')}</Text>
+          <View style={S.sizeRow}>
+            {(isDog
+              ? ['DEA 1.1+', 'DEA 1.1-', 'DEA 1.2', 'DEA 3', 'DEA 4', 'DEA 5', 'DEA 7']
+              : ['A', 'B', 'AB']
+            ).map((bt) => (
+              <TouchableOpacity
+                key={bt}
+                style={[S.sizeBtn, bloodType === bt && S.sizeBtnActive]}
+                onPress={() => { setBloodType(bloodType === bt ? '' : bt); setTimeout(doSave, 50); }}
+                activeOpacity={0.7}
+              >
+                <Text style={[S.sizeBtnText, bloodType === bt && S.sizeBtnTextActive]}>{bt}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={{ height: rs(40) }} />
@@ -409,6 +439,10 @@ const S = StyleSheet.create({
   label: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textDim, letterSpacing: 1, marginBottom: rs(6), marginTop: rs(16) },
   inputWrap: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: rs(14), overflow: 'hidden' },
   input: { fontFamily: 'Sora_400Regular', fontSize: fs(15), color: colors.text, paddingHorizontal: rs(16), paddingVertical: rs(14) },
+  microchipWrap: { flexDirection: 'row', alignItems: 'center' },
+  microchipInput: { flex: 1 },
+  microchipQrBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.accentGlow, borderLeftWidth: 1, borderLeftColor: colors.accent + '25', paddingHorizontal: rs(12), paddingVertical: rs(14) },
+  microchipQrText: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.accent },
 
   row: { flexDirection: 'row', gap: rs(12) },
   halfField: { flex: 1 },

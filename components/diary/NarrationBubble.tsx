@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, RefreshCw } from 'lucide-react-native';
+import { Sparkles, RefreshCw, Pencil, Check, X } from 'lucide-react-native';
 import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
@@ -18,6 +18,7 @@ interface NarrationBubbleProps {
   moodConfidence: number;
   tags?: string[];
   onRegenerate?: () => void;
+  onEdit?: (editedNarration: string) => void;
 }
 
 // ══════════════════════════════════════
@@ -80,11 +81,29 @@ const NarrationBubble: React.FC<NarrationBubbleProps> = ({
   moodConfidence,
   tags,
   onRegenerate,
+  onEdit,
 }) => {
   const { t, i18n } = useTranslation();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState('');
 
   const moodVisual = useMemo(() => getMoodVisual(mood), [mood]);
   const handleRegenerate = useCallback(() => onRegenerate?.(), [onRegenerate]);
+
+  const handleEditStart = useCallback(() => {
+    setEditText(narration);
+    setIsEditing(true);
+  }, [narration]);
+
+  const handleEditConfirm = useCallback(() => {
+    const trimmed = editText.trim();
+    if (trimmed.length > 0) onEdit?.(trimmed);
+    setIsEditing(false);
+  }, [editText, onEdit]);
+
+  const handleEditCancel = useCallback(() => {
+    setIsEditing(false);
+  }, []);
 
   const moodLabel = useMemo(() => {
     const found = moods.find((m) => m.id === mood);
@@ -111,21 +130,51 @@ const NarrationBubble: React.FC<NarrationBubbleProps> = ({
         </View>
       </View>
 
-      {/* Narration body — Sora italic, NOT Caveat (3rd person narrator) */}
-      <Text style={styles.narrationText}>{narration}</Text>
+      {/* Narration body */}
+      {isEditing ? (
+        <TextInput
+          style={styles.editInput}
+          value={editText}
+          onChangeText={setEditText}
+          multiline
+          autoFocus
+          maxLength={600}
+          placeholderTextColor={colors.placeholder}
+        />
+      ) : (
+        <Text style={styles.narrationText}>{narration}</Text>
+      )}
 
-      {/* Footer: signature + regenerate */}
+      {/* Footer: signature + actions */}
       <View style={styles.footer}>
-        <Text style={styles.signature}>{t('diary.aiSignature')}</Text>
-        {onRegenerate && (
-          <TouchableOpacity
-            style={styles.regenerateBtn}
-            onPress={handleRegenerate}
-            activeOpacity={0.7}
-          >
-            <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
-            <Text style={styles.regenerateText}>{t('diary.regenerate')}</Text>
-          </TouchableOpacity>
+        {isEditing ? (
+          <>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleEditCancel} activeOpacity={0.7}>
+              <X size={rs(14)} color={colors.textDim} strokeWidth={2} />
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.confirmBtn]} onPress={handleEditConfirm} activeOpacity={0.7}>
+              <Check size={rs(14)} color="#fff" strokeWidth={2} />
+              <Text style={styles.confirmText}>{t('common.save')}</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.signature}>{t('diary.aiSignature')}</Text>
+            <View style={styles.footerActions}>
+              {onEdit && (
+                <TouchableOpacity style={styles.regenerateBtn} onPress={handleEditStart} activeOpacity={0.7}>
+                  <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+                </TouchableOpacity>
+              )}
+              {onRegenerate && (
+                <TouchableOpacity style={styles.regenerateBtn} onPress={handleRegenerate} activeOpacity={0.7}>
+                  <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+                  <Text style={styles.regenerateText}>{t('diary.regenerate')}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
         )}
       </View>
 
@@ -222,6 +271,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
+  },
   signature: {
     fontFamily: 'Sora',
     fontWeight: '500',
@@ -233,7 +287,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(5),
-    paddingVertical: rs(4),
+    paddingVertical: rs(6),
     paddingHorizontal: rs(8),
   },
   regenerateText: {
@@ -241,6 +295,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: fs(12),
     color: colors.accent,
+  },
+  editInput: {
+    fontFamily: 'Sora',
+    fontWeight: '400',
+    fontSize: fs(14),
+    fontStyle: 'italic',
+    color: colors.text,
+    lineHeight: fs(14) * 1.7,
+    backgroundColor: colors.bgCard,
+    borderWidth: 1.5,
+    borderColor: colors.accent + '60',
+    borderRadius: rs(10),
+    padding: rs(10),
+    marginBottom: spacing.sm,
+    minHeight: rs(80),
+    textAlignVertical: 'top',
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(5),
+    paddingVertical: rs(6),
+    paddingHorizontal: rs(12),
+    borderRadius: rs(8),
+  },
+  confirmBtn: {
+    backgroundColor: colors.accent,
+  },
+  cancelText: {
+    fontFamily: 'Sora',
+    fontWeight: '600',
+    fontSize: fs(12),
+    color: colors.textDim,
+  },
+  confirmText: {
+    fontFamily: 'Sora',
+    fontWeight: '700',
+    fontSize: fs(12),
+    color: '#fff',
   },
   tagsRow: {
     flexDirection: 'row',

@@ -9,10 +9,13 @@ interface AuExpertLogoProps {
   showIcon?: boolean;
 }
 
+// Aspect ratio real: 512 x 127 ≈ 4.03:1
+const LOGO_RATIO = 512 / 127;
+
 const dimensions: Record<LogoSize, { width: number; height: number }> = {
-  large: { width: rs(260), height: rs(80) },
-  normal: { width: rs(180), height: rs(55) },
-  small: { width: rs(130), height: rs(40) },
+  large: { width: rs(260), height: rs(Math.round(260 / LOGO_RATIO)) },  // ~64
+  normal: { width: rs(180), height: rs(Math.round(180 / LOGO_RATIO)) }, // ~45
+  small: { width: rs(130), height: rs(Math.round(130 / LOGO_RATIO)) },  // ~32
 };
 
 const AuExpertLogo: React.FC<AuExpertLogoProps> = ({ size = 'normal' }) => {

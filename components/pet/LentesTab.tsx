@@ -197,7 +197,7 @@ export default function LentesTab({ petId, petName, overdueVaccines }: LentesTab
         <LensCard
           icon={Receipt} color={colors.gold}
           label={t('lenses.expenses')} badge={expensesBadge}
-          onPress={() => nav('expenses')}
+          onPress={() => router.push(`/pet/${petId}/health?tab=expenses` as never)}
         />
         <LensCard
           icon={PawIcon as unknown as React.ElementType} isPaw color={colors.accent}

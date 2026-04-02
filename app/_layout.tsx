@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View, Image, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,7 +15,15 @@ import { ToastProvider } from '../components/Toast';
 import { NetworkGuard } from '../components/NetworkGuard';
 import { supabase } from '../lib/supabase';
 import { restoreQueryCache } from '../lib/offlineCache';
+import { initLocalDb } from '../lib/localDb';
+import { useSyncQueue } from '../hooks/useSyncQueue';
 import '../i18n';
+
+// Activates the SQLite sync queue inside the QueryClientProvider context
+function SyncQueueActivator() {
+  useSyncQueue();
+  return null;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -76,22 +85,38 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [router]);
 
+  // Inicializar banco SQLite local (one-time, sync)
+  useEffect(() => {
+    initLocalDb();
+  }, []);
+
   // Restaurar cache salvo ao abrir o app
   useEffect(() => {
     restoreQueryCache(queryClient);
   }, []);
 
+  // Hide the native splash immediately — the in-app loading screen
+  // (logotipotrans.png on dark bg) covers while fonts finish loading.
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return (
+      <View style={splashStyles.container}>
+        <Image
+          source={require('../assets/images/logotipotrans.png')}
+          style={splashStyles.logo}
+          resizeMode="contain"
+        />
+      </View>
+    );
+  }
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <SyncQueueActivator />
         <ToastProvider>
           <NetworkGuard>
             <Stack
@@ -108,3 +133,16 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+const splashStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0F1923',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 260,
+    height: 80,
+  },
+});

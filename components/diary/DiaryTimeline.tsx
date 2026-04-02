@@ -60,6 +60,9 @@ interface DiaryTimelineProps {
   onRefresh: () => void;
   onNewEntry: () => void;
   onEditEntry: (id: string) => void;
+  onRetryEntry?: (id: string) => void;
+  onNarrationUpdated?: (entryId: string, narration: string) => void;
+  onModuleUpdated?: (entryId: string, moduleId: string, updates: Record<string, unknown>) => void;
   /** Render additional content below the header (e.g. LensGrid) */
   headerExtra?: React.ReactNode;
 }
@@ -75,6 +78,9 @@ export default function DiaryTimeline({
   onRefresh,
   onNewEntry,
   onEditEntry,
+  onRetryEntry,
+  onNarrationUpdated,
+  onModuleUpdated,
   headerExtra,
 }: DiaryTimelineProps) {
   const { t, i18n } = useTranslation();
@@ -114,7 +120,7 @@ export default function DiaryTimeline({
           cardContent = <MonthSummaryCard event={item} t={t} />;
           break;
         case 'diary':
-          cardContent = <DiaryCard event={item} petName={petName} t={t} getMoodData={getMoodData} onEdit={onEditEntry} />;
+          cardContent = <DiaryCard event={item} petName={petName} t={t} getMoodData={getMoodData} onEdit={onEditEntry} onRetry={onRetryEntry} onNarrationUpdated={onNarrationUpdated} onModuleUpdated={onModuleUpdated} />;
           break;
         case 'audio_analysis':
           cardContent = <AudioAnalysisCard event={item} t={t} />;
@@ -147,7 +153,7 @@ export default function DiaryTimeline({
         </View>
       );
     },
-    [timelineEvents.length, petName, t, getMoodData, onEditEntry],
+    [timelineEvents.length, petName, t, getMoodData, onEditEntry, onRetryEntry],
   );
 
   // ── Header ──

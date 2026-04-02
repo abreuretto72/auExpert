@@ -14,6 +14,8 @@ import {
   Bell,
   Fingerprint,
   Info,
+  ShieldCheck,
+  Sparkles,
   Trash2,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +25,7 @@ import { rs, fs } from '../../hooks/useResponsive';
 import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
+import { useConsent } from '../../hooks/useConsent';
 
 type ConfirmOptions = {
   text: string;
@@ -38,6 +41,7 @@ export default function SettingsScreen() {
   const logout = useAuthStore((s) => s.logout);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
+  const { granted: aiTrainingGranted, setConsent: setAiTraining, isUpdating: aiTrainingUpdating } = useConsent('ai_training_anonymous');
 
   const handleLogout = async () => {
     const yes = await confirm({
@@ -118,6 +122,31 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Privacidade */}
+        <Text style={styles.sectionLabel}>{t('settings.privacy').toUpperCase()}</Text>
+        <View style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Sparkles size={rs(20)} color={colors.purple} strokeWidth={1.8} />
+              <View style={styles.toggleTextCol}>
+                <Text style={styles.toggleLabel}>{t('settings.aiTraining')}</Text>
+                <Text style={styles.toggleDesc}>{t('settings.aiTrainingDesc')}</Text>
+              </View>
+            </View>
+            <Switch
+              value={aiTrainingGranted}
+              disabled={aiTrainingUpdating}
+              onValueChange={(val) => setAiTraining(val).catch(() => {})}
+              trackColor={{ false: colors.border, true: colors.purple + '50' }}
+              thumbColor={aiTrainingGranted ? colors.purple : colors.textDim}
+            />
+          </View>
+          <View style={styles.consentNote}>
+            <ShieldCheck size={rs(12)} color={colors.textDim} strokeWidth={1.8} />
+            <Text style={styles.consentNoteText}>{t('settings.aiTrainingNote')}</Text>
+          </View>
+        </View>
+
         {/* Sobre */}
         <Text style={styles.sectionLabel}>{t('settings.about').toUpperCase()}</Text>
         <View style={styles.card}>
@@ -166,5 +195,7 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: 'Sora_500Medium', fontSize: fs(14), color: colors.textSec, flex: 1 },
   infoValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(13), color: colors.textDim },
   dangerRow: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm) },
+  consentNote: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(6), marginTop: rs(10), paddingTop: rs(10), borderTopWidth: 1, borderTopColor: colors.border },
+  consentNoteText: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, flex: 1, lineHeight: fs(15) },
   bottomSpacer: { height: rs(40) },
 });

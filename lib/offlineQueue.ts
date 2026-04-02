@@ -2,10 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 
 const QUEUE_KEY = '@auexpert/offline-queue';
+const FAILED_KEY = '@auexpert/failed-queue';
 
 export interface QueuedMutation {
   id: string;
-  type: 'createPet' | 'updatePet' | 'deletePet' | 'createDiaryEntry' | 'updateDiaryEntry' | 'deleteDiaryEntry' | 'createMoodLog';
+  type:
+    | 'createPet' | 'updatePet' | 'deletePet'
+    | 'createDiaryEntry' | 'updateDiaryEntry' | 'deleteDiaryEntry'
+    | 'createMoodLog'
+    | 'createVaccine' | 'createExam' | 'createMedication'
+    | 'createConsultation' | 'createSurgery' | 'createAllergy'
+    | 'createScheduledEvent' | 'updateScheduledEvent';
   payload: Record<string, unknown>;
   createdAt: string;
   retries: number;
@@ -69,4 +76,36 @@ export async function getQueueSize(): Promise<number> {
 export async function checkConnection(): Promise<boolean> {
   const state = await NetInfo.fetch();
   return !!(state.isConnected && state.isInternetReachable !== false);
+}
+
+// ── Failed queue (mutations that exceeded MAX_RETRIES) ──
+
+export interface FailedMutation extends QueuedMutation {
+  error: string;
+  failedAt: string;
+}
+
+export async function getFailedQueue(): Promise<FailedMutation[]> {
+  try {
+    const raw = await AsyncStorage.getItem(FAILED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addToFailedQueue(mutation: QueuedMutation, error: string) {
+  const queue = await getFailedQueue();
+  const entry: FailedMutation = { ...mutation, error, failedAt: new Date().toISOString() };
+  queue.push(entry);
+  await AsyncStorage.setItem(FAILED_KEY, JSON.stringify(queue));
+}
+
+export async function clearFailedQueue() {
+  await AsyncStorage.removeItem(FAILED_KEY);
+}
+
+export async function getFailedQueueSize(): Promise<number> {
+  const queue = await getFailedQueue();
+  return queue.length;
 }

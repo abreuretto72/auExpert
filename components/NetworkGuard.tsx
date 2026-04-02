@@ -16,6 +16,7 @@ import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
 import { rs, fs } from '../hooks/useResponsive';
 import { processQueue } from '../lib/offlineSync';
+import type { SyncResult } from '../lib/offlineSync';
 import { getQueueSize } from '../lib/offlineQueue';
 import { persistQueryCache } from '../lib/offlineCache';
 import { queryClient } from '../lib/queryClient';
@@ -34,6 +35,7 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
   const [showOnline, setShowOnline] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const hasInitialized = useRef(false);
   const startTime = useRef(Date.now());
   const offlineOpacity = useRef(new Animated.Value(0)).current;
@@ -133,8 +135,10 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
     const count = await getQueueSize();
     if (count === 0) return;
     setSyncing(true);
+    setSyncResult(null);
     const result = await processQueue();
     setSyncing(false);
+    setSyncResult(result);
     setPendingCount(result.remaining);
   };
 
@@ -212,7 +216,13 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
             <Text style={styles.bubbleText}>
               {syncing
                 ? t('toast.syncing', { defaultValue: 'Sincronizando seus dados...' })
-                : t('toast.reconnected', { defaultValue: 'Voltei! Conexao restabelecida.' })}
+                : syncResult && syncResult.failed > 0
+                  ? t('toast.syncPartial', {
+                      synced: String(syncResult.synced),
+                      failed: String(syncResult.failed),
+                      defaultValue: `${syncResult.synced} sincronizado(s), ${syncResult.failed} falhou(aram). Tentaremos de novo!`,
+                    })
+                  : t('toast.reconnected', { defaultValue: 'Voltei! Conexao restabelecida.' })}
             </Text>
 
             <Text style={styles.bubbleSignature}>{t('toast.petSignature')}</Text>

@@ -6,8 +6,8 @@ import {
   Dog,
   Cat,
   Clock,
-  BookOpen,
-  ScanEye,
+  Heart,
+  Trophy,
   ShieldCheck,
   AlertTriangle,
   ChevronRight,
@@ -28,11 +28,10 @@ export interface PetCardData {
   weight_kg: number | null;
   health_score: number | null;
   happiness_score?: number | null;
+  xp_total?: number | null;
   current_mood?: MoodId | null;
   user_id: string;
   estimated_age_months?: number | null;
-  diary_count?: number;
-  photo_count?: number;
   vaccine_status?: 'up_to_date' | 'overdue' | 'upcoming';
   last_activity?: string | null;
   avatar_url?: string | null;
@@ -42,9 +41,11 @@ interface PetCardProps {
   pet: PetCardData;
   onPress?: () => void;
   onEdit?: () => void;
+  onPressHappiness?: () => void;
+  onPressXp?: () => void;
 }
 
-const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit }) => {
+const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappiness, onPressXp }) => {
   const { t } = useTranslation();
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
@@ -61,8 +62,8 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit }) => {
         : colors.danger;
   const vaccineOverdue = pet.vaccine_status === 'overdue';
   const vaccineColor = vaccineOverdue ? colors.danger : colors.success;
-  const diaryCount = pet.diary_count ?? 0;
-  const photoCount = pet.photo_count ?? 0;
+  const happinessScore = pet.happiness_score ?? '--';
+  const xpTotal = pet.xp_total ?? '--';
 
   return (
     <TouchableOpacity
@@ -144,7 +145,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Stats: saude, diario, fotos */}
+      {/* Stats: saude, felicidade, xp */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <ShieldCheck size={16} color={healthColor} strokeWidth={1.8} />
@@ -153,20 +154,20 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit }) => {
           </Text>
           <Text style={styles.statLabel}>Saude</Text>
         </View>
-        <View style={styles.statBox}>
-          <BookOpen size={16} color={colors.accent} strokeWidth={1.8} />
+        <TouchableOpacity style={styles.statBox} onPress={onPressHappiness} activeOpacity={onPressHappiness ? 0.7 : 1}>
+          <Heart size={16} color={colors.accent} strokeWidth={1.8} />
           <Text style={[styles.statValue, { color: colors.accent }]}>
-            {diaryCount}
+            {happinessScore}
           </Text>
-          <Text style={styles.statLabel}>Diario</Text>
-        </View>
-        <View style={styles.statBox}>
-          <ScanEye size={16} color={colors.purple} strokeWidth={1.8} />
+          <Text style={styles.statLabel}>{t('pets.statHappiness')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.statBox} onPress={onPressXp} activeOpacity={onPressXp ? 0.7 : 1}>
+          <Trophy size={16} color={colors.purple} strokeWidth={1.8} />
           <Text style={[styles.statValue, { color: colors.purple }]}>
-            {photoCount}
+            {xpTotal}
           </Text>
-          <Text style={styles.statLabel}>Fotos</Text>
-        </View>
+          <Text style={styles.statLabel}>{t('pets.statXp')}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Bottom: vacina status + last activity */}

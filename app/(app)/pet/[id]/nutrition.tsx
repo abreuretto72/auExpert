@@ -27,11 +27,12 @@ import { colors } from '../../../../constants/colors';
 import { radii, spacing } from '../../../../constants/spacing';
 import { usePet } from '../../../../hooks/usePets';
 import { Skeleton } from '../../../../components/Skeleton';
+import { NutritionLensContent } from '../../../../components/lenses/NutritionLensContent';
 
 // ──────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────
-type TabId = 'today' | 'foods' | 'recipes';
+type TabId = 'today' | 'foods' | 'recipes' | 'records';
 
 interface TabDef {
   readonly id: TabId;
@@ -78,6 +79,7 @@ interface RecipeCard {
 // Constants
 // ──────────────────────────────────────────
 const TABS: readonly TabDef[] = [
+  { id: 'records', labelKey: 'nutrition.tabRecords' },
   { id: 'today', labelKey: 'nutrition.tabToday' },
   { id: 'foods', labelKey: 'nutrition.tabFoods' },
   { id: 'recipes', labelKey: 'nutrition.tabRecipes' },
@@ -151,7 +153,7 @@ export default function NutritionScreen() {
   const { t } = useTranslation();
   const { pet, isLoading, refetch } = usePet(id);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabId>('today');
+  const [activeTab, setActiveTab] = useState<TabId>('records');
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -230,6 +232,10 @@ export default function NutritionScreen() {
       </View>
 
       {/* ── Tab Content ── */}
+      {activeTab === 'records' && id && (
+        <NutritionLensContent petId={id} />
+      )}
+
       {activeTab === 'today' && (
         <>
           {/* Daily Calories Card */}

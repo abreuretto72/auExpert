@@ -95,7 +95,7 @@ function ToastItem({ message, onDone }: { message: ToastMessage; onDone: () => v
         </View>
       </TouchableOpacity>
 
-      <Image source={pawImageMap[message.type]} style={styles.pawImage} />
+      <Image source={pawImageMap[message.type]} style={styles.pawImage} resizeMode="contain" />
 
       <Text style={styles.bubbleText}>{message.text}</Text>
       <Text style={styles.bubbleSignature}>{t('toast.petSignature')}</Text>
@@ -129,7 +129,7 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
 
   return (
     <Animated.View style={[styles.bubble, { opacity, transform: [{ scale }] }]}>
-      <Image source={confirmImage} style={styles.pawImage} />
+      <Image source={confirmImage} style={styles.pawImage} resizeMode="contain" />
 
       <Text style={styles.bubbleText}>{message.text}</Text>
 
@@ -286,9 +286,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pawImage: {
-    width: rs(56),
-    height: rs(56),
-    borderRadius: rs(16),
+    width: rs(72),
+    height: rs(61),
     marginBottom: rs(spacing.md),
   },
   bubbleText: {

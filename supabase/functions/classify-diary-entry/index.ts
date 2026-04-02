@@ -18,11 +18,15 @@
  */
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 import { corsResponse, jsonResponse, errorResponse } from './modules/cors.ts';
 import { validateAuth } from './modules/auth.ts';
 import { fetchPetContext } from './modules/context.ts';
 import { classifyEntry } from './modules/classifier.ts';
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // ── Main handler ──
 
@@ -72,8 +76,8 @@ Deno.serve(async (req: Request) => {
       return errorResponse('pet_id and (text or photo_base64/photos_base64/pdf_base64) are required', 400);
     }
 
-    // 4. Fetch pet context (profile + RAG memories)
-    const petContext = await fetchPetContext(pet_id);
+    // 4. Fetch pet context (profile + RAG memories — passes text for vector search)
+    const petContext = await fetchPetContext(pet_id, text ?? undefined);
     if (!petContext) {
       return errorResponse('Pet not found', 404);
     }
@@ -89,7 +93,30 @@ Deno.serve(async (req: Request) => {
       petContext,
     });
 
-    // 6. Return structured result
+    // 6. Record anonymized training data — fire-and-forget, consent checked inside DB function
+    if (user?.id) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      supabase.rpc('anonymize_and_insert_training_record', {
+        p_user_id: user.id,
+        p_pet_id: pet_id,
+        p_input_text: text ?? null,
+        p_input_type: input_type,
+        p_language: language,
+        p_classifications: result.classifications ?? [],
+        p_primary_type: result.primary_type,
+        p_mood: result.mood ?? null,
+        p_urgency: result.urgency,
+        p_narration: result.narration ?? null,
+        p_model_used: 'claude-sonnet-4-20250514',
+        p_tokens_used: result.tokens_used,
+      }).then(() => {
+        console.log('[classify-diary-entry] training record queued for user:', user.id);
+      }).catch((err: unknown) => {
+        console.warn('[classify-diary-entry] training insert skipped (non-critical):', String(err));
+      });
+    }
+
+    // 7. Return structured result
     return jsonResponse(result);
 
   } catch (err) {
