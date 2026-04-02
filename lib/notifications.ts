@@ -6,6 +6,7 @@ import type * as NotificationsType from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../i18n';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -44,8 +45,8 @@ export async function ensureNotificationChannels() {
   });
 
   await Notifications.setNotificationChannelAsync('agenda', {
-    name: 'Agenda',
-    description: 'Lembretes de eventos agendados para seu pet',
+    name: i18n.t('notifications.channelAgendaName'),
+    description: i18n.t('notifications.channelAgendaDescription'),
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 200, 100, 200],
     sound: 'default',
@@ -180,7 +181,7 @@ export async function scheduleAgendaReminders(
     morning.setHours(8, 0, 0, 0);
     await schedule(
       morning,
-      'Hoje!',
+      i18n.t('notifications.today'),
       event.title + (sub ? ` — ${sub}` : ''),
     );
   } else {
@@ -190,10 +191,11 @@ export async function scheduleAgendaReminders(
 
     if (msUntilEvent > ms24h) {
       const t24 = new Date(eventDate.getTime() - ms24h);
+      const timeStr = eventDate.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
       await schedule(
         t24,
-        'Amanhã',
-        `${event.title} às ${eventDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${sub ? ` — ${sub}` : ''}`,
+        i18n.t('notifications.tomorrow'),
+        `${event.title} — ${timeStr}${sub ? ` — ${sub}` : ''}`,
       );
     }
 
@@ -201,7 +203,7 @@ export async function scheduleAgendaReminders(
       const t1h = new Date(eventDate.getTime() - ms1h);
       await schedule(
         t1h,
-        'Em 1 hora',
+        i18n.t('notifications.inOneHour'),
         event.title + (sub ? ` — ${sub}` : ''),
       );
     }
@@ -209,7 +211,7 @@ export async function scheduleAgendaReminders(
     // At event time
     await schedule(
       eventDate,
-      'Agora!',
+      i18n.t('notifications.now'),
       event.title + (sub ? ` — ${sub}` : ''),
     );
   }

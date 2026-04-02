@@ -1705,5 +1705,13 @@
     "maxDocuments": "Maximum 3 documents per entry",
     "petAudioHint": "Record your pet's sound",
     "petAudioLabel": "Pet sound (bark, meow, etc.)"
+  },
+  "notifications": {
+    "today": "Today!",
+    "tomorrow": "Tomorrow",
+    "inOneHour": "In 1 hour",
+    "now": "Now!",
+    "channelAgendaName": "Agenda",
+    "channelAgendaDescription": "Reminders for your pet's scheduled events"
   }
 }
