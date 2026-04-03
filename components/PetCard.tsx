@@ -6,12 +6,13 @@ import {
   Dog,
   Cat,
   Clock,
-  Heart,
-  Trophy,
   ShieldCheck,
   AlertTriangle,
-  ChevronRight,
   Pencil,
+  Syringe,
+  BookOpen,
+  CalendarDays,
+  Users,
 } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
@@ -27,42 +28,38 @@ export interface PetCardData {
   breed: string | null;
   weight_kg: number | null;
   health_score: number | null;
-  happiness_score?: number | null;
-  xp_total?: number | null;
   current_mood?: MoodId | null;
   user_id: string;
   estimated_age_months?: number | null;
   vaccine_status?: 'up_to_date' | 'overdue' | 'upcoming';
   last_activity?: string | null;
   avatar_url?: string | null;
+  last_diary_entry?: string | null;
+  agenda_count?: number | null;
 }
 
 interface PetCardProps {
   pet: PetCardData;
   onPress?: () => void;
   onEdit?: () => void;
-  onPressHappiness?: () => void;
-  onPressXp?: () => void;
+  onPressVaccine?: () => void;
+  onPressDiary?: () => void;
+  onPressAgenda?: () => void;
+  onPressMembers?: () => void;
 }
 
-const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappiness, onPressXp }) => {
+const PetCard: React.FC<PetCardProps> = ({
+  pet, onPress, onEdit,
+  onPressVaccine, onPressDiary, onPressAgenda, onPressMembers,
+}) => {
   const { t } = useTranslation();
   const isDog = pet.species === 'dog';
   const petColor = isDog ? colors.accent : colors.purple;
   const mood = pet.current_mood
     ? moods.find((m) => m.id === pet.current_mood)
     : null;
-  const healthScore = pet.health_score ?? 0;
-  const healthColor =
-    healthScore >= 80
-      ? colors.success
-      : healthScore >= 50
-        ? colors.warning
-        : colors.danger;
   const vaccineOverdue = pet.vaccine_status === 'overdue';
   const vaccineColor = vaccineOverdue ? colors.danger : colors.success;
-  const happinessScore = pet.happiness_score ?? '--';
-  const xpTotal = pet.xp_total ?? '--';
 
   return (
     <TouchableOpacity
@@ -70,7 +67,7 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
       activeOpacity={0.7}
       style={[styles.card, { shadowColor: petColor }]}
     >
-      {/* Top row: avatar + info + chevron */}
+      {/* Top row: avatar + info + edit */}
       <View style={styles.topRow}>
         <View style={[styles.avatarOuter, { borderColor: petColor + '40' }]}>
           {pet.avatar_url ? (
@@ -98,15 +95,8 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
               </Text>
             )}
             {mood ? (
-              <View
-                style={[
-                  styles.moodBadge,
-                  { backgroundColor: mood.color + '1F' },
-                ]}
-              >
-                <View
-                  style={[styles.moodDot, { backgroundColor: mood.color }]}
-                />
+              <View style={[styles.moodBadge, { backgroundColor: mood.color + '1F' }]}>
+                <View style={[styles.moodDot, { backgroundColor: mood.color }]} />
                 <Text style={[styles.moodText, { color: mood.color }]}>
                   {mood.label}
                 </Text>
@@ -115,14 +105,12 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
           </View>
 
           <Text style={styles.breed} numberOfLines={1}>
-            {pet.breed ?? 'Sem raca definida'}
+            {pet.breed ?? t('pets.noBreed')}
           </Text>
 
           <View style={styles.tagsRow}>
             {[
-              pet.estimated_age_months
-                ? formatAge(pet.estimated_age_months)
-                : null,
+              pet.estimated_age_months ? formatAge(pet.estimated_age_months) : null,
               pet.weight_kg ? formatWeight(pet.weight_kg) : null,
               isDog ? t('pets.dog') : t('pets.cat'),
             ]
@@ -144,53 +132,76 @@ const PetCard: React.FC<PetCardProps> = ({ pet, onPress, onEdit, onPressHappines
         </TouchableOpacity>
       </View>
 
-      {/* Stats: saude, felicidade, xp */}
+      {/* Stats: Vacinas · Diário · Agenda */}
       <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <ShieldCheck size={16} color={healthColor} strokeWidth={1.8} />
-          <Text style={[styles.statValue, { color: healthColor }]}>
-            {healthScore || '--'}
+
+        {/* Box 1 — Vacinas */}
+        <TouchableOpacity
+          style={styles.statBox}
+          onPress={(e) => { e.stopPropagation(); onPressVaccine?.(); }}
+          activeOpacity={0.7}
+        >
+          <Syringe size={rs(16)} color={vaccineColor} strokeWidth={1.8} />
+          <Text style={[styles.statValue, { color: vaccineColor }]}>
+            {vaccineOverdue ? t('pets.boxVaccineOverdue') : t('pets.boxVaccineOk')}
           </Text>
-          <Text style={styles.statLabel}>{t('pets.healthScore')}</Text>
-        </View>
-        <TouchableOpacity style={styles.statBox} onPress={onPressHappiness} activeOpacity={onPressHappiness ? 0.7 : 1}>
-          <Heart size={16} color={colors.accent} strokeWidth={1.8} />
-          <Text style={[styles.statValue, { color: colors.accent }]}>
-            {happinessScore}
-          </Text>
-          <Text style={styles.statLabel}>{t('pets.statHappiness')}</Text>
+          <Text style={styles.statLabel}>{t('pets.boxVaccineLabel')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.statBox} onPress={onPressXp} activeOpacity={onPressXp ? 0.7 : 1}>
-          <Trophy size={16} color={colors.purple} strokeWidth={1.8} />
-          <Text style={[styles.statValue, { color: colors.purple }]}>
-            {xpTotal}
+
+        {/* Box 2 — Diário */}
+        <TouchableOpacity
+          style={styles.statBox}
+          onPress={(e) => { e.stopPropagation(); onPressDiary?.(); }}
+          activeOpacity={0.7}
+        >
+          <BookOpen size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+          <Text style={[styles.statValue, { color: colors.accent }]} numberOfLines={1}>
+            {pet.last_diary_entry
+              ? formatRelativeDate(pet.last_diary_entry)
+              : t('pets.boxDiaryEmpty')}
           </Text>
-          <Text style={styles.statLabel}>{t('pets.statXp')}</Text>
+          <Text style={styles.statLabel}>{t('pets.boxDiaryLabel')}</Text>
         </TouchableOpacity>
+
+        {/* Box 3 — Agenda */}
+        <TouchableOpacity
+          style={styles.statBox}
+          onPress={(e) => { e.stopPropagation(); onPressAgenda?.(); }}
+          activeOpacity={0.7}
+        >
+          <CalendarDays size={rs(16)} color={colors.petrol} strokeWidth={1.8} />
+          <Text style={[styles.statValue, { color: colors.petrol }]} numberOfLines={1}>
+            {pet.agenda_count != null && pet.agenda_count > 0
+              ? t('pets.boxAgendaCount', { count: pet.agenda_count })
+              : t('pets.boxAgendaEmpty')}
+          </Text>
+          <Text style={styles.statLabel}>{t('pets.boxAgendaLabel')}</Text>
+        </TouchableOpacity>
+
       </View>
 
-      {/* Bottom: vacina status + last activity */}
+      {/* Bottom: vacina badge + última atividade */}
       <View style={styles.bottomRow}>
-        <View
-          style={[styles.vaccineBar, { backgroundColor: vaccineColor + '1F' }]}
-        >
+        <View style={[styles.vaccineBar, { backgroundColor: vaccineColor + '1F' }]}>
           {vaccineOverdue ? (
-            <AlertTriangle
-              size={13}
-              color={colors.danger}
-              strokeWidth={2}
-            />
+            <AlertTriangle size={13} color={colors.danger} strokeWidth={2} />
           ) : (
-            <ShieldCheck
-              size={13}
-              color={colors.success}
-              strokeWidth={2}
-            />
+            <ShieldCheck size={13} color={colors.success} strokeWidth={2} />
           )}
           <Text style={[styles.vaccineText, { color: vaccineColor }]}>
-            {vaccineOverdue ? 'Vacinas atrasadas' : 'Vacinas em dia'}
+            {vaccineOverdue ? t('pets.vaccinesOverdue') : t('pets.vaccineUpToDate')}
           </Text>
         </View>
+
+        <TouchableOpacity
+          style={styles.membersBtn}
+          onPress={(e) => { e.stopPropagation(); onPressMembers?.(); }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.7}
+        >
+          <Users size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+        </TouchableOpacity>
+
         {pet.last_activity ? (
           <View style={styles.lastActivity}>
             <Clock size={12} color={colors.textDim} strokeWidth={1.8} />
@@ -326,7 +337,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: 'JetBrainsMono_700Bold',
-    fontSize: fs(18),
+    fontSize: fs(11),
+    textAlign: 'center',
   },
   statLabel: {
     fontFamily: 'Sora_500Medium',
@@ -351,6 +363,14 @@ const styles = StyleSheet.create({
   vaccineText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(11),
+  },
+  membersBtn: {
+    width: rs(32),
+    height: rs(32),
+    borderRadius: rs(10),
+    backgroundColor: colors.accent + '12',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   lastActivity: {
     flexDirection: 'row',

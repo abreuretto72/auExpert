@@ -22,7 +22,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import {
   Dog, Cat, Camera, AlertTriangle, ShieldCheck,
-  Sparkles, Clock, ChevronLeft, FileText,
+  Sparkles, Clock, ChevronLeft, FileText, Users,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -48,13 +48,13 @@ import IATab from '../../../../components/pet/IATab';
 import { AgendaLensContent } from '../../../../components/lenses/AgendaLensContent';
 
 export default function PetScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, initialTab } = useLocalSearchParams<{ id: string; initialTab?: string }>();
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const user = useAuthStore((s) => s.user);
 
-  const [activeTab, setActiveTab] = useState<PetTab>('diario');
+  const [activeTab, setActiveTab] = useState<PetTab>((initialTab as PetTab) ?? 'diario');
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
 
@@ -280,6 +280,13 @@ export default function PetScreen() {
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{pet.name}</Text>
         <View style={s.headerRight}>
+          <TouchableOpacity
+            onPress={() => router.push(`/pet/${id}/coparents` as never)}
+            style={s.headerBtn}
+            activeOpacity={0.7}
+          >
+            <Users size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
           {activeTab === 'diario' && (
             <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
               <FileText size={rs(20)} color="#FFFFFF" strokeWidth={1.8} />
@@ -353,7 +360,7 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(16), paddingVertical: rs(8), gap: rs(12), borderBottomWidth: 1, borderBottomColor: colors.border },
   headerBtn: { width: rs(40), height: rs(40), borderRadius: rs(12), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text, textAlign: 'center' },
-  headerRight: { width: rs(40), alignItems: 'center', justifyContent: 'center' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
   tabContent: { flex: 1 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
 

@@ -10,7 +10,32 @@ App mobile AI-first para tutores de cães e gatos. Diário inteligente com narra
 
 ## Status do Desenvolvimento
 
-### Concluido
+### Concluido (2026-04-03)
+
+#### Co-Tutores — Sistema de Delegação
+- **`hooks/usePetMembers.ts`** — `usePetMembers` + `useMyPetRole` + `inviteMember` client-side (sem Edge Function)
+- **`app/(app)/pet/[id]/coparents.tsx`** — tela completa: membros ativos, pendentes, remoção e convite
+- **Convite por link** — URL `https://multiversodigital.com.br/auexpert/invite/{token}?from=...&pet=...&role=...`
+- **Token seguro** — `generateToken()` via `Math.random()` (compatível React Native, sem `crypto`)
+- **Expiração** — 48h padrão; 1d co_parent / 7d caregiver / 30d viewer quando definido pelo tutor
+- **Email obrigatório** para co_parent (acesso completo); opcional para caregiver/viewer com aviso de segurança
+- **Máximo 10 convites pendentes** por pet (guard no hook)
+- **Share nativo do SO** (`Share.share`) — funciona em qualquer país e app
+- **Deep link aceite** — `InviteLinkHandler` em `_layout.tsx` detecta `/invite/{token}`, aceita no banco e navega para Hub
+- **`app.json`** — Android `intentFilters` + iOS `associatedDomains` para `multiversodigital.com.br` (requer rebuild)
+- **14 chaves i18n** adicionadas em `members.*` (PT-BR + EN-US)
+
+#### PetCard — Acesso Rápido por Pet
+- **3 caixas clicáveis** no card: Vacinas → `/health`, Diário → `/pet/{id}`, Agenda → `?initialTab=agenda`
+- **Botão Tutores** no rodapé → `/pet/{id}/coparents`
+- **Botão Users** no header da tela do pet → `coparents`
+- **`initialTab` param** — hub passa aba inicial para `pet/[id]/index.tsx` via `useLocalSearchParams`
+
+#### Autenticação — Fix Race Condition
+- **`_layout.tsx`** — `onAuthStateChange` listener sincroniza `authStore` na sessão real (sem race com `useAuth`)
+- **Diagnóstico** — logs temporários identificaram conflito entre `useAuth.ts` e handler do layout
+
+### Concluido (anterior)
 
 #### i18n — Todas as Strings Migradas (REGRA OBRIGATÓRIA)
 - **Eliminação de hardcodes** — 100% das strings visíveis ao tutor migradas para `i18n/{pt-BR,en-US}.json`

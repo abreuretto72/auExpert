@@ -6,12 +6,14 @@ import type { Pet, DiaryEntry, Vaccine, Allergy, MoodLog } from '../types/databa
 // ══════════════════════════════════════
 
 export async function fetchPets(): Promise<Pet[]> {
+  console.log('[api.fetchPets] iniciando query...');
   const { data, error } = await supabase
     .from('pets')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
+  console.log('[api.fetchPets] data:', data?.length ?? 0, '| error:', error?.message ?? 'ok');
   if (error) throw error;
   return (data as Pet[]) ?? [];
 }
@@ -73,12 +75,11 @@ export async function deletePet(id: string): Promise<void> {
 
 const DIARY_MODULE_SELECT = `
   *,
-  expenses(id, amount, currency, category, description, merchant_name),
-  vaccines(id, vaccine_name, laboratory, vet_name, clinic, applied_at, next_due_date, lot_number),
-  consultations(id, vet_name, clinic, reason, diagnosis, date),
+  expenses(id, total, currency, category, notes, vendor),
+  vaccines(id, name, laboratory, veterinarian, clinic, date_administered, next_due_date, batch_number),
+  consultations(id, veterinarian, clinic, type, diagnosis, date),
   clinical_metrics(id, metric_type, value, unit, measured_at),
-  medications(id, medication_name, dosage, frequency, vet_name),
-  nutrition_records(id, product_name, brand, record_type, quantity)
+  medications(id, name, dosage, frequency, veterinarian)
 `.trim();
 
 export async function fetchDiaryEntries(petId: string, page = 1, perPage = 20): Promise<DiaryEntry[]> {

@@ -12,12 +12,28 @@ export function usePets() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { selectedPetId, selectPet } = usePetStore();
 
+  // LOG TEMPORÁRIO — remover após diagnóstico
+  console.log('[usePets] isAuthenticated:', isAuthenticated);
+
   const query = useQuery({
     queryKey: PETS_KEY,
-    queryFn: api.fetchPets,
+    queryFn: async () => {
+      console.log('[usePets] queryFn chamada — buscando pets...');
+      try {
+        const result = await api.fetchPets();
+        console.log('[usePets] pets retornados:', result.length, result.map((p) => p.name));
+        return result;
+      } catch (err) {
+        console.error('[usePets] ERRO na queryFn:', err);
+        throw err;
+      }
+    },
     enabled: isAuthenticated,
     refetchOnMount: 'always',
   });
+
+  // LOG TEMPORÁRIO — remover após diagnóstico
+  console.log('[usePets] status:', query.status, '| data length:', query.data?.length ?? 0, '| error:', query.error?.message ?? 'nenhum');
 
   const addMutation = useMutation({
     mutationFn: async (pet: Omit<Pet, 'id' | 'created_at' | 'updated_at' | 'is_active'>) => {

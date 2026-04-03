@@ -57,10 +57,20 @@ export default function HubScreen() {
   const { pets, isLoading, refetch, addPet, isAdding } = usePets();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // LOG TEMPORÁRIO — remover após diagnóstico
+  console.log('[Hub] pets:', pets.length, '| isLoading:', isLoading, '| user:', user?.id ?? 'NULL');
   const [refreshing, setRefreshing] = useState(false);
   const [tutorProfile, setTutorProfile] = useState<TutorProfile | null>(null);
   const [diaryCount, setDiaryCount] = useState(0);
   const [photoCount, setPhotoCount] = useState(0);
+
+  // LOG TEMPORÁRIO — verificar sessão Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('[Hub] session user:', data.session?.user?.id ?? 'NULL');
+    });
+  }, []);
 
   // Carregar perfil do tutor + contadores
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -83,7 +93,7 @@ export default function HubScreen() {
       const { data: userPets } = await supabase
         .from('pets')
         .select('id')
-        .eq('tutor_id', userId)
+        .eq('user_id', userId)
         .eq('is_active', true);
       const petIds = userPets?.map((p) => p.id) ?? [];
 
@@ -120,14 +130,14 @@ export default function HubScreen() {
     breed: p.breed,
     weight_kg: p.weight_kg,
     health_score: p.health_score,
-    happiness_score: p.happiness_score,
-    xp_total: p.xp_total,
     current_mood: null,
     user_id: p.user_id,
     estimated_age_months: p.estimated_age_months,
     vaccine_status: 'up_to_date' as const,
     last_activity: p.updated_at,
     avatar_url: p.avatar_url,
+    last_diary_entry: p.updated_at ?? null,
+    agenda_count: null,
   }));
 
   const hasOverdueVaccine = petCards.some(
@@ -138,6 +148,11 @@ export default function HubScreen() {
     (id: string) => {
       router.push(`/pet/${id}` as never);
     },
+    [router],
+  );
+
+  const handlePressDiary = useCallback(
+    (id: string) => { router.push(`/pet/${id}` as never); },
     [router],
   );
 
@@ -400,11 +415,13 @@ export default function HubScreen() {
         pet={item}
         onPress={() => handlePetPress(item.id)}
         onEdit={() => handleEditPet(item.id)}
-        onPressHappiness={() => handlePetPress(item.id)}
-        onPressXp={() => handlePetPress(item.id)}
+        onPressVaccine={() => router.push(`/pet/${item.id}/health` as never)}
+        onPressDiary={() => handlePressDiary(item.id)}
+        onPressAgenda={() => router.push({ pathname: `/pet/${item.id}`, params: { initialTab: 'agenda' } } as never)}
+        onPressMembers={() => router.push(`/pet/${item.id}/coparents` as never)}
       />
     ),
-    [handlePetPress, handleEditPet],
+    [handlePetPress, handleEditPet, handlePressDiary, router],
   );
 
   // ── Empty state ──────────────────────────────────

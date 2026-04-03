@@ -15,13 +15,31 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.auexpert.app",
+      "associatedDomains": [
+        "applinks:multiversodigital.com.br"
+      ],
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
-        "NSSpeechRecognitionUsageDescription": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
+        "NSSpeechRecognitionUsageDescription": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.auexpert.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "multiversodigital.com.br",
+              "pathPrefix": "/auexpert/invite"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0F1923",
         "foregroundImage": "./assets/images/icon_app_ok.png"
@@ -35,7 +53,10 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
@@ -79,6 +100,12 @@
         {
           "microphonePermission": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
           "speechRecognitionPermission": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Permitir que AuExpert acesse o microfone para gravar sons do seu pet."
         }
       ],
       "expo-sharing",

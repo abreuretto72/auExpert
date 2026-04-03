@@ -16,6 +16,7 @@ export function useAuth() {
     // onAuthStateChange com INITIAL_SESSION ja cuida de restaurar a sessao.
     // NAO chamar checkSession() aqui — isso causa race condition com o listener.
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+      console.log('[useAuth] onAuthStateChange:', event, '| session:', !!session);
       if (event === 'INITIAL_SESSION') {
         hasInitialized.current = true;
         useAuthStore.setState({

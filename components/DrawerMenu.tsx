@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import {
   Settings,
-  Users,
   Shield,
   FileText,
   HelpCircle,
@@ -125,12 +124,6 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       label: t('menu.preferences'),
       sublabel: t('menu.preferencesDesc'),
       route: '/settings',
-    },
-    {
-      icon: <Users size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
-      label: t('menu.assistants'),
-      sublabel: t('menu.assistantsDesc'),
-      badge: t('menu.comingSoon'),
     },
     {
       icon: <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
