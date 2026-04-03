@@ -11,9 +11,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator 
 import {
   Syringe, Stethoscope, Scale, FlaskConical, Pill,
   DollarSign, UtensilsCrossed, AlertCircle, Plane, Heart,
-  ChevronDown, ChevronUp, Check, X,
+  ChevronDown, ChevronUp, Check, X, Trash2,
 } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../Toast';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { radii, spacing } from '../../constants/spacing';
@@ -35,6 +36,9 @@ interface DiaryModuleCardProps {
   classification: Classification;
   moduleRow?: ModuleRow;
   onUpdated?: (id: string, updates: Record<string, unknown>) => void;
+  onDeleted?: (id: string) => void;
+  /** Show delete button — true only inside the edit screen, never on the timeline */
+  showDelete?: boolean;
   t: (key: string, opts?: Record<string, string>) => string;
 }
 
@@ -175,16 +179,22 @@ const EDIT_FIELDS: Record<string, FieldDef[]> = {
 
 // ── DiaryModuleCard ──
 
-export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdated, t }: DiaryModuleCardProps) => {
+// Tables that have is_active column and support soft-delete
+const DELETABLE_TABLES = new Set(['vaccines', 'consultations', 'clinical_metrics', 'exams', 'medications', 'expenses']);
+
+export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdated, onDeleted, showDelete = false, t }: DiaryModuleCardProps) => {
   const cfg = MODULE_CONFIG[classification.type] ?? FALLBACK_CONFIG;
   const Icon = cfg.icon;
   const label = t(cfg.labelKey);
   const editFields = EDIT_FIELDS[classification.type];
   const canEdit = !!moduleRow && !!cfg.table && !!editFields;
+  const canDelete = !!moduleRow && DELETABLE_TABLES.has(cfg.table);
 
+  const { confirm, toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
 
   // Source for summary: prefer moduleRow data, fall back to extracted_data
   const displayData: Record<string, unknown> = moduleRow ?? classification.extracted_data;
@@ -205,6 +215,24 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
     setExpanded(false);
     setEditValues({});
   }, []);
+
+  const handleDeleteModule = useCallback(async () => {
+    if (!moduleRow || !cfg.table) return;
+    const yes = await confirm({ text: t('diary.deleteModuleConfirm'), type: 'warning' });
+    if (!yes) return;
+    try {
+      const { error } = await supabase
+        .from(cfg.table)
+        .update({ is_active: false })
+        .eq('id', moduleRow.id);
+      if (error) throw error;
+      setIsDeleted(true);
+      toast(t('diary.moduleDeleted'), 'success');
+      onDeleted?.(moduleRow.id);
+    } catch {
+      toast(t('errors.editFailed'), 'error');
+    }
+  }, [moduleRow, cfg.table, confirm, t, toast, onDeleted]);
 
   const handleSave = useCallback(async () => {
     if (!moduleRow || !cfg.table) return;
@@ -235,6 +263,7 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
   }, [moduleRow, cfg.table, editFields, editValues, onUpdated]);
 
   if (!summary && !label) return null;
+  if (isDeleted) return null;
 
   return (
     <View style={[s.card, { borderLeftColor: cfg.color }]}>
@@ -251,12 +280,19 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
           <Text style={[s.typeLabel, { color: cfg.color }]}>{label}</Text>
           {!!summary && <Text style={s.summary} numberOfLines={expanded ? undefined : 1}>{summary}</Text>}
         </View>
-        {canEdit && !expanded && (
-          <ChevronDown size={rs(14)} color={colors.textDim} strokeWidth={1.8} />
-        )}
-        {canEdit && expanded && (
-          <ChevronUp size={rs(14)} color={colors.accent} strokeWidth={1.8} />
-        )}
+        <View style={s.rowActions}>
+          {showDelete && canDelete && !expanded && (
+            <TouchableOpacity
+              onPress={handleDeleteModule}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={rs(14)} color={colors.danger} strokeWidth={1.8} />
+            </TouchableOpacity>
+          )}
+          {canEdit && !expanded && <ChevronDown size={rs(14)} color={colors.textDim} strokeWidth={1.8} />}
+          {canEdit && expanded && <ChevronUp size={rs(14)} color={colors.accent} strokeWidth={1.8} />}
+        </View>
       </TouchableOpacity>
 
       {/* Expanded edit fields */}
@@ -336,6 +372,11 @@ const s = StyleSheet.create({
   info: {
     flex: 1,
     gap: rs(2),
+  },
+  rowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
   },
   typeLabel: {
     fontFamily: 'Sora_700Bold',

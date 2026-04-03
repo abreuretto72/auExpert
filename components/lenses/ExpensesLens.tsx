@@ -5,7 +5,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Receipt, TrendingDown, ShoppingBag, Stethoscope, Pill, Scissors, MoreHorizontal } from 'lucide-react-native';
+import { Receipt, TrendingDown, ShoppingBag, Stethoscope, Pill, Scissors, Home, Shield, Dumbbell, Package, Cpu, FileText, Smile, AlertCircle, MoreHorizontal } from 'lucide-react-native';
 import { useLensExpenses } from '../../hooks/useLens';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
@@ -13,16 +13,24 @@ import { rs, fs } from '../../hooks/useResponsive';
 // ── Category config ────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { labelKey: string; color: string; Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }> }> = {
-  vet:      { labelKey: 'expenses.catVet',      color: colors.danger,   Icon: Stethoscope },
-  exam:     { labelKey: 'expenses.catExam',     color: colors.petrol,   Icon: Receipt },
-  pharmacy: { labelKey: 'expenses.catPharmacy', color: colors.purple,   Icon: Pill },
-  food:     { labelKey: 'expenses.catFood',     color: colors.success,  Icon: ShoppingBag },
-  grooming: { labelKey: 'expenses.catGrooming', color: colors.gold,     Icon: Scissors },
-  other:    { labelKey: 'expenses.catOther',    color: colors.textDim,  Icon: MoreHorizontal },
+  saude:        { labelKey: 'expenses.category.saude',        color: colors.danger,   Icon: Stethoscope },
+  alimentacao:  { labelKey: 'expenses.category.alimentacao',  color: colors.success,  Icon: ShoppingBag },
+  higiene:      { labelKey: 'expenses.category.higiene',      color: colors.petrol,   Icon: Scissors },
+  hospedagem:   { labelKey: 'expenses.category.hospedagem',   color: colors.sky,      Icon: Home },
+  cuidados:     { labelKey: 'expenses.category.cuidados',     color: colors.purple,   Icon: Shield },
+  treinamento:  { labelKey: 'expenses.category.treinamento',  color: colors.purple,   Icon: Dumbbell },
+  acessorios:   { labelKey: 'expenses.category.acessorios',   color: colors.gold,     Icon: Package },
+  tecnologia:   { labelKey: 'expenses.category.tecnologia',   color: colors.petrol,   Icon: Cpu },
+  plano:        { labelKey: 'expenses.category.plano',        color: colors.gold,     Icon: Receipt },
+  funerario:    { labelKey: 'expenses.category.funerario',    color: colors.textDim,  Icon: Pill },
+  emergencia:   { labelKey: 'expenses.category.emergencia',   color: colors.danger,   Icon: AlertCircle },
+  lazer:        { labelKey: 'expenses.category.lazer',        color: colors.accent,   Icon: Smile },
+  documentacao: { labelKey: 'expenses.category.documentacao', color: colors.textDim,  Icon: FileText },
+  outros:       { labelKey: 'expenses.category.outros',       color: colors.textDim,  Icon: MoreHorizontal },
 };
 
 function getCategoryConfig(category: string) {
-  return CATEGORY_CONFIG[category] ?? CATEGORY_CONFIG.other;
+  return CATEGORY_CONFIG[category?.toLowerCase()] ?? CATEGORY_CONFIG.outros;
 }
 
 // ── Currency formatter ─────────────────────────────────────────────────────

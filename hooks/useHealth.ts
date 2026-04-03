@@ -47,7 +47,7 @@ export function useVaccines(petId: string) {
           tipo: 'Vacina aplicada',
           nome: newVaccine.name,
           data: newVaccine.date_administered,
-          lote: newVaccine.lot_number,
+          lote: newVaccine.batch_number,
           veterinario: newVaccine.veterinarian,
           clinica: newVaccine.clinic,
           proxima: newVaccine.next_due_date,

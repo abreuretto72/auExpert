@@ -3,7 +3,7 @@
  *
  * Records up to 30 seconds of pet audio (barks, meows, purrs).
  * Shows animated waveform bars driven by real-time metering.
- * Requires expo-av: npx expo install expo-av
+ * Requires expo-audio: npx expo install expo-audio
  */
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
@@ -12,21 +12,46 @@ import {
 } from 'react-native';
 import { Ear, Square, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  AudioModule,
+  IOSOutputFormat,
+  AudioQuality,
+} from 'expo-audio';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
-
-// ── expo-av optional load ──────────────────────────────────────────────────
-
-type AudioModule = typeof import('expo-av');
-let AvModule: AudioModule | null = null;
-try {
-  AvModule = require('expo-av');
-} catch {
-  // expo-av not installed — recorder will show unavailable state
-}
+import { useToast } from '../Toast';
 
 const MAX_DURATION = 30; // seconds
 const WAVEFORM_BARS = 24;
+
+const RECORDING_OPTIONS = {
+  isMeteringEnabled: true,
+  extension: '.m4a',
+  sampleRate: 22050,
+  numberOfChannels: 1,
+  bitRate: 32000,
+  android: {
+    extension: '.m4a',
+    sampleRate: 22050,
+    outputFormat: 'mpeg4' as const,
+    audioEncoder: 'aac' as const,
+  },
+  ios: {
+    extension: '.m4a',
+    sampleRate: 22050,
+    outputFormat: IOSOutputFormat.MPEG4AAC,
+    audioQuality: AudioQuality.LOW,
+    linearPCMBitDepth: 16 as const,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/mp4',
+    bitsPerSecond: 32000,
+  },
+} as const;
 
 interface PetAudioRecorderProps {
   petName: string;
@@ -52,17 +77,19 @@ const WaveformBar = React.memo(({ anim }: { anim: Animated.Value }) => (
 
 export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAudioRecorderProps) {
   const { t } = useTranslation();
+  const { toast } = useToast();
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [isAvailable] = useState(() => AvModule !== null);
 
-  const recordingRef = useRef<InstanceType<AudioModule['Audio']['Recording']> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recorder = useAudioRecorder(RECORDING_OPTIONS);
+
+  // Polls at 150ms — drives waveform and elapsed timer reactively
+  const recorderState = useAudioRecorderState(recorder, 150);
+
+  const elapsed = Math.floor(recorderState.durationMillis / 1000);
   const startTimeRef = useRef<number>(0);
-  const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isRecording = recorderState.isRecording;
 
   // Animated bars for waveform
   const barAnims = useRef(
@@ -76,38 +103,14 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
   // ── Permission check ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isAvailable) {
-      setHasPermission(false);
-      return;
-    }
-    AvModule!.Audio.requestPermissionsAsync().then(({ granted }) => {
+    AudioModule.requestRecordingPermissionsAsync().then(({ granted }) => {
       setHasPermission(granted);
     });
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (meteringIntervalRef.current) clearInterval(meteringIntervalRef.current);
-      pulseLoop.current?.stop();
-      stopRecordingCleanup();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const stopRecordingCleanup = useCallback(async () => {
-    if (recordingRef.current) {
-      try {
-        await recordingRef.current.stopAndUnloadAsync();
-      } catch {
-        // best-effort
-      }
-      recordingRef.current = null;
-    }
   }, []);
 
   // ── Waveform animation ────────────────────────────────────────────────────
 
   const animateWaveform = useCallback((level: number) => {
-    // level: 0.0 to 1.0 representing audio amplitude
     barAnims.forEach((anim, i) => {
       const phase = Math.sin((Date.now() / 200 + i * 0.5)) * 0.3;
       const target = Math.max(0.1, Math.min(1, level + phase + (Math.random() * 0.2)));
@@ -125,45 +128,58 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
     });
   }, [barAnims]);
 
+  // ── Waveform driven by reactive metering ──────────────────────────────────
+
+  useEffect(() => {
+    if (recorderState.isRecording && recorderState.metering != null) {
+      // metering is dBFS (-160 to 0), normalize to 0–1
+      const normalized = Math.max(0, (recorderState.metering + 60) / 60);
+      animateWaveform(normalized);
+    }
+  }, [recorderState.metering, recorderState.isRecording, animateWaveform]);
+
   // ── Recording controls ────────────────────────────────────────────────────
 
-  const handleStart = useCallback(async () => {
-    if (!AvModule || isRecording) return;
+  const handleStop = useCallback(async () => {
+    if (!recorder.isRecording) return;
+
+    pulseLoop.current?.stop();
+    pulseAnim.setValue(1);
+    resetWaveform();
+
+    const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
 
     try {
-      await AvModule.Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
+      await recorder.stop();
+      const uri = recorder.uri; // populated by native layer after stop()
+      if (!uri) return;
 
-      const { recording } = await AvModule.Audio.Recording.createAsync(
-        {
-          ...AvModule.Audio.RecordingOptionsPresets.LOW_QUALITY,
-          isMeteringEnabled: true,
-          android: {
-            ...AvModule.Audio.RecordingOptionsPresets.LOW_QUALITY.android,
-            extension: '.m4a',
-            outputFormat: AvModule.Audio.AndroidOutputFormat.MPEG_4,
-            audioEncoder: AvModule.Audio.AndroidAudioEncoder.AAC,
-            sampleRate: 22050,
-            numberOfChannels: 1,
-            bitRate: 32000,
-          },
-          ios: {
-            ...AvModule.Audio.RecordingOptionsPresets.LOW_QUALITY.ios,
-            extension: '.m4a',
-            outputFormat: AvModule.Audio.IOSOutputFormat.MPEG4AAC,
-            audioQuality: AvModule.Audio.IOSAudioQuality.LOW,
-            sampleRate: 22050,
-            numberOfChannels: 1,
-            bitRate: 32000,
-          },
-        },
-      );
+      setIsProcessing(true);
+      await onCapture(uri, duration);
+    } catch {
+      setIsProcessing(false);
+      toast(t('errors.generic'), 'error');
+    }
+  }, [recorder, pulseAnim, resetWaveform, onCapture, toast, t]);
 
-      recordingRef.current = recording;
-      setIsRecording(true);
-      setElapsed(0);
+  // ── Auto-stop at MAX_DURATION — uses ref to avoid stale closure ───────────
+
+  const handleStopRef = useRef(handleStop);
+  useEffect(() => { handleStopRef.current = handleStop; });
+
+  useEffect(() => {
+    if (recorderState.isRecording && elapsed >= MAX_DURATION) {
+      void handleStopRef.current();
+    }
+  }, [elapsed, recorderState.isRecording]);
+
+  const handleStart = useCallback(async () => {
+    if (recorder.isRecording) return;
+
+    try {
+      // prepareToRecordAsync must be called before record() on every start
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       startTimeRef.current = Date.now();
 
       // Pulse animation
@@ -174,78 +190,15 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
         ]),
       );
       pulseLoop.current.start();
-
-      // Timer interval
-      timerRef.current = setInterval(() => {
-        const secs = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        setElapsed(secs);
-        if (secs >= MAX_DURATION) {
-          handleStop();
-        }
-      }, 500);
-
-      // Metering interval for waveform
-      meteringIntervalRef.current = setInterval(async () => {
-        if (!recordingRef.current) return;
-        try {
-          const status = await recordingRef.current.getStatusAsync();
-          if (status.isRecording && status.metering != null) {
-            // metering is in dBFS (-160 to 0), normalize to 0-1
-            const normalized = Math.max(0, (status.metering + 60) / 60);
-            animateWaveform(normalized);
-          }
-        } catch {
-          // ignore metering errors
-        }
-      }, 150);
-
     } catch {
-      setIsRecording(false);
+      toast(t('errors.generic'), 'error');
     }
-  }, [isRecording, pulseAnim, animateWaveform]);
-
-  const handleStop = useCallback(async () => {
-    if (!recordingRef.current) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (meteringIntervalRef.current) clearInterval(meteringIntervalRef.current);
-    pulseLoop.current?.stop();
-    pulseAnim.setValue(1);
-    resetWaveform();
-
-    const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-    setIsRecording(false);
-
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      if (!uri) return;
-
-      setIsProcessing(true);
-      await onCapture(uri, duration);
-    } catch {
-      setIsProcessing(false);
-    }
-  }, [pulseAnim, resetWaveform, onCapture]);
+  }, [recorder, pulseAnim, toast, t]);
 
   const remaining = MAX_DURATION - elapsed;
   const progressPct = elapsed / MAX_DURATION;
 
   // ── States ────────────────────────────────────────────────────────────────
-
-  if (!isAvailable) {
-    return (
-      <View style={s.permissionsScreen}>
-        <Ear size={rs(48)} color={colors.rose} strokeWidth={1.5} />
-        <Text style={s.permTitle}>{t('listen.unavailableTitle')}</Text>
-        <Text style={s.permDesc}>{t('listen.unavailableDesc')}</Text>
-        <TouchableOpacity style={s.closeBtn} onPress={onClose}>
-          <X size={rs(20)} color={colors.accent} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   if (hasPermission === null) {
     return (
@@ -263,7 +216,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
         <Text style={s.permDesc}>{t('listen.permissionsDesc')}</Text>
         <TouchableOpacity
           style={s.permBtn}
-          onPress={() => AvModule!.Audio.requestPermissionsAsync().then(({ granted }) => setHasPermission(granted))}
+          onPress={() => AudioModule.requestRecordingPermissionsAsync().then(({ granted }) => setHasPermission(granted))}
           activeOpacity={0.8}
         >
           <Text style={s.permBtnText}>{t('listen.grantPermissions')}</Text>

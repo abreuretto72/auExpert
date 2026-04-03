@@ -4,7 +4,68 @@
  */
 
 import type { PetContext } from './context.ts';
-import { getAIConfig } from '../../_shared/ai-config.ts';
+
+// ── Inlined AI config (avoids cross-directory import in deploy bundle) ──
+
+interface AIConfig {
+  model_classify:    string;
+  model_vision:      string;
+  model_chat:        string;
+  model_narrate:     string;
+  model_insights:    string;
+  model_simple:      string;
+  timeout_ms:        number;
+  anthropic_version: string;
+}
+
+const AI_CONFIG_DEFAULTS: AIConfig = {
+  model_classify:    'claude-sonnet-4-20250514',
+  model_vision:      'claude-sonnet-4-20250514',
+  model_chat:        'claude-sonnet-4-20250514',
+  model_narrate:     'claude-sonnet-4-20250514',
+  model_insights:    'claude-sonnet-4-20250514',
+  model_simple:      'claude-sonnet-4-20250514',
+  timeout_ms:        30_000,
+  anthropic_version: '2023-06-01',
+};
+
+let _cachedAIConfig: AIConfig | null = null;
+let _aiConfigExpiry = 0;
+
+async function getAIConfig(): Promise<AIConfig> {
+  const now = Date.now();
+  if (_cachedAIConfig && now < _aiConfigExpiry) return _cachedAIConfig;
+  try {
+    const { createClient } = await import('jsr:@supabase/supabase-js@2');
+    const client = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const keys = [
+      'ai_model_classify', 'ai_model_vision', 'ai_model_chat',
+      'ai_model_narrate', 'ai_model_insights', 'ai_model_simple',
+      'ai_timeout_ms', 'ai_anthropic_version',
+    ];
+    const { data, error } = await client.from('app_config').select('key, value').in('key', keys);
+    if (error || !data?.length) throw new Error('app_config fetch failed');
+    const map: Record<string, unknown> = {};
+    for (const row of data) map[row.key] = row.value;
+    _cachedAIConfig = {
+      model_classify:    (map['ai_model_classify']    as string) ?? AI_CONFIG_DEFAULTS.model_classify,
+      model_vision:      (map['ai_model_vision']      as string) ?? AI_CONFIG_DEFAULTS.model_vision,
+      model_chat:        (map['ai_model_chat']        as string) ?? AI_CONFIG_DEFAULTS.model_chat,
+      model_narrate:     (map['ai_model_narrate']     as string) ?? AI_CONFIG_DEFAULTS.model_narrate,
+      model_insights:    (map['ai_model_insights']    as string) ?? AI_CONFIG_DEFAULTS.model_insights,
+      model_simple:      (map['ai_model_simple']      as string) ?? AI_CONFIG_DEFAULTS.model_simple,
+      timeout_ms:        Number(map['ai_timeout_ms']  ?? AI_CONFIG_DEFAULTS.timeout_ms),
+      anthropic_version: (map['ai_anthropic_version'] as string) ?? AI_CONFIG_DEFAULTS.anthropic_version,
+    };
+    _aiConfigExpiry = now + 5 * 60 * 1000;
+    return _cachedAIConfig;
+  } catch {
+    return AI_CONFIG_DEFAULTS;
+  }
+}
 
 // ── Constants ──
 
@@ -431,6 +492,43 @@ mood: "ansioso", "agitado", "triste", "feliz", "brincalhão", "com medo",
 
 ## 26. GASTOS (type = 'expense')
 Detectar: "R$ X", "X reais", "custou", "paguei", "gastei", "comprei", "cobrou", "nota fiscal"
+
+REGRA CRÍTICA — CATEGORIA PELO CONTEXTO (NUNCA ignorar outras classificações da mesma fala):
+Ao gerar um expense, inspecionar TODOS os outros tipos classificados nesta mesma fala.
+NUNCA usar 'outros' quando houver contexto que permita inferir a categoria.
+
+MAPA DE INFERÊNCIA (prioridade decrescente):
+  consultation, exam, surgery, vaccine, medication, clinical_metric, symptom, emergency
+    → category: 'saude'
+  grooming
+    → category: 'higiene'
+  food
+    → category: 'alimentacao'
+  boarding
+    → category: 'hospedagem'
+  dog_walker, pet_sitter
+    → category: 'cuidados'
+  training
+    → category: 'treinamento'
+  plan, insurance, funeral_plan
+    → category: 'plano'
+  purchase(technology)
+    → category: 'tecnologia'
+  purchase(toy/comfort/accessory/transport)
+    → category: 'acessorios'
+  'outros' SOMENTE se NENHUM contexto acima existir.
+  Na dúvida, preferir 'saude' a 'outros'.
+
+EXEMPLOS OBRIGATÓRIOS:
+  "fui ao vet, vacina V10, custou R$ 250"
+  → consultation + vaccine + expense(250,saude) ← NÃO 'outros'
+  "banho e tosa na ZooMais, R$ 80"
+  → grooming + expense(80,higiene)
+  "passeador cobrou R$ 35"
+  → dog_walker + expense(35,cuidados)
+  "gastei R$ 50 hoje" (SEM outro contexto)
+  → expense(50,outros) ← único caso válido para 'outros'
+
 CATEGORIAS — usar a mais específica:
   'saude'        → vet, vacina, exame, cirurgia, remédio, internação, plano saúde, seguro
   'alimentacao'  → ração, petisco, snack, comida, suplemento
@@ -855,6 +953,57 @@ function parseClassification(rawText: string, fallbackText?: string): Record<str
   }
 }
 
+// ── Expense category inference fallback ──
+
+/**
+ * If the AI returned expense.category = 'outros' (or blank/other) but
+ * other classifications in the same entry provide clear context, override it.
+ * This is a safety net — the system prompt already instructs the AI to do this,
+ * but the fallback guarantees correctness even if the AI misses it.
+ */
+function inferExpenseCategory(classifications: Classification[]): Classification[] {
+  const types = classifications.map((c) => c.type);
+
+  return classifications.map((cls) => {
+    if (cls.type !== 'expense') return cls;
+
+    const cat = cls.extracted_data?.category as string | undefined;
+    if (cat && cat !== 'outros' && cat !== 'other' && cat !== '') {
+      return cls; // already has a valid category — keep it
+    }
+
+    let inferred = 'outros';
+
+    if (types.some((t) =>
+      ['consultation', 'exam', 'surgery', 'vaccine', 'medication',
+        'clinical_metric', 'symptom', 'emergency'].includes(t)
+    )) {
+      inferred = 'saude';
+    } else if (types.includes('grooming')) {
+      inferred = 'higiene';
+    } else if (types.includes('food')) {
+      inferred = 'alimentacao';
+    } else if (types.includes('boarding')) {
+      inferred = 'hospedagem';
+    } else if (types.some((t) => ['dog_walker', 'pet_sitter'].includes(t))) {
+      inferred = 'cuidados';
+    } else if (types.includes('training')) {
+      inferred = 'treinamento';
+    } else if (types.some((t) => ['plan', 'insurance', 'funeral_plan'].includes(t))) {
+      inferred = 'plano';
+    }
+
+    if (inferred !== 'outros') {
+      console.log(`[classifier] inferExpenseCategory: overriding '${cat ?? ''}' → '${inferred}' (context types: ${types.filter(t => t !== 'expense').join(', ')})`);
+    }
+
+    return {
+      ...cls,
+      extracted_data: { ...cls.extracted_data, category: inferred },
+    };
+  });
+}
+
 // ── Public API ──
 
 /** Resolve language code to full language name. */
@@ -899,9 +1048,13 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
     'tokens:', tokensUsed,
   );
 
+  // Apply expense category fallback (guarantees 'outros' is only used when truly no context)
+  const rawClassifications = (result.classifications as Classification[]) ?? [{ type: 'moment', confidence: 1.0, extracted_data: {} }];
+  const classifications = inferExpenseCategory(rawClassifications);
+
   // Normalize with safe defaults
   return {
-    classifications: (result.classifications as Classification[]) ?? [{ type: 'moment', confidence: 1.0, extracted_data: {} }],
+    classifications,
     primary_type: (result.primary_type as ClassificationType) ?? 'moment',
     narration: (result.narration as string) ?? '',
     mood: (result.mood as MoodId) ?? 'calm',

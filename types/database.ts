@@ -116,7 +116,7 @@ export interface Vaccine {
   name: string;
   date_administered: string;
   next_due_date: string | null;
-  lot_number: string | null;
+  batch_number: string | null;
   veterinarian: string | null;
   clinic: string | null;
   notes: string | null;

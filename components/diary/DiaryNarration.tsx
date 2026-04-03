@@ -1,13 +1,14 @@
 /**
- * DiaryNarration — inline-editable narration block for timeline diary cards.
- * No regeneration (that lives in NarrationBubble for the new-entry flow).
- * Saves directly to diary_entries.narration on confirm.
+ * DiaryNarration — read-only narration block for timeline diary cards.
+ * Editing is done indirectly: tutor edits the original text → AI regenerates.
+ * showDelete is only true when explicitly passed (e.g. never used currently).
  */
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { Pencil, Check, X } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Trash2 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../Toast';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { radii, spacing } from '../../constants/spacing';
@@ -17,45 +18,34 @@ interface DiaryNarrationProps {
   entryId: string;
   narration: string;
   petName: string;
-  onUpdated?: (newNarration: string) => void;
+  onDeleted?: () => void;
+  /** Show delete button — reserved for future use; currently always false */
+  showDelete?: boolean;
 }
 
-const DiaryNarration = ({ entryId, narration, petName, onUpdated }: DiaryNarrationProps) => {
+const DiaryNarration = ({ entryId, narration, petName, onDeleted, showDelete = false }: DiaryNarrationProps) => {
   const { t } = useTranslation();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const { confirm, toast } = useToast();
+  const [isDeleted, setIsDeleted] = useState(false);
 
-  const handleEditStart = useCallback(() => {
-    setEditText(narration);
-    setIsEditing(true);
-  }, [narration]);
-
-  const handleCancel = useCallback(() => {
-    setIsEditing(false);
-    setEditText('');
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    const trimmed = editText.trim();
-    if (!trimmed || trimmed === narration) {
-      setIsEditing(false);
-      return;
-    }
-    setIsSaving(true);
+  const handleDeleteNarration = useCallback(async () => {
+    const yes = await confirm({ text: t('diary.deleteNarrationConfirm'), type: 'warning' });
+    if (!yes) return;
     try {
       const { error } = await supabase
         .from('diary_entries')
-        .update({ narration: trimmed, updated_at: new Date().toISOString() })
+        .update({ narration: null })
         .eq('id', entryId);
-      if (!error) {
-        onUpdated?.(trimmed);
-        setIsEditing(false);
-      }
-    } finally {
-      setIsSaving(false);
+      if (error) throw error;
+      setIsDeleted(true);
+      toast(t('diary.narrationDeleted'), 'success');
+      onDeleted?.();
+    } catch {
+      toast(t('errors.editFailed'), 'error');
     }
-  }, [editText, narration, entryId, onUpdated]);
+  }, [entryId, confirm, t, toast, onDeleted]);
+
+  if (isDeleted) return null;
 
   return (
     <View style={styles.container}>
@@ -64,47 +54,18 @@ const DiaryNarration = ({ entryId, narration, petName, onUpdated }: DiaryNarrati
         <Text style={styles.title} numberOfLines={1}>
           {t('diary.petNarrates', { name: petName })}
         </Text>
-        {!isEditing && (
+        {showDelete && (
           <TouchableOpacity
-            style={styles.editBtn}
-            onPress={handleEditStart}
+            style={styles.deleteBtn}
+            onPress={handleDeleteNarration}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             activeOpacity={0.7}
           >
-            <Pencil size={rs(13)} color={colors.accent} strokeWidth={1.8} />
+            <Trash2 size={rs(13)} color={colors.danger} strokeWidth={1.8} />
           </TouchableOpacity>
         )}
       </View>
-
-      {isEditing ? (
-        <>
-          <TextInput
-            style={styles.editInput}
-            value={editText}
-            onChangeText={setEditText}
-            multiline
-            autoFocus
-            maxLength={600}
-            placeholderTextColor={colors.placeholder}
-            selectionColor={colors.accent}
-          />
-          <View style={styles.editActions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.7} disabled={isSaving}>
-              <X size={rs(13)} color={colors.textDim} strokeWidth={2} />
-              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.7} disabled={isSaving}>
-              {isSaving
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Check size={rs(13)} color="#fff" strokeWidth={2} />
-              }
-              <Text style={styles.saveText}>{t('common.save')}</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      ) : (
-        <Text style={styles.narrationText}>{narration}</Text>
-      )}
+      <Text style={styles.narrationText}>{narration}</Text>
     </View>
   );
 };
@@ -129,7 +90,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
     flex: 1,
   },
-  editBtn: {
+  deleteBtn: {
     padding: rs(2),
   },
   narrationText: {
@@ -138,55 +99,6 @@ const styles = StyleSheet.create({
     color: colors.textSec,
     lineHeight: rs(27),
     fontStyle: 'italic',
-  },
-  editInput: {
-    fontFamily: 'Caveat_400Regular',
-    fontSize: fs(15),
-    fontStyle: 'italic',
-    color: colors.text,
-    lineHeight: rs(27),
-    backgroundColor: colors.bgCard,
-    borderWidth: 1.5,
-    borderColor: colors.accent + '50',
-    borderRadius: rs(radii.md),
-    padding: rs(10),
-    minHeight: rs(80),
-    textAlignVertical: 'top',
-  },
-  editActions: {
-    flexDirection: 'row',
-    gap: rs(8),
-    marginTop: rs(8),
-    justifyContent: 'flex-end',
-  },
-  cancelBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    paddingVertical: rs(6),
-    paddingHorizontal: rs(10),
-    borderRadius: rs(radii.md),
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cancelText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(11),
-    color: colors.textDim,
-  },
-  saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    paddingVertical: rs(6),
-    paddingHorizontal: rs(12),
-    borderRadius: rs(radii.md),
-    backgroundColor: colors.accent,
-  },
-  saveText: {
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(11),
-    color: '#fff',
   },
 });
 

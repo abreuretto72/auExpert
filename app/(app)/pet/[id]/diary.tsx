@@ -11,6 +11,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../../../constants/colors';
 import { useDiary } from '../../../../hooks/useDiary';
@@ -28,6 +29,7 @@ export default function DiaryScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
 
+  const qc = useQueryClient();
   const { data: pet } = usePet(id!);
   const { entries, isLoading, refetch } = useDiary(id!);
   const { retryEntry } = useDiaryEntry(id!);
@@ -60,8 +62,15 @@ export default function DiaryScreen() {
   }, [router, id]);
 
   const handleEditEntry = useCallback((entryId: string) => {
-    router.push(`/pet/${id}/diary/${entryId}/edit` as never);
-  }, [router, id]);
+    const entry = entries.find((e) => e.id === entryId);
+    router.push({
+      pathname: `/pet/${id}/diary/${entryId}/edit` as never,
+      params: {
+        prefillContent: entry?.content ?? '',
+        prefillMoodId: entry?.mood_id ?? '',
+      },
+    });
+  }, [router, id, entries]);
 
   const handleRetryEntry = useCallback((entryId: string) => {
     retryEntry(entryId).catch(() => {});

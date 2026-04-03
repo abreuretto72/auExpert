@@ -225,8 +225,47 @@ async function saveToModule(
             'acessorios', 'tecnologia', 'plano', 'funerario', 'emergencia', 'lazer',
             'documentacao', 'esporte', 'memorial', 'logistica', 'digital', 'outros',
           ];
-          const rawCategory = (extracted.category as string) ?? (extracted.merchant_type as string) ?? 'outros';
-          const category = VALID_EXPENSE_CATEGORIES.includes(rawCategory) ? rawCategory : 'outros';
+          // Normalize synonyms the classifier may return (especially older model versions)
+          const CATEGORY_ALIASES: Record<string, string> = {
+            // Health
+            veterinario: 'saude', veterinary: 'saude', health: 'saude', medical: 'saude',
+            vet: 'saude', consulta: 'saude', vacina: 'saude', exame: 'saude',
+            // Food
+            food: 'alimentacao', nutrition: 'alimentacao', racao: 'alimentacao',
+            ração: 'alimentacao', petisco: 'alimentacao', petiscos: 'alimentacao',
+            alimentação: 'alimentacao', alimento: 'alimentacao', alimentos: 'alimentacao',
+            // Hygiene
+            grooming: 'higiene', banho: 'higiene', tosa: 'higiene',
+            // Boarding
+            boarding: 'hospedagem', hotel: 'hospedagem', hospedagem: 'hospedagem',
+            // Care
+            walker: 'cuidados', sitter: 'cuidados', caretaker: 'cuidados',
+            passeio: 'cuidados', cuidado: 'cuidados',
+            // Training
+            training: 'treinamento', adestramento: 'treinamento',
+            // Accessories
+            accessories: 'acessorios', acessório: 'acessorios', acessórios: 'acessorios',
+            // Plans
+            insurance: 'plano', plan: 'plano', plano: 'plano', seguro: 'plano',
+            // Fallback
+            other: 'outros', outro: 'outros', others: 'outros',
+          };
+          const rawCategory = ((extracted.category as string) ?? (extracted.merchant_type as string) ?? '').toLowerCase().trim();
+          // Context-based inference when category is missing: look at sibling classification types
+          const inferredFromContext = (() => {
+            if (rawCategory) return null;
+            const types = classifications.map((c: { type: string }) => c.type);
+            if (types.some((t: string) => ['consultation', 'exam', 'surgery', 'vaccine', 'medication', 'clinical_metric', 'symptom', 'emergency'].includes(t))) return 'saude';
+            if (types.includes('food')) return 'alimentacao';
+            if (types.includes('grooming')) return 'higiene';
+            if (types.includes('boarding')) return 'hospedagem';
+            if (types.some((t: string) => ['dog_walker', 'pet_sitter'].includes(t))) return 'cuidados';
+            if (types.includes('training')) return 'treinamento';
+            if (types.some((t: string) => ['plan', 'insurance', 'funeral_plan'].includes(t))) return 'plano';
+            return null;
+          })();
+          const normalizedCategory = inferredFromContext ?? CATEGORY_ALIASES[rawCategory] ?? rawCategory;
+          const category = VALID_EXPENSE_CATEGORIES.includes(normalizedCategory) ? normalizedCategory : 'outros';
           const { data } = await supabase.from('expenses').insert({
             pet_id:        petId,
             user_id:       userId,
@@ -236,7 +275,7 @@ async function saveToModule(
             category,
             total:         Number(total) || 0,
             currency:      (extracted.currency as string) ?? 'BRL',
-            description:   (extracted.description as string) ?? null,
+            notes:         (extracted.description as string) ?? null,
             items:         items,
             source:        'ai',
           }).select('id').single();
@@ -908,10 +947,17 @@ async function _backgroundClassifyAndSave(opts: {
       updated_at:       realEntry.updated_at,
     });
 
-    qc.setQueryData<import('../types/database').DiaryEntry[]>(queryKey as unknown as ['pets', string, 'diary'], (old) =>
-      old?.map((e) => e.id === tempId ? realEntry : e) ?? [],
-    );
+    qc.setQueryData<import('../types/database').DiaryEntry[]>(queryKey as unknown as ['pets', string, 'diary'], (old) => {
+      // Remove the temp entry (and any stale temp entries) then prepend the real entry
+      const withoutTemp = (old ?? []).filter((e) => !e.id.startsWith('temp-'));
+      return [realEntry, ...withoutTemp];
+    });
+    // Force a refetch so the diary gets the full DB row (with joined module data)
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'diary'] });
+    qc.refetchQueries({ queryKey: ['pets', petId, 'diary'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'moods'] });
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'expenses'] });
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'metrics'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'achievements'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'travels'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'mood_trend'] });
@@ -924,7 +970,7 @@ async function _backgroundClassifyAndSave(opts: {
     updatePendingStatus(tempId, 'error', msg);
 
     qc.setQueryData<import('../types/database').DiaryEntry[]>(queryKey as unknown as ['pets', string, 'diary'], (old) =>
-      old?.map((e) => e.id === tempId ? { ...e, processing_status: 'error' as const } : e) ?? [],
+      (old ?? []).map((e) => e.id === tempId ? { ...e, processing_status: 'error' as const } : e),
     );
   }
 }
@@ -1198,11 +1244,14 @@ export function useDiaryEntry(petId: string) {
       } as DiaryEntry & { primary_type: string; classifications: unknown[]; urgency: string };
     },
     onSuccess: (newEntry) => {
-      // Optimistic cache update
-      qc.setQueryData<DiaryEntry[]>(queryKey, (old) =>
-        old ? [newEntry as DiaryEntry, ...old] : [newEntry as DiaryEntry],
-      );
+      // Remove any stale temp entries, then prepend the real entry
+      qc.setQueryData<DiaryEntry[]>(queryKey, (old) => {
+        const withoutTemp = (old ?? []).filter((e) => !e.id.startsWith('temp-'));
+        return [newEntry as DiaryEntry, ...withoutTemp];
+      });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'moods'] });
+      qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'expenses'] });
+      qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'metrics'] });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'achievements'] });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'travels'] });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'mood_trend'] });

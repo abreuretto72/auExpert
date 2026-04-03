@@ -30,8 +30,6 @@ interface DiaryCardProps extends CardProps {
   getMoodData: (id: string | null | undefined) => { label: string; color: string } | null;
   onEdit: (id: string) => void;
   onRetry?: (id: string) => void;
-  onNarrationUpdated?: (entryId: string, narration: string) => void;
-  onModuleUpdated?: (entryId: string, moduleId: string, updates: Record<string, unknown>) => void;
 }
 
 // ── Helper: match classification type → module row ──
@@ -43,7 +41,6 @@ const MODULE_TYPE_TO_KEY: Record<string, keyof NonNullable<TimelineEvent['module
   expense:       'expenses',
   weight:        'clinical_metrics',
   medication:    'medications',
-  food:          'nutrition_records',
 };
 
 function resolveModuleRow(
@@ -94,7 +91,7 @@ export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
 
 // ── DiaryCard ──
 
-export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, onRetry, onNarrationUpdated, onModuleUpdated }: DiaryCardProps) => {
+export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, onRetry }: DiaryCardProps) => {
   const moodData = getMoodData(event.moodId);
   const dateObj = new Date(event.date);
   const dateStr = dateObj.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -220,7 +217,6 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
             entryId={event.id}
             narration={event.narration}
             petName={petName}
-            onUpdated={(narration) => onNarrationUpdated?.(event.id, narration)}
           />
         </View>
       ) : null}
@@ -239,7 +235,6 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
                     key={`${cls.type}-${idx}`}
                     classification={cls}
                     moduleRow={moduleRow}
-                    onUpdated={(moduleId, updates) => onModuleUpdated?.(event.id, moduleId, updates)}
                     t={t}
                   />
                 );

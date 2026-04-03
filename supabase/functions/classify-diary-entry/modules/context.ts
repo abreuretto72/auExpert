@@ -9,7 +9,20 @@
  */
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { generateEmbedding } from "../../generate-embedding/index.ts";
+
+// ── Inlined embedding helper (avoids cross-directory import in deploy bundle) ──
+async function generateEmbedding(text: string): Promise<number[]> {
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+  const res = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'text-embedding-3-small', input: text.slice(0, 8191) }),
+  });
+  if (!res.ok) { const err = await res.text(); throw new Error(`OpenAI embedding error ${res.status}: ${err}`); }
+  const json = await res.json();
+  return json.data[0].embedding as number[];
+}
 
 const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -42,8 +55,8 @@ interface PetRow {
   health_score: number | null;
 }
 
-interface AllergyRow { name: string; reaction: string | null }
-interface VaccineRow { vaccine_name: string; next_due: string | null }
+interface AllergyRow { allergen: string; reaction: string | null }
+interface VaccineRow { name: string; next_due_date: string | null }
 interface MemoryRow  { content_text: string; importance: number; category: string | null }
 
 // ── Service client ─────────────────────────────────────────────────────────
@@ -83,7 +96,7 @@ export async function fetchPetContext(
 
   const { data: allergies } = await client
     .from('allergies')
-    .select('name, reaction')
+    .select('allergen, reaction')
     .eq('pet_id', petId)
     .eq('is_active', true)
     .limit(10);
@@ -92,13 +105,13 @@ export async function fetchPetContext(
 
   const { data: vaccines } = await client
     .from('vaccines')
-    .select('vaccine_name, next_due')
+    .select('name, next_due_date')
     .eq('pet_id', petId)
     .eq('is_active', true)
-    .not('next_due', 'is', null)
-    .gte('next_due', new Date().toISOString().slice(0, 10))
-    .lte('next_due', offsetDate(60))
-    .order('next_due', { ascending: true })
+    .not('next_due_date', 'is', null)
+    .gte('next_due_date', new Date().toISOString().slice(0, 10))
+    .lte('next_due_date', offsetDate(60))
+    .order('next_due_date', { ascending: true })
     .limit(5);
 
   // ── 4. Critical memories (importance ≥ 0.8, always included) ─────────────
@@ -190,11 +203,11 @@ function buildContextString(
   const speciesLabel = pet.species === 'dog' ? 'cão' : 'gato';
 
   const allergyText = allergies.length > 0
-    ? allergies.map(a => `${a.name}${a.reaction ? ' (reação: ' + a.reaction + ')' : ''}`).join(', ')
+    ? allergies.map(a => `${a.allergen}${a.reaction ? ' (reação: ' + a.reaction + ')' : ''}`).join(', ')
     : 'nenhuma conhecida';
 
   const vaccineText = vaccines.length > 0
-    ? vaccines.map(v => `${v.vaccine_name} vence em ${v.next_due}`).join(', ')
+    ? vaccines.map(v => `${v.name} vence em ${v.next_due_date}`).join(', ')
     : '';
 
   const criticalText = critical.length > 0

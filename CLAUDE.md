@@ -1,5 +1,5 @@
-# CLAUDE.md — auExpert Project Rules (v7)
-# Última atualização: 31/03/2026
+# CLAUDE.md — auExpert Project Rules (v8)
+# Última atualização: 02/04/2026
 
 > Fonte de verdade para o Claude Code. Toda decisão segue estas diretrizes.
 
@@ -52,6 +52,68 @@
 >
 > ### ⛔ 5. NARRAÇÃO SEMPRE EM 3ª PESSOA
 > "O Rex foi ao parque" ✅ — "Fui ao parque" ⛔ — "Meu dono..." ⛔
+>
+> ### ⛔ 6. NUNCA INVENTAR NOMES DE COLUNAS, TABELAS OU FUNÇÕES DO BANCO
+>
+> **ANTES de escrever qualquer query, mutation, RPC ou referência ao banco:**
+> Consultar os nomes REAIS das colunas e tabelas no Supabase.
+> NUNCA assumir, deduzir ou inventar nomes de colunas.
+>
+> ```typescript
+> // ⛔ PROIBIDO — inventar coluna sem verificar
+> .select('pet_name, owner_id, created_date')
+> .update({ is_deleted: true })
+> .from('pet_health_records')
+>
+> // ✅ CORRETO — verificar antes de usar
+> // 1. Consultar no Supabase:
+> //    SELECT column_name FROM information_schema.columns
+> //    WHERE table_name = 'pets';
+> // 2. Usar os nomes EXATOS retornados
+> .select('name, user_id, created_at')
+> .update({ is_active: false })
+> .from('pets')
+> ```
+>
+> **Como verificar nomes reais antes de usar:**
+> ```sql
+> -- Colunas de uma tabela
+> SELECT column_name, data_type
+> FROM information_schema.columns
+> WHERE table_name = 'nome_da_tabela'
+>   AND table_schema = 'public'
+> ORDER BY ordinal_position;
+>
+> -- Todas as tabelas do projeto
+> SELECT table_name FROM information_schema.tables
+> WHERE table_schema = 'public'
+> ORDER BY table_name;
+>
+> -- Funções/RPCs disponíveis
+> SELECT routine_name FROM information_schema.routines
+> WHERE routine_schema = 'public';
+> ```
+>
+> **Isso se aplica a:**
+> - Queries Supabase (`.select()`, `.update()`, `.insert()`, `.eq()`)
+> - Edge Functions que acessam o banco
+> - RPCs (`.rpc('nome_da_funcao')`)
+> - Migrations SQL
+> - Seeds e fixtures
+> - Qualquer referência a `table.column` no código
+>
+> ### ⛔ 7. MODELO DE IA NUNCA HARDCODED
+> NUNCA escrever `'claude-sonnet-4-20250514'` ou qualquer nome de modelo diretamente no código.
+> SEMPRE buscar via `getAIConfig(supabase)` de `supabase/functions/_shared/ai-config.ts`.
+> Para mudar o modelo: 1 UPDATE no banco (`app_config`), zero deploy.
+> ```typescript
+> // ⛔ PROIBIDO — nunca fazer isso
+> model: 'claude-sonnet-4-20250514'
+>
+> // ✅ CORRETO — sempre assim
+> const aiConfig = await getAIConfig(supabase);
+> model: aiConfig.ai_model_classify   // ou ai_model_vision, ai_model_chat...
+> ```
 >
 > ---
 >
@@ -764,7 +826,7 @@ E:\aa_projetos_claude\auExpert\
 | i18n | react-i18next 14.x |
 | Ícones | **lucide-react-native** + react-native-svg |
 | Backend | Supabase (PostgreSQL 15+ / pgvector 0.7+ / Auth / Storage / Edge Functions) |
-| IA | Claude API claude-sonnet-4-20250514 |
+| IA | Claude API — modelo via `app_config` (NUNCA hardcoded) |
 | Compressão | Sharp 0.33+ |
 | Push | Expo Notifications |
 | Biometria | Expo LocalAuthentication |
@@ -824,6 +886,44 @@ notifications_queue, media_files
 ---
 
 ## 8.1 FLUXO DO DIÁRIO DE VIDA — Especificação Completa
+
+### Tela de Nova Entrada — UNIFICADA (v8)
+
+> A tela de nova entrada é UMA ÚNICA TELA que substitui o grid de 8 botões.
+> Referência visual: `docs/prototypes/NovaEntradaScreen.jsx`
+
+```
+FLUXO:
+  FAB laranja (mic) no diário
+       ↓
+  Tela unificada abre com mic JÁ gravando
+       ↓
+  Tutor fala + pode anexar foto/vídeo/som/arquivo
+       ↓
+  Toca [Gravar no Diário] → vai pro diário IMEDIATAMENTE
+       ↓
+  IA processa em background (fire and forget)
+       ↓
+  Entry aparece como "processando..." → atualiza com narração + lentes
+```
+
+**Componentes da tela:**
+1. Waveform animado (barras laranja pulsando) — para quando pausado
+2. Campo de transcrição — readonly gravando, editável pausado
+3. Botão ✏️ — pausa mic e foca o campo para edição
+4. 4 botões de anexo: Foto, Vídeo, Som pet, Arquivo
+5. Thumbnails dos anexos com × para remover
+6. Hint roxo: "A IA vai narrar, classificar e construir as lentes automaticamente"
+7. Botão mic toggle (pausar/retomar) — NUNCA fecha sozinho
+8. Botão **"Gravar no Diário"** — navega imediatamente, processa em background
+
+**Regras da tela:**
+- Mic abre AUTOMATICAMENTE ao entrar na tela
+- Mic NUNCA fecha sozinho (sem silence detection)
+- Mic pausa durante qualquer picker de mídia e retoma depois
+- [Gravar no Diário] navega imediatamente — sem esperar IA
+- Botão desabilitado se sem texto E sem anexos
+- Confirmar antes de voltar (←) se há conteúdo
 
 ### Hierarquia de Input (AI-first obrigatório)
 
@@ -1624,7 +1724,102 @@ await sharePdf({ title, subtitle?, bodyHtml, language? }, 'diario_mana.pdf');
 
 ---
 
-## 13. GLOSSÁRIO
+## 13. NOVAS DECISÕES DE ARQUITETURA (v8 — 02/04/2026)
+
+### 13.1 Modelo de IA via app_config
+
+NUNCA hardcodar nome de modelo no código.
+Helper: `supabase/functions/_shared/ai-config.ts`
+Cache 5 minutos + fallback seguro.
+
+```sql
+-- Modelos no banco (atualizar aqui, zero deploy)
+ai_model_classify  → claude-sonnet-4-20250514
+ai_model_vision    → claude-sonnet-4-20250514
+ai_model_chat      → claude-sonnet-4-20250514
+ai_model_narrate   → claude-sonnet-4-20250514
+ai_model_insights  → claude-sonnet-4-20250514
+ai_model_simple    → claude-haiku-4-5-20251001
+```
+
+### 13.2 Offline First
+
+Toda entrada é salva LOCALMENTE PRIMEIRO.
+Sync automático silencioso quando internet voltar.
+Arquivos: `lib/localDb.ts`, `hooks/useNetworkStatus.ts`,
+          `hooks/useSyncQueue.ts`, `components/ui/OfflineBanner.tsx`
+
+Regra: NUNCA bloquear o tutor por falta de internet.
+
+### 13.3 RAG por Pet — Isolamento Absoluto
+
+Filtro `pet_id` OBRIGATÓRIO em todas as queries RAG.
+NUNCA misturar memórias de pets diferentes.
+Importâncias: allergy 0.95, vaccine 0.9, medication 0.85,
+              consultation 0.8, symptom 0.8, exam 0.75,
+              weight 0.7, food 0.6, moment 0.5, expense 0.4
+
+### 13.4 Classificador — Regras de Gastos
+
+NUNCA usar category: 'outros' quando há contexto claro.
+Inferir categoria pelo contexto das outras classificações:
+  consultation/vaccine/exam → 'saude'
+  grooming                  → 'higiene'
+  food                      → 'alimentacao'
+  boarding                  → 'hospedagem'
+  dog_walker/pet_sitter     → 'cuidados'
+  training                  → 'treinamento'
+  plan/insurance            → 'plano'
+
+### 13.5 Lixeira — Hierarquia de Exclusão
+
+```
+Card do diário (timeline):
+  ❌ Sem lixeira — só botão ✏️
+
+Tela de edição (abre ao tocar ✏️):
+  ✅ 🗑️ no header → exclui entry inteira (soft delete)
+  ✅ 🗑️ na narração → zera ai_narration
+
+Cada ModuleCard (lente):
+  ✅ ✏️ + 🗑️ lado a lado → edita ou exclui o módulo
+```
+
+Ícone: `Trash2` (Lucide), cor `danger` (#E74C3C).
+SEMPRE soft delete: `is_active = false`.
+SEMPRE confirm() antes de excluir.
+
+### 13.6 Dataset para IA Proprietária
+
+Tabelas: `user_consents`, `ai_training_dataset` (particionada),
+         `ai_clinical_sequences`, `ai_correlations`, `regional_alerts`
+Edge Function: `anonymize-entry` — roda após /confirm com consentimento ativo.
+Hash one-way com salt — IDs nunca reversíveis.
+Consentimento explícito LGPD/GDPR antes de qualquer anonimização.
+
+### 13.7 Assistente Proativo — CRONs
+
+| CRON | Frequência | Função |
+|------|-----------|--------|
+| check-scheduled-events | 2x/dia 07h+20h | Vacinas, medicamentos, aniversários |
+| analyze-health-patterns | 1x/dia 07:30h | Peso, humor, sintomas, exames atrasados |
+| preventive-care-alerts | 1x/semana seg | Alertas por raça/idade |
+| financial-monitor | 1x/mês dia 1 | Gastos acima da média |
+| weather-alerts | 2x/dia 06h+18h | Clima + alertas regionais |
+
+Todos os insights vão para tabela `pet_insights` e push notification.
+
+### 13.8 Multilíngue — Classificador
+
+O classificador detecta o idioma do tutor automaticamente.
+Narração SEMPRE no idioma do tutor (PT, EN, ES, etc.).
+Moeda detectada pelo símbolo: R$→BRL, $→USD, €→EUR, £→GBP.
+Campo `detected_language` salvo em `diary_entries`.
+STT usa o locale do dispositivo (`expo-localization`).
+
+---
+
+## 14. GLOSSÁRIO
 
 | Termo | Significado |
 |-------|-------------|
@@ -1647,7 +1842,7 @@ await sharePdf({ title, subtitle?, bodyHtml, language? }, 'diario_mana.pdf');
 
 ---
 
-## 14. REFERÊNCIA DE PROTÓTIPOS
+## 15. REFERÊNCIA DE PROTÓTIPOS
 
 Todos em `docs/prototypes/`. São referência de **layout e dados**, NÃO de cores.
 A paleta deste CLAUDE.md (laranja + azul petróleo, dark) prevalece SEMPRE.
@@ -1660,6 +1855,7 @@ Os protótipos antigos usam emojis — no código real, substituir por ícones L
 | `petaulife_hub_v6.jsx` | Hub com card Aldeia + card Tutor + cards Pets | ✅ v6 definitivo |
 | `petaulife_pet_dashboard.jsx` | Dashboard do Pet conectando 12 funcionalidades | ✅ v6 |
 | `petaulife_diary_new_entry.jsx` | Diário nova entrada (5 etapas AI-first) | ✅ v6 |
+| `NovaEntradaScreen.jsx` | **Tela unificada de nova entrada — mic + anexos + Gravar no Diário** | ✅ v8 ATUAL |
 
 ### Protótipos da Aldeia (identidade v6 — 13 telas):
 | Arquivo | Conteúdo | Status |

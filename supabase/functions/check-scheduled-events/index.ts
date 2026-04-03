@@ -194,15 +194,15 @@ function offsetDate(days: number): string {
 async function checkVaccines(sb: ReturnType<typeof createClient>) {
   const { data: vaccines } = await sb
     .from('vaccines')
-    .select('id, vaccine_name, next_due, pet_id, pets(name, user_id)')
+    .select('id, name, next_due_date, pet_id, pets(name, user_id)')
     .eq('is_active', true)
-    .lte('next_due', offsetDate(30))
-    .order('next_due', { ascending: true });
+    .lte('next_due_date', offsetDate(30))
+    .order('next_due_date', { ascending: true });
 
   for (const v of vaccines ?? []) {
     const pet     = v.pets as { name: string; user_id: string } | null;
     if (!pet) continue;
-    const days    = daysUntil(v.next_due);
+    const days    = daysUntil(v.next_due_date);
     const source  = `cron_vaccine_${v.id}`;
     const lang    = await getUserLanguage(sb, pet.user_id);
 
@@ -212,25 +212,25 @@ async function checkVaccines(sb: ReturnType<typeof createClient>) {
 
     if (days < 0) {
       urgency = 'critical';
-      title   = t(lang, 'vaccineOverdueTitle', { name: v.vaccine_name, pet: pet.name });
-      body    = t(lang, 'vaccineOverdueBody',  { name: v.vaccine_name, days: Math.abs(days) });
+      title   = t(lang, 'vaccineOverdueTitle', { name: v.name, pet: pet.name });
+      body    = t(lang, 'vaccineOverdueBody',  { name: v.name, days: Math.abs(days) });
     } else if (days <= 1) {
       urgency = 'high';
-      title   = t(lang, 'vaccineTomorrowTitle', { name: v.vaccine_name, pet: pet.name });
+      title   = t(lang, 'vaccineTomorrowTitle', { name: v.name, pet: pet.name });
       const daysWord = days === 0 ? t(lang, 'vaccineTomorrowDays') : t(lang, 'vaccineTomorrowDays1');
-      body    = t(lang, 'vaccineTomorrowBody',  { name: v.vaccine_name, pet: pet.name, days: daysWord });
+      body    = t(lang, 'vaccineTomorrowBody',  { name: v.name, pet: pet.name, days: daysWord });
     } else if (days <= 7) {
       urgency = 'medium';
-      title   = t(lang, 'vaccineSoonTitle',     { name: v.vaccine_name, pet: pet.name, days });
-      body    = t(lang, 'vaccineSoonBody',      { name: v.vaccine_name, pet: pet.name, days });
+      title   = t(lang, 'vaccineSoonTitle',     { name: v.name, pet: pet.name, days });
+      body    = t(lang, 'vaccineSoonBody',      { name: v.name, pet: pet.name, days });
     } else {
       urgency = 'low';
-      title   = t(lang, 'vaccineUpcomingTitle', { name: v.vaccine_name, pet: pet.name, days });
-      body    = t(lang, 'vaccineUpcomingBody',  { name: v.vaccine_name, pet: pet.name, days });
+      title   = t(lang, 'vaccineUpcomingTitle', { name: v.name, pet: pet.name, days });
+      body    = t(lang, 'vaccineUpcomingBody',  { name: v.name, pet: pet.name, days });
     }
 
     const windowHours = days <= 1 ? 12 : days <= 7 ? 24 : 48;
-    if (await alreadyExists(sb, v.pet_id, source, v.next_due, windowHours)) continue;
+    if (await alreadyExists(sb, v.pet_id, source, v.next_due_date, windowHours)) continue;
 
     await insertInsight(sb, {
       pet_id:       v.pet_id,
@@ -242,7 +242,7 @@ async function checkVaccines(sb: ReturnType<typeof createClient>) {
       action_label: t(lang, 'vaccineActionLabel'),
       action_route: `/pet/${v.pet_id}?tab=agenda`,
       source,
-      due_date:     v.next_due,
+      due_date:     v.next_due_date,
     });
   }
 }
@@ -250,7 +250,7 @@ async function checkVaccines(sb: ReturnType<typeof createClient>) {
 async function checkMedications(sb: ReturnType<typeof createClient>) {
   const { data: meds } = await sb
     .from('medications')
-    .select('id, medication_name, end_date, pet_id, pets(name, user_id)')
+    .select('id, name, end_date, pet_id, pets(name, user_id)')
     .eq('is_active', true)
     .not('end_date', 'is', null)
     .lte('end_date', offsetDate(2))
@@ -274,8 +274,8 @@ async function checkMedications(sb: ReturnType<typeof createClient>) {
       user_id:      pet.user_id,
       type:         'reminder',
       urgency:      'medium',
-      title:        t(lang, 'medEndTitle', { name: m.medication_name, pet: pet.name, when: whenTitle }),
-      body:         t(lang, 'medEndBody',  { name: m.medication_name, when: whenBody }),
+      title:        t(lang, 'medEndTitle', { name: m.name, pet: pet.name, when: whenTitle }),
+      body:         t(lang, 'medEndBody',  { name: m.name, when: whenBody }),
       action_label: t(lang, 'medActionLabel'),
       action_route: `/pet/${m.pet_id}/diary`,
       source,
@@ -287,18 +287,19 @@ async function checkMedications(sb: ReturnType<typeof createClient>) {
 async function checkScheduledEvents(sb: ReturnType<typeof createClient>) {
   const { data: events } = await sb
     .from('scheduled_events')
-    .select('id, event_type, scheduled_for, establishment, pet_id, pets(name, user_id)')
+    .select('id, event_type, scheduled_for, location, pet_id, user_id, pets(name)')
     .eq('is_active', true)
     .in('status', ['scheduled', 'confirmed'])
     .lte('scheduled_for', new Date(Date.now() + 3 * 86_400_000).toISOString())
     .gte('scheduled_for', new Date().toISOString());
 
   for (const ev of events ?? []) {
-    const pet      = ev.pets as { name: string; user_id: string } | null;
-    if (!pet) continue;
+    const petData  = ev.pets as { name: string } | null;
+    const petName  = petData?.name ?? '';
+    const userId   = ev.user_id as string;
     const hoursUntil = (new Date(ev.scheduled_for).getTime() - Date.now()) / 3_600_000;
     const source   = `cron_event_${ev.id}`;
-    const lang     = await getUserLanguage(sb, pet.user_id);
+    const lang     = await getUserLanguage(sb, userId);
 
     let urgency: string;
     if (hoursUntil <= 1)       urgency = 'high';
@@ -314,15 +315,15 @@ async function checkScheduledEvents(sb: ReturnType<typeof createClient>) {
     if (await alreadyExists(sb, ev.pet_id, source, null, 6)) continue;
 
     const typeLabel = ev.event_type.replace(/_/g, ' ');
-    const placeStr  = ev.establishment ? t(lang, 'eventBodyPlace', { place: ev.establishment }) : '';
+    const placeStr  = ev.location ? t(lang, 'eventBodyPlace', { place: ev.location }) : '';
     const dateStr   = new Date(ev.scheduled_for).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' });
 
     await insertInsight(sb, {
       pet_id:       ev.pet_id,
-      user_id:      pet.user_id,
+      user_id:      userId,
       type:         'reminder',
       urgency,
-      title:        t(lang, 'eventTitle', { type: typeLabel, pet: pet.name, when }),
+      title:        t(lang, 'eventTitle', { type: typeLabel, pet: petName, when }),
       body:         t(lang, 'eventBody',  { type: typeLabel, place: placeStr, date: dateStr }),
       action_label: t(lang, 'eventActionLabel'),
       action_route: `/pet/${ev.pet_id}?tab=agenda`,
@@ -414,7 +415,7 @@ Deno.serve(async (req: Request) => {
       checkVaccines(sb),
       checkMedications(sb),
       checkScheduledEvents(sb),
-      checkPlanRenewals(sb),
+      // checkPlanRenewals(sb), // pet_plans table not yet created
       checkBirthdays(sb),
     ]);
 

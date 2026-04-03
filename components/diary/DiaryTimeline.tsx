@@ -61,8 +61,6 @@ interface DiaryTimelineProps {
   onNewEntry: () => void;
   onEditEntry: (id: string) => void;
   onRetryEntry?: (id: string) => void;
-  onNarrationUpdated?: (entryId: string, narration: string) => void;
-  onModuleUpdated?: (entryId: string, moduleId: string, updates: Record<string, unknown>) => void;
   /** Render additional content below the header (e.g. LensGrid) */
   headerExtra?: React.ReactNode;
 }
@@ -79,8 +77,6 @@ export default function DiaryTimeline({
   onNewEntry,
   onEditEntry,
   onRetryEntry,
-  onNarrationUpdated,
-  onModuleUpdated,
   headerExtra,
 }: DiaryTimelineProps) {
   const { t, i18n } = useTranslation();
@@ -102,7 +98,14 @@ export default function DiaryTimeline({
   // ── Events ──
 
   const timelineEvents = useMemo(() => {
-    const diaryEvents = entries.map(diaryEntryToEvent);
+    const seen = new Set<string>();
+    const diaryEvents = entries
+      .filter((e) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      })
+      .map(diaryEntryToEvent);
     diaryEvents.sort((a, b) => b.sortDate - a.sortDate);
     return diaryEvents;
   }, [entries]);
@@ -120,7 +123,7 @@ export default function DiaryTimeline({
           cardContent = <MonthSummaryCard event={item} t={t} />;
           break;
         case 'diary':
-          cardContent = <DiaryCard event={item} petName={petName} t={t} getMoodData={getMoodData} onEdit={onEditEntry} onRetry={onRetryEntry} onNarrationUpdated={onNarrationUpdated} onModuleUpdated={onModuleUpdated} />;
+          cardContent = <DiaryCard event={item} petName={petName} t={t} getMoodData={getMoodData} onEdit={onEditEntry} onRetry={onRetryEntry} />;
           break;
         case 'audio_analysis':
           cardContent = <AudioAnalysisCard event={item} t={t} />;

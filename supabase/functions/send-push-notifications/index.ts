@@ -127,18 +127,10 @@ Deno.serve(async (req: Request) => {
   try {
     const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Fetch pending insights with user token + preferences
-    // Uses a SQL join via RPC-style query
-    const { data: insights, error } = await sb
+    // Fetch pending insights
+    const { data: rawInsights, error } = await sb
       .from('pet_insights')
-      .select(`
-        id, pet_id, user_id, type, urgency, title, body, action_route, source, created_at,
-        users!inner(expo_push_token),
-        notification_preferences(
-          push_enabled, quiet_start, quiet_end, preferred_hour,
-          reminders, health_alerts, trends, preventive, financial, celebrations
-        )
-      `)
+      .select('id, pet_id, user_id, type, urgency, title, body, action_route, source, created_at')
       .eq('push_sent', false)
       .eq('dismissed', false)
       .eq('is_active', true)
@@ -146,21 +138,34 @@ Deno.serve(async (req: Request) => {
       .limit(100);
 
     if (error) throw error;
+    if (!rawInsights?.length) {
+      return new Response(
+        JSON.stringify({ ok: true, sent: 0, skipped: 0, ts: new Date().toISOString() }),
+        { headers: { ...CORS, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // Batch-fetch user tokens and notification preferences
+    const userIds = [...new Set(rawInsights.map((i) => i.user_id))];
+
+    const [{ data: usersData }, { data: prefsData }] = await Promise.all([
+      sb.from('users').select('id, expo_push_token').in('id', userIds),
+      sb.from('notification_preferences').select(
+        'user_id, push_enabled, quiet_start, quiet_end, preferred_hour, reminders, health_alerts, trends, preventive, financial, celebrations'
+      ).in('user_id', userIds),
+    ]);
+
+    const userMap = new Map((usersData ?? []).map((u) => [u.id, u.expo_push_token as string | null]));
+    const prefsMap = new Map((prefsData ?? []).map((p) => [p.user_id, p]));
 
     let sent = 0;
     let skipped = 0;
 
-    for (const raw of insights ?? []) {
-      // Flatten joined fields
-      const user  = (raw.users as { expo_push_token: string | null } | null);
-      const prefs = (raw.notification_preferences as {
-        push_enabled: boolean; quiet_start: string; quiet_end: string;
-        preferred_hour: number; reminders: boolean; health_alerts: boolean;
-        trends: boolean; preventive: boolean; financial: boolean; celebrations: boolean;
-      } | null);
+    for (const raw of rawInsights) {
+      const prefs = prefsMap.get(raw.user_id);
 
       const insight = raw as unknown as InsightWithPrefs;
-      insight.expo_push_token = user?.expo_push_token ?? null;
+      insight.expo_push_token = userMap.get(raw.user_id) ?? null;
       insight.push_enabled    = prefs?.push_enabled    ?? true;
       insight.quiet_start     = prefs?.quiet_start     ?? '22:00:00';
       insight.quiet_end       = prefs?.quiet_end       ?? '08:00:00';

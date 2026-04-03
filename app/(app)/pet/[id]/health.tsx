@@ -367,7 +367,7 @@ export default function HealthScreen() {
         pet_id: id!,
         user_id: user?.id ?? '',
         name: vaccine.name,
-        lot_number: vaccine.batch_number ?? null,
+        batch_number: vaccine.batch_number ?? null,
         date_administered: vaccine.date_administered,
         next_due_date: vaccine.next_due_date ?? null,
         veterinarian: vaccine.veterinarian ?? null,
@@ -478,27 +478,27 @@ export default function HealthScreen() {
               }
             >
               <View style={styles.vaccineDetails}>
-                {vaccine.lot_number && (
-                  <InfoRow label={t('health.batch')} value={vaccine.lot_number} isFirst />
+                {vaccine.batch_number && (
+                  <InfoRow label={t('health.batch')} value={vaccine.batch_number} isFirst />
                 )}
                 {vaccine.veterinarian && (
                   <InfoRow
                     label={t('health.vet')}
                     value={vaccine.veterinarian}
-                    isFirst={!vaccine.lot_number}
+                    isFirst={!vaccine.batch_number}
                   />
                 )}
                 {vaccine.clinic && (
                   <InfoRow
                     label={t('health.clinic')}
                     value={vaccine.clinic}
-                    isFirst={!vaccine.lot_number && !vaccine.veterinarian}
+                    isFirst={!vaccine.batch_number && !vaccine.veterinarian}
                   />
                 )}
                 <InfoRow
                   label={t('health.dateAdministered')}
                   value={formatDate(vaccine.date_administered)}
-                  isFirst={!vaccine.lot_number && !vaccine.veterinarian && !vaccine.clinic}
+                  isFirst={!vaccine.batch_number && !vaccine.veterinarian && !vaccine.clinic}
                 />
                 {vaccine.next_due_date && (
                   <InfoRow label={t('health.nextDue')} value={formatDate(vaccine.next_due_date)} />
