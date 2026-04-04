@@ -1526,7 +1526,8 @@
     "inviteAccepted":            "Convite aceito! Bem-vindo à família.",
     "inviteLoginRequired":       "Faça login para aceitar o convite",
     "inviteError":               "Não foi possível aceitar o convite",
-    "emailRequiredForCoparent":  "Co-tutor tem acesso completo — e-mail obrigatório para segurança."
+    "emailRequiredForCoparent":  "Co-tutor tem acesso completo — e-mail obrigatório para segurança.",
+    "noPermissionCoparent":      "Só o dono pode convidar co-tutores"
   },
   "invite": {
     "title":       "Você foi convidado!",

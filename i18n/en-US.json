@@ -1526,7 +1526,8 @@
     "inviteAccepted":            "Invite accepted! Welcome to the family.",
     "inviteLoginRequired":       "Please log in to accept the invite",
     "inviteError":               "Could not accept the invite",
-    "emailRequiredForCoparent":  "Co-parent has full access — email required for security."
+    "emailRequiredForCoparent":  "Co-parent has full access — email required for security.",
+    "noPermissionCoparent":      "Only the owner can invite co-parents"
   },
   "invite": {
     "title":       "You were invited!",

@@ -79,6 +79,18 @@ export function usePetMembers(petId: string) {
       throw new Error('email_required_for_co_parent');
     }
 
+    // Co-tutor não pode convidar outros co-tutores — validação server-side
+    if (role === 'co_parent') {
+      const { data: pet } = await supabase
+        .from('pets')
+        .select('user_id')
+        .eq('id', petId)
+        .single();
+      if (pet?.user_id !== user?.id) {
+        throw new Error('only_owner_can_invite_coparent');
+      }
+    }
+
     const { count } = await supabase
       .from('pet_members')
       .select('id', { count: 'exact', head: true })
@@ -159,6 +171,12 @@ export interface MyPetRole {
   canDelete: boolean;
   canSeeFinances: boolean;
   canManageMembers: boolean;
+  canInviteCoParent: boolean;
+  canInviteCaregiver: boolean;
+  canInviteViewer: boolean;
+  canRemoveCoParent: boolean;
+  canRemoveCaregiver: boolean;
+  canRemoveViewer: boolean;
 }
 
 export function useMyPetRole(petId: string): MyPetRole {
@@ -199,9 +217,15 @@ export function useMyPetRole(petId: string): MyPetRole {
   return {
     role,
     isOwner,
-    canEdit:          isOwner || ['co_parent', 'caregiver'].includes(role),
-    canDelete:        isOwner || role === 'co_parent',
-    canSeeFinances:   isOwner || (member?.can_see_finances === true),
-    canManageMembers: isOwner || role === 'co_parent',
+    canEdit:             isOwner || ['co_parent', 'caregiver'].includes(role),
+    canDelete:           isOwner || role === 'co_parent',
+    canSeeFinances:      isOwner || (member?.can_see_finances === true),
+    canManageMembers:    isOwner || role === 'co_parent',
+    canInviteCoParent:   isOwner,
+    canInviteCaregiver:  isOwner || role === 'co_parent',
+    canInviteViewer:     isOwner || role === 'co_parent',
+    canRemoveCoParent:   isOwner,
+    canRemoveCaregiver:  isOwner || role === 'co_parent',
+    canRemoveViewer:     isOwner || role === 'co_parent',
   };
 }

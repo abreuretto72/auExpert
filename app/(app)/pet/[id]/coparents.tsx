@@ -40,11 +40,19 @@ const INVITE_ROLES: Array<'co_parent' | 'caregiver' | 'viewer'> = [
 
 // ── MemberCard ─────────────────────────────────────────────────────────────────
 
+function canRemoveMember(memberRole: MemberRole, myRole: ReturnType<typeof useMyPetRole>): boolean {
+  if (memberRole === 'owner')     return false;
+  if (memberRole === 'co_parent') return myRole.canRemoveCoParent;
+  if (memberRole === 'caregiver') return myRole.canRemoveCaregiver;
+  if (memberRole === 'viewer')    return myRole.canRemoveViewer;
+  return false;
+}
+
 function MemberCard({
-  member, canManage, onRemove, t,
+  member, myRole, onRemove, t,
 }: {
   member: PetMember;
-  canManage: boolean;
+  myRole: ReturnType<typeof useMyPetRole>;
   onRemove: (id: string) => void;
   t: (k: string, opts?: Record<string, string | number>) => string;
 }) {
@@ -88,7 +96,7 @@ function MemberCard({
           )}
         </View>
       </View>
-      {canManage && (
+      {canRemoveMember(member.role, myRole) && (
         <TouchableOpacity
           style={s.removeBtn}
           onPress={() => onRemove(member.id)}
@@ -106,16 +114,18 @@ function MemberCard({
 const DEFAULT_INVITE_DAYS: Record<string, number> = { co_parent: 1, caregiver: 7, viewer: 30 };
 
 function InviteSheet({
-  visible, onClose, onInvite, t,
+  visible, onClose, onInvite, availableRoles, t,
 }: {
   visible: boolean;
   onClose: () => void;
   onInvite: (params: InviteParams) => Promise<string>;
+  availableRoles: Array<'co_parent' | 'caregiver' | 'viewer'>;
   t: (k: string, opts?: Record<string, string | number>) => string;
 }) {
   const [email, setEmail] = useState('');
   const [nickname, setNickname] = useState('');
-  const [role, setRole] = useState<'co_parent' | 'caregiver' | 'viewer'>('co_parent');
+  const defaultRole = availableRoles[0] ?? 'caregiver';
+  const [role, setRole] = useState<'co_parent' | 'caregiver' | 'viewer'>(defaultRole);
   const [canSeeFinances, setCanSeeFinances] = useState(true);
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -125,7 +135,7 @@ function InviteSheet({
   const canGenerate = !loading && (!emailRequired || email.trim().length > 0);
 
   const reset = () => {
-    setEmail(''); setNickname(''); setRole('co_parent');
+    setEmail(''); setNickname(''); setRole(availableRoles[0] ?? 'caregiver');
     setCanSeeFinances(true); setInviteLink(null); setExpiryDays(1);
   };
 
@@ -179,7 +189,7 @@ function InviteSheet({
               {/* Role selector — first */}
               <Text style={s.fieldLabel}>{t('members.roles.label')}</Text>
               <View style={s.roleRow}>
-                {INVITE_ROLES.map((r) => {
+                {availableRoles.map((r) => {
                   const cfg = ROLE_CONFIG[r];
                   const active = role === r;
                   return (
@@ -299,6 +309,12 @@ export default function CoparentsScreen() {
   const { members, activeMembers, pendingMembers, isLoading, refetch, inviteMember, removeMember } = usePetMembers(id!);
   const myRole = useMyPetRole(id!);
 
+  const availableRoles = ([
+    myRole.canInviteCoParent  ? 'co_parent'  : null,
+    myRole.canInviteCaregiver ? 'caregiver'  : null,
+    myRole.canInviteViewer    ? 'viewer'     : null,
+  ].filter(Boolean)) as Array<'co_parent' | 'caregiver' | 'viewer'>;
+
   const [inviteVisible, setInviteVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showPending, setShowPending] = useState(true);
@@ -330,6 +346,8 @@ export default function CoparentsScreen() {
         toast(t('members.errorEmailRequired'), 'error');
       } else if (msg === 'max_invites_reached') {
         toast(t('members.errorMaxInvites'), 'warning');
+      } else if (msg === 'only_owner_can_invite_coparent') {
+        toast(t('members.noPermissionCoparent'), 'error');
       } else {
         toast(t('errors.editFailed'), 'error');
       }
@@ -388,7 +406,7 @@ export default function CoparentsScreen() {
               <MemberCard
                 key={m.id}
                 member={m}
-                canManage={myRole.canManageMembers}
+                myRole={myRole}
                 onRemove={handleRemove}
                 t={t}
               />
@@ -418,7 +436,7 @@ export default function CoparentsScreen() {
                   <MemberCard
                     key={m.id}
                     member={m}
-                    canManage={myRole.canManageMembers}
+                    myRole={myRole}
                     onRemove={handleRemove}
                     t={t}
                   />
@@ -441,6 +459,7 @@ export default function CoparentsScreen() {
         visible={inviteVisible}
         onClose={() => setInviteVisible(false)}
         onInvite={handleInvite}
+        availableRoles={availableRoles}
         t={t}
       />
     </>
