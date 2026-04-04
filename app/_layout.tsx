@@ -48,6 +48,7 @@ function InviteLinkHandler() {
   const qc = useQueryClient();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const userId = useAuthStore((s) => s.user?.id);
+  const userEmail = useAuthStore((s) => s.user?.email);
 
   const acceptInvite = async (token: string, uid: string) => {
     try {
@@ -76,13 +77,36 @@ function InviteLinkHandler() {
     }
   };
 
-  // Processar token pendente quando usuário logar
+  // Processar convite pendente quando usuário logar:
+  // 1. token salvo via deep link (AsyncStorage)
+  // 2. convite pendente no banco pelo email (TestFlight / instalação direta)
   useEffect(() => {
-    if (!isAuthenticated || !userId) return;
-    AsyncStorage.getItem(PENDING_INVITE_KEY).then((token) => {
-      if (token) acceptInvite(token, userId);
-    });
-  }, [isAuthenticated, userId]);
+    if (!isAuthenticated || !userId || !userEmail) return;
+
+    (async () => {
+      // 1. Token local salvo antes do login (deep link)
+      const pendingToken = await AsyncStorage.getItem(PENDING_INVITE_KEY).catch(() => null);
+      if (pendingToken) {
+        await acceptInvite(pendingToken, userId);
+        return;
+      }
+
+      // 2. Convite pendente no banco pelo email — cobre TestFlight e qualquer instalação
+      const { data: invite } = await supabase
+        .from('pet_members')
+        .select('invite_token')
+        .eq('email', userEmail)
+        .eq('is_active', true)
+        .is('accepted_at', null)
+        .is('user_id', null)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (invite?.invite_token) {
+        await acceptInvite(invite.invite_token, userId);
+      }
+    })();
+  }, [isAuthenticated, userId, userEmail]);
 
   useEffect(() => {
     const handleUrl = async (url: string) => {
