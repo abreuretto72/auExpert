@@ -1,6 +1,6 @@
 # auExpert Architecture Codemap
 
-**Last Updated:** 2026-04-03
+**Last Updated:** 2026-04-04
 **Status:** MVP Phase — Diário Inteligente + Co-Tutores
 
 ---
@@ -29,7 +29,8 @@ auExpert é um app mobile AI-first para tutores de cães e gatos. A arquitetura 
 ┌──────────────────────────────────────────────────────────┐
 │ HOOKS (hooks/)                                           │
 │ "Cola" entre UI e dados — React Query + Zustand         │
-│ useAuth, usePets, useDiary, useHealth, useNotifications │
+│ useAuth, usePets, useDiary, useHealth, useNotifications,│
+│ usePetMembers, useDeletedRecords                        │
 └──────────────────────────────────────────────────────────┘
                            ↓
 ┌──────────────────────────────────────────────────────────┐
@@ -443,6 +444,7 @@ await scheduleNotificationAsync({
 
 **Tela:** `app/(app)/pet/[id]/coparents.tsx`
 **Hooks:** `hooks/usePetMembers.ts`
+**Modal:** `components/InviteModal.tsx`
 
 ### Papéis disponíveis
 
@@ -473,28 +475,60 @@ Tutor abre CoparentsScreen
 
 ### Aceitar convite (deep link)
 
-`InviteLinkHandler` — componente renderizado dentro de `<ToastProvider>` no `_layout.tsx`:
+`InviteLinkHandler` + `InviteModal` — componentes renderizados no `_layout.tsx`:
 
 ```typescript
+// Fluxo 2024 (direto):
 // Detecta: /invite/{TOKEN} na URL
-// UPDATE pet_members SET user_id, accepted_at, invite_token=null
-// WHERE invite_token = token AND accepted_at IS NULL
+// → InviteModal aparece pedindo confirmação (tutor, pet, role)
+// → [Aceitar] → UPDATE pet_members SET user_id, accepted_at, invite_token=null
 // → toast success + invalidate ['pets'] + router.push('/')
+// → [Recusar] → UPDATE pet_members SET is_active=false (soft delete)
+
+// Fallback TestFlight/instalação direta:
+// Se o link foi aberto ANTES de qualquer login, o token é salvo localmente
+// Após login, _layout.tsx consulta pet_members BY email como fallback
+// Se houver convites pendentes, InviteModal aparece mesmo sem deep link ativo
 ```
 
 **Deep link config em `app.json`:**
-- Android: `intentFilters` com `autoVerify: true` para `multiversodigital.com.br/auexpert/invite`
-- iOS: `associatedDomains: ["applinks:multiversodigital.com.br"]`
+- Android: `intentFilters` com `autoVerify: true` para `multiversodigital.com.br/auexpert/invite` + subdomain `invite.auexpert.multiversodigital.com.br`
+- iOS: `associatedDomains: ["applinks:multiversodigital.com.br", "applinks:invite.auexpert.multiversodigital.com.br"]`
 - ⚠️ Requer novo EAS build
+
+**Detecção de fresh install (`lib/firstRun.ts`):**
+- iOS instala via TestFlight → Keychain pode conter sessão fantasma de instalação anterior
+- Ao primeiro run, detecta estado stale e força logout + limpeza de Keychain
+- Previne loops de sessão expirada
 
 ### `hooks/usePetMembers.ts`
 
 ```typescript
-// usePetMembers(petId) → { members, activeMembers, pendingMembers, inviteMember, removeMember }
-// useMyPetRole(petId)  → { role, isOwner, canEdit, canDelete, canManageMembers, canSeeFinances }
+// usePetMembers(petId) → { 
+//   members, activeMembers, pendingMembers, 
+//   inviteMember, removeMember, restoreInvite 
+// }
+
+// useMyPetRole(petId) → { 
+//   role, isOwner, 
+//   canInviteCoParent, canInviteCaregiver, canInviteViewer,
+//   canRemoveCoParent, canRemoveCaregiver, canRemoveViewer,
+//   canEdit, canDelete, canManageMembers, canSeeFinances 
+// }
 
 function generateToken(): string  // crypto-free, compatível React Native
 ```
+
+### `components/InviteModal.tsx`
+
+Modal centralizado (ToastProvider) que exibe:
+- Nome do pet + ícone (Dog/Cat com cor accent)
+- Nome do invitante (registeredByUser.full_name)
+- Rol em badge com cor semântica (co_parent → laranja, caregiver → azul, viewer → cinza)
+- [Aceitar] botão primário (accent)
+- [Recusar] botão secundário (cinza)
+
+Recusa executa soft delete: `UPDATE pet_members SET is_active=false`.
 
 ### PetCard — Caixas de acesso rápido
 
@@ -504,6 +538,77 @@ function generateToken(): string  // crypto-free, compatível React Native
 - **Agenda** → `onPressAgenda` → `/pet/{id}?initialTab=agenda`
 
 E botão **Tutores** no rodapé → `onPressMembers` → `/pet/{id}/coparents`
+
+---
+
+## Audit Trail
+
+All record tables (`diary_entries`, `vaccines`, `consultations`, `medications`, `clinical_metrics`, `expenses`, `allergies`, `pet_members`) carry:
+
+| Column | Type | Filled by |
+|--------|------|-----------|
+| `registered_by` | UUID → users | Trigger `set_audit_fields()` on INSERT |
+| `updated_by` | UUID → users | Trigger on INSERT + UPDATE |
+| `updated_at` | TIMESTAMPTZ | Trigger on INSERT + UPDATE |
+
+**Trigger:** `set_audit_fields()` — SECURITY DEFINER BEFORE INSERT OR UPDATE — calls `auth.uid()` safely.
+
+**DiaryCard display (`components/diary/TimelineCards.tsx`):**
+```
+Por você · 3 abr          ← registeredBy === currentUserId → "você"
+Editado por Ana · 4 abr   ← only shown when updatedBy ≠ registeredBy
+```
+- Font: Sora 400, 10px, `textGhost`
+- Data for display comes from `TimelineEvent.registeredByUser`, `updatedByUser` fields
+- `diaryEntryToEvent()` in `timelineTypes.ts` maps the DB join columns to these fields
+
+**DIARY_MODULE_SELECT in `lib/api.ts`:**
+```typescript
+registered_by_user:registered_by(full_name, email),
+updated_by_user:updated_by(full_name, email),
+```
+
+---
+
+## Deleted Records History
+
+Soft deletes are audited and browseable by owner and co_parent.
+
+### Audit columns (7 tables)
+
+All tables with `is_active` now also carry:
+
+| Column | Type | Filled by |
+|--------|------|-----------|
+| `deleted_by` | UUID → users | Trigger `set_delete_audit()` when `is_active` TRUE→FALSE |
+| `deleted_at` | TIMESTAMPTZ | Same trigger |
+| `delete_reason` | TEXT | Optional, set manually |
+
+Trigger also **clears** `deleted_by`/`deleted_at` when `is_active` FALSE→TRUE (restore).
+
+### RLS visibility
+
+- Active records (`is_active=true`): visible to all pet members
+- Deleted records (`is_active=false`): visible only to `is_pet_owner()` OR `pet_members.role = 'co_parent'`
+
+### Hook — `hooks/useDeletedRecords.ts`
+
+```typescript
+function useDeletedRecords(petId: string) {
+  // Queries diary_entries WHERE is_active=false AND deleted_at IS NOT NULL
+  // Joins: deleted_by_user, registered_by_user
+  // Returns: { deletedEntries, isLoading, refetch, restoreEntry, isRestoring }
+}
+```
+
+`restoreEntry(entryId)` — sets `is_active=true`, removes from deleted cache, invalidates active diary.
+
+### Screen — `app/(app)/pet/[id]/deleted-records.tsx`
+
+- Shows deleted diary entries with content preview + audit rows
+- `Restaurar` button (RotateCcw, accent) per entry
+- Empty state, skeleton loading, pull-to-refresh
+- Header Trash2 button (danger red) in `app/(app)/pet/[id]/index.tsx` — **only visible to owner + co_parent** (`canSeeDeleted = myRole.isOwner || myRole.role === 'co_parent'`)
 
 ---
 
