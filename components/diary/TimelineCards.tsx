@@ -14,6 +14,7 @@ import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import i18n from '../../i18n';
 import { getPublicUrl } from '../../lib/storage';
+import { useAuthStore } from '../../stores/authStore';
 import type { TimelineEvent } from './timelineTypes';
 import { DiaryModuleCard, DiaryModuleSeparator, type ModuleRow } from './DiaryModuleCard';
 import DiaryNarration from './DiaryNarration';
@@ -92,6 +93,7 @@ export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
 // ── DiaryCard ──
 
 export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, onRetry }: DiaryCardProps) => {
+  const currentUserId = useAuthStore((s) => s.user?.id);
   const moodData = getMoodData(event.moodId);
   const dateObj = new Date(event.date);
   const dateStr = dateObj.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -250,6 +252,33 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
               <Text style={styles.tagText}>#{t(`diary.${tag}`, { defaultValue: tag })}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {event.registeredBy && (
+        <View style={styles.auditSection}>
+          <Text style={styles.auditText}>
+            {t('diary.registeredBy', {
+              name: event.registeredBy === currentUserId
+                ? t('diary.registeredByYou')
+                : (event.registeredByUser?.full_name
+                  ?? event.registeredByUser?.email?.split('@')[0]
+                  ?? t('diary.registeredByUnknown')),
+              date: new Date(event.date).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+            })}
+          </Text>
+          {!!event.updatedBy && event.updatedBy !== event.registeredBy && !!event.updatedAt && (
+            <Text style={styles.auditText}>
+              {t('diary.editedBy', {
+                name: event.updatedBy === currentUserId
+                  ? t('diary.registeredByYou')
+                  : (event.updatedByUser?.full_name
+                    ?? event.updatedByUser?.email?.split('@')[0]
+                    ?? t('diary.anotherTutor')),
+                date: new Date(event.updatedAt).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }),
+              })}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -659,4 +688,8 @@ const styles = StyleSheet.create({
   errorContent: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, lineHeight: fs(18), marginBottom: rs(10) },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), alignSelf: 'flex-start', paddingVertical: rs(6), paddingHorizontal: rs(12), backgroundColor: colors.accentGlow, borderRadius: rs(8) },
   retryText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+
+  // Audit
+  auditSection: { marginTop: rs(8), gap: rs(2) },
+  auditText: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textGhost, lineHeight: fs(15) },
 });

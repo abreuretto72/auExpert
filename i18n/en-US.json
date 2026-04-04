@@ -599,7 +599,12 @@
     "noNarration": "No narration yet",
     "generateNarration": "Generate AI narration",
     "savedChanges": "Changes saved!",
-    "discardChanges": "Discard unsaved changes?"
+    "discardChanges": "Discard unsaved changes?",
+    "registeredBy":        "By {{name}} · {{date}}",
+    "editedBy":            "Edited by {{name}} · {{date}}",
+    "registeredByYou":     "you",
+    "registeredByUnknown": "tutor",
+    "anotherTutor":        "another tutor"
   },
   "health": {
     "vaccines": "Vaccines",

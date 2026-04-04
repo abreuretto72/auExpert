@@ -94,6 +94,8 @@ export async function deletePet(id: string): Promise<void> {
 
 const DIARY_MODULE_SELECT = `
   *,
+  registered_by_user:registered_by(full_name, email),
+  updated_by_user:updated_by(full_name, email),
   expenses(id, total, currency, category, notes, vendor),
   vaccines(id, name, laboratory, veterinarian, clinic, date_administered, next_due_date, batch_number),
   consultations(id, veterinarian, clinic, type, diagnosis, date),

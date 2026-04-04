@@ -73,6 +73,12 @@ export interface TimelineEvent {
     intensity: 'low' | 'medium' | 'high';
     pattern_notes: string;
   } | null;
+  // Audit fields
+  registeredBy?: string | null;
+  registeredByUser?: { full_name: string | null; email: string | null } | null;
+  updatedBy?: string | null;
+  updatedByUser?: { full_name: string | null; email: string | null } | null;
+  updatedAt?: string | null;
   // Optimistic UI processing state
   processingStatus?: 'pending' | 'processing' | 'done' | 'error';
   // AI classifications attached to this entry
@@ -156,6 +162,11 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
   consultations?: ModuleField<'consultations'>;
   clinical_metrics?: ModuleField<'clinical_metrics'>;
   medications?: ModuleField<'medications'>;
+  registered_by?: string | null;
+  registered_by_user?: { full_name: string | null; email: string | null } | null;
+  updated_by?: string | null;
+  updated_by_user?: { full_name: string | null; email: string | null } | null;
+  updated_at?: string | null;
 }): TimelineEvent {
   // input_type takes precedence over entry_type for newer entries
   const inputType = entry.input_type;
@@ -185,6 +196,11 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     audioUrl: entry.audio_url ?? null,
     audioDuration: entry.audio_duration ?? null,
     petAudioAnalysis: entry.pet_audio_analysis ?? null,
+    registeredBy:     entry.registered_by ?? null,
+    registeredByUser: entry.registered_by_user ?? null,
+    updatedBy:        entry.updated_by ?? null,
+    updatedByUser:    entry.updated_by_user ?? null,
+    updatedAt:        entry.updated_at ?? null,
     processingStatus: entry.processing_status ?? 'done',
     classifications: Array.isArray((entry as unknown as Record<string, unknown>).classifications)
       ? (entry as unknown as Record<string, unknown>).classifications as TimelineEvent['classifications']
