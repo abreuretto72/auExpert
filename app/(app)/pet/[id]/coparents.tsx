@@ -175,7 +175,7 @@ function InviteSheet({
           </View>
 
           {!inviteLink ? (
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: rs(spacing.xl) }}>
               {/* Role selector — first */}
               <Text style={s.fieldLabel}>{t('members.roles.label')}</Text>
               <View style={s.roleRow}>

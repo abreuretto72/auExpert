@@ -32,7 +32,11 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://peqpkzituzpwukzusgcq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_jlRPLbKcPSTNWeniHqThZg_0Nnb0ydK"
+      }
     }
   },
   "submit": {

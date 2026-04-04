@@ -108,6 +108,13 @@
           "microphonePermission": "Permitir que AuExpert acesse o microfone para gravar sons do seu pet."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que AuExpert acesse suas fotos para análise e perfil do pet.",
+          "cameraPermission": "Permitir que AuExpert acesse sua câmera para análise de fotos do pet."
+        }
+      ],
       "expo-sharing",
       "expo-sqlite"
     ],

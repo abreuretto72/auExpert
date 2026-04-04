@@ -8,6 +8,8 @@ import {
   Pressable,
   ScrollView,
   useWindowDimensions,
+  BackHandler,
+  Platform,
 } from 'react-native';
 import {
   Settings,
@@ -17,6 +19,7 @@ import {
   Cloud,
   Trash2,
   LogOut,
+  UserX,
   User,
   X,
   ChevronRight,
@@ -94,6 +97,15 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       ]).start();
     }
   }, [visible]);
+
+  const handleExit = () => {
+    onClose();
+    if (Platform.OS === 'android') {
+      BackHandler.exitApp();
+    } else {
+      toast(t('menu.exitIosHint'), 'info');
+    }
+  };
 
   const handleLogout = async () => {
     onClose();
@@ -247,17 +259,40 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
           <View style={styles.divider} />
 
-          {/* Logout */}
+          {/* Sair do app */}
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.7}
-            onPress={handleLogout}
+            onPress={handleExit}
           >
             <View style={styles.menuIconBox}>
               <LogOut size={rs(20)} color={colors.accent} strokeWidth={1.8} />
             </View>
             <View style={styles.menuTextCol}>
-              <Text style={styles.menuLabel}>{t('menu.logoutLabel')}</Text>
+              <Text style={styles.menuLabel}>{t('menu.exitApp')}</Text>
+              <Text style={styles.menuSublabel}>
+                {Platform.OS === 'android'
+                  ? t('menu.exitAppDescAndroid')
+                  : t('menu.exitAppDescIos')}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* Sair da conta */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={handleLogout}
+          >
+            <View style={[styles.menuIconBox, styles.dangerIconBox]}>
+              <UserX size={rs(20)} color={colors.danger} strokeWidth={1.8} />
+            </View>
+            <View style={styles.menuTextCol}>
+              <Text style={[styles.menuLabel, { color: colors.danger }]}>
+                {t('menu.logoutLabel')}
+              </Text>
               <Text style={styles.menuSublabel}>{t('menu.logoutDesc')}</Text>
             </View>
           </TouchableOpacity>

@@ -1379,8 +1379,12 @@
     "backupDesc": "Exportar dados do pet",
     "dangerZone": "Zona de Perigo",
     "dangerZoneDesc": "Excluir conta e dados",
-    "logoutLabel": "Sair do App",
-    "logoutDesc": "Encerrar sessão",
+    "logoutLabel": "Sair da conta",
+    "logoutDesc": "Encerrar sessão e voltar ao login",
+    "exitApp": "Sair do app",
+    "exitAppDescAndroid": "Fecha o aplicativo",
+    "exitAppDescIos": "Minimiza o aplicativo",
+    "exitIosHint": "Deslize para cima ou pressione o botão Home para sair",
     "comingSoon": "Em breve",
     "auto": "Auto"
   },
@@ -1520,6 +1524,8 @@
     "errorEmailRequired":        "E-mail é obrigatório para co-tutores.",
     "errorMaxInvites":           "Limite de 10 convites pendentes atingido. Remove algum antes de convidar mais.",
     "inviteAccepted":            "Convite aceito! Bem-vindo à família.",
+    "inviteLoginRequired":       "Faça login para aceitar o convite",
+    "inviteError":               "Não foi possível aceitar o convite",
     "emailRequiredForCoparent":  "Co-tutor tem acesso completo — e-mail obrigatório para segurança."
   },
   "errors": {

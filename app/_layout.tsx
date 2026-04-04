@@ -18,7 +18,9 @@ import { supabase } from '../lib/supabase';
 import { restoreQueryCache } from '../lib/offlineCache';
 import { initLocalDb } from '../lib/localDb';
 import { useSyncQueue } from '../hooks/useSyncQueue';
-import { useAuthStore } from '../stores/authStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore, getSecureStore, BIO_EMAIL_KEY, BIO_PASS_KEY } from '../stores/authStore';
+import { isFirstRun, markAsLaunched } from '../lib/firstRun';
 import { useTranslation } from 'react-i18next';
 import '../i18n';
 
@@ -28,38 +30,76 @@ function SyncQueueActivator() {
   return null;
 }
 
+const PENDING_INVITE_KEY = 'auexpert_pending_invite';
+
+function extractInviteToken(url: string): string | null {
+  // Formato novo: invite.auexpert.multiversodigital.com.br/TOKEN
+  const subdomainMatch = url.match(/invite\.auexpert\.multiversodigital\.com\.br\/([a-zA-Z0-9]+)/);
+  // Formato legado: .../invite/TOKEN
+  const legacyMatch = url.match(/invite\/([a-zA-Z0-9]+)/);
+  return subdomainMatch?.[1] ?? legacyMatch?.[1] ?? null;
+}
+
 // Handles /invite/TOKEN deep links — must be inside QueryClientProvider + ToastProvider
 function InviteLinkHandler() {
   const router = useRouter();
   const { t } = useTranslation();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id);
+
+  const acceptInvite = async (token: string, uid: string) => {
+    try {
+      const { error } = await supabase
+        .from('pet_members')
+        .update({
+          user_id:      uid,
+          accepted_at:  new Date().toISOString(),
+          invite_token: null,
+        })
+        .eq('invite_token', token)
+        .is('accepted_at', null);
+
+      await AsyncStorage.removeItem(PENDING_INVITE_KEY).catch(() => {});
+
+      if (!error) {
+        toast(t('members.inviteAccepted'), 'success');
+        qc.invalidateQueries({ queryKey: ['pets'] });
+        router.replace('/');
+      } else {
+        console.error('[invite] erro ao aceitar:', error);
+        toast(t('members.inviteError'), 'error');
+      }
+    } catch (e) {
+      console.error('[invite] erro ao aceitar:', e);
+    }
+  };
+
+  // Processar token pendente quando usuário logar
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return;
+    AsyncStorage.getItem(PENDING_INVITE_KEY).then((token) => {
+      if (token) acceptInvite(token, userId);
+    });
+  }, [isAuthenticated, userId]);
 
   useEffect(() => {
     const handleUrl = async (url: string) => {
-      const match = url.match(/invite\/([a-zA-Z0-9-]+)/);
-      if (!match) return;
-      const token = match[1];
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return; // not logged in — user needs to log in first
-        const { error } = await supabase
-          .from('pet_members')
-          .update({
-            user_id:      user.id,
-            accepted_at:  new Date().toISOString(),
-            invite_token: null,
-          })
-          .eq('invite_token', token)
-          .is('accepted_at', null);
-        if (!error) {
-          toast(t('members.inviteAccepted'), 'success');
-          qc.invalidateQueries({ queryKey: ['pets'] });
-          router.push('/');
-        }
-      } catch (e) {
-        console.error('[invite] erro ao aceitar:', e);
+      const token = extractInviteToken(url);
+      if (!token) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        // Salvar token e mandar para login — será processado após autenticação
+        await AsyncStorage.setItem(PENDING_INVITE_KEY, token);
+        toast(t('members.inviteLoginRequired'), 'info');
+        router.push('/(auth)/login');
+        return;
       }
+
+      await acceptInvite(token, user.id);
     };
 
     Linking.getInitialURL().then((url) => { if (url) handleUrl(url); });
@@ -95,8 +135,29 @@ export default function RootLayout() {
   // Sem este listener, isAuthenticated fica false após Metro refresh
   // e usePets nunca executa (enabled: false).
   useEffect(() => {
-    // Checar sessão existente imediatamente ao montar
-    useAuthStore.getState().checkSession();
+    (async () => {
+      const firstRun = await isFirstRun();
+
+      if (firstRun) {
+        // iOS não limpa o Keychain ao desinstalar — sessão do Supabase persiste.
+        // AsyncStorage é limpo na desinstalação, então usamos como detector.
+        await supabase.auth.signOut();
+        const store = getSecureStore();
+        await store.deleteItemAsync(BIO_EMAIL_KEY).catch(() => {});
+        await store.deleteItemAsync(BIO_PASS_KEY).catch(() => {});
+        await markAsLaunched();
+        useAuthStore.setState({
+          user: null,
+          session: null,
+          isAuthenticated: false,
+          isLoading: false,
+          hasBioCredentials: false,
+        });
+      } else {
+        // Execução normal — verificar sessão existente
+        useAuthStore.getState().checkSession();
+      }
+    })();
 
     // Manter em sincronia com qualquer mudança de sessão (login, logout, refresh de token)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

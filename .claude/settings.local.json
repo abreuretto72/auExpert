@@ -8,10 +8,32 @@
       "Bash(npx expo:*)",
       "Bash(EXPO_NO_INTERACTIVE=0 npx expo start --tunnel)",
       "Bash(ls \"e:/aa_projetos_claude/PetsauLife/app/\\(app\\)/pet/[id]/\")",
-      "Bash(wc -l \"E:/aa_projetos_claude/PetsauLife/app/\\(app\\)/pet/[id]/happiness.tsx\")"
+      "Bash(wc -l \"E:/aa_projetos_claude/PetsauLife/app/\\(app\\)/pet/[id]/happiness.tsx\")",
+      "Bash(grep -r \"DiaryTimeline\\\\|LensGrid\\\\|DiaryTimeline\" /e/aa_projetos_claude/auExpert/components --include=*.tsx)",
+      "Bash(grep -E \"class.*DiaryTimeline|export.*useDiaryEntry\" /e/aa_projetos_claude/auExpert/components/diary/*.tsx /e/aa_projetos_claude/auExpert/hooks/useDiaryEntry.ts)",
+      "Bash(wc -l /e/aa_projetos_claude/auExpert/components/diary/*.tsx /e/aa_projetos_claude/auExpert/hooks/useDiary.ts /e/aa_projetos_claude/auExpert/hooks/useDiaryEntry.ts)",
+      "Bash(wc -l \"e:/aa_projetos_claude/auExpert/components/diary/\"*.ts* \"e:/aa_projetos_claude/auExpert/components/lenses/\"*.tsx \"e:/aa_projetos_claude/auExpert/app/\\(app\\)/pet/[id]/diary.tsx\")",
+      "Bash(grep -rn \"setErrors\\\\|e\\\\[.*\\\\] = \" /e/aa_projetos_claude/auExpert/app /e/aa_projetos_claude/auExpert/components --include=*.tsx --include=*.ts)",
+      "Bash(grep -rn \"message=\\\\|label=\\\\|placeholder=\" /e/aa_projetos_claude/auExpert/app /e/aa_projetos_claude/auExpert/components --include=*.tsx)",
+      "mcp__claude_ai_Supabase__list_tables",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(python3 -c ':*)",
+      "Bash(python3 e:/tmp/write_edit_screen.py)",
+      "Bash(node -e ':*)",
+      "Bash(grep -rn \"t\\(\\\\`\\\\|happiness\\\\.\\\\|achievements\\\\.\" components/lenses/ --include=\"*.tsx\")",
+      "Bash(grep -oh 't\\(`[^`]*`\\)' components/lenses/HappinessLensContent.tsx components/lenses/AchievementsLensContent.tsx)",
+      "Bash(grep -roh \"t\\(['\\\\`][^'\\\\`]*['\\\\`]\\)\" components/lenses/)",
+      "Bash(grep -o \"['\\\\`][^'\\\\`]*['\\\\`]\")",
+      "Bash(grep -v '`')",
+      "Bash(read k:*)",
+      "Bash(node -e 'const en=require\\('\\\\''./i18n/en-US.json'\\\\''\\);function g\\(o,k\\){return k.split\\('\\\\''.'\\\\''\\).reduce\\(\\(c,p\\)=>c&&c[p],o\\);}const v=g\\(en,'\\\\''__TRACKED_VAR__'\\\\''\\);if\\(v===undefined\\)console.log\\('\\\\''MISSING: __TRACKED_VAR__'\\\\''\\);' done)",
+      "Bash(grep -c \"app_errors\" supabase/migrations/*.sql)",
+      "Bash(node -e \"const en=require\\('./i18n/en-US.json'\\);const k=Object.keys\\(en\\).filter\\(k=>k.includes\\('expens'\\)||k.includes\\('Expens'\\)\\);console.log\\('expense keys:',k\\);console.log\\(JSON.stringify\\(en.expenses??en.lenses,null,2\\)\\);\")",
+      "Bash(node -e \"const en=require\\('./i18n/en-US.json'\\);console.log\\('expenses.screenTitle:',en.expenses?.screenTitle??'MISSING'\\);console.log\\('expenses.screenSubtitle:',en.expenses?.screenSubtitle??'MISSING'\\);\")"
     ],
     "additionalDirectories": [
-      "\\tmp"
+      "\\tmp",
+      "e:\\aa_projetos_claude\\auExpert\\app\\(app)\\pet\\[id]\\diary\\[entryId]"
     ]
   }
 }

@@ -7,15 +7,34 @@ import type { Pet, DiaryEntry, Vaccine, Allergy, MoodLog } from '../types/databa
 
 export async function fetchPets(): Promise<Pet[]> {
   console.log('[api.fetchPets] iniciando query...');
-  const { data, error } = await supabase
+
+  // 1. Pets que sou dono (RLS filtra por user_id automaticamente)
+  const { data: ownedPets, error: ownedError } = await supabase
     .from('pets')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
-  console.log('[api.fetchPets] data:', data?.length ?? 0, '| error:', error?.message ?? 'ok');
-  if (error) throw error;
-  return (data as Pet[]) ?? [];
+  console.log('[api.fetchPets] owned:', ownedPets?.length ?? 0, '| error:', ownedError?.message ?? 'ok');
+  if (ownedError) throw ownedError;
+
+  // 2. Pets onde sou co-tutor/cuidador/visualizador ativo
+  const { data: memberRows, error: memberError } = await supabase
+    .from('pet_members')
+    .select('pets(*), role')
+    .eq('is_active', true)
+    .not('accepted_at', 'is', null);
+
+  console.log('[api.fetchPets] shared:', memberRows?.length ?? 0, '| error:', memberError?.message ?? 'ok');
+  if (memberError) throw memberError;
+
+  // Combinar e deduplicar
+  const ownedIds = new Set((ownedPets ?? []).map((p) => p.id));
+  const sharedPets = (memberRows ?? [])
+    .map((m) => ({ ...(m.pets as unknown as Pet), _role: m.role }))
+    .filter((p) => p?.id && !ownedIds.has(p.id));
+
+  return [...(ownedPets as Pet[] ?? []), ...sharedPets];
 }
 
 export async function fetchPetById(id: string): Promise<Pet> {

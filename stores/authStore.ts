@@ -4,7 +4,7 @@ import type { User } from '../types/database';
 import * as auth from '../lib/auth';
 
 // SecureStore — criptografado pelo hardware (Keychain/Keystore)
-const getSecureStore = () => {
+export const getSecureStore = () => {
   if (Platform.OS === 'web') {
     return {
       getItemAsync: (key: string) => Promise.resolve(localStorage.getItem(key)),
@@ -19,8 +19,8 @@ const getSecureStore = () => {
   };
 };
 
-const BIO_EMAIL_KEY = 'auexpert_bio_email';
-const BIO_PASS_KEY = 'auexpert_bio_pass';
+export const BIO_EMAIL_KEY = 'auexpert_bio_email';
+export const BIO_PASS_KEY = 'auexpert_bio_pass';
 
 interface AuthState {
   user: User | null;

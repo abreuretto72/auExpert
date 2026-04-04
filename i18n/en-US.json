@@ -1379,8 +1379,12 @@
     "backupDesc": "Export pet data",
     "dangerZone": "Danger Zone",
     "dangerZoneDesc": "Delete account and data",
-    "logoutLabel": "Sign Out",
-    "logoutDesc": "End session",
+    "logoutLabel": "Sign out of account",
+    "logoutDesc": "End session and return to login",
+    "exitApp": "Exit app",
+    "exitAppDescAndroid": "Close the application",
+    "exitAppDescIos": "Minimize the application",
+    "exitIosHint": "Swipe up or press the Home button to exit",
     "comingSoon": "Soon",
     "auto": "Auto"
   },
@@ -1520,6 +1524,8 @@
     "errorEmailRequired":        "Email is required for co-parents.",
     "errorMaxInvites":           "Limit of 10 pending invites reached. Remove one before inviting more.",
     "inviteAccepted":            "Invite accepted! Welcome to the family.",
+    "inviteLoginRequired":       "Please log in to accept the invite",
+    "inviteError":               "Could not accept the invite",
     "emailRequiredForCoparent":  "Co-parent has full access — email required for security."
   },
   "errors": {

@@ -119,7 +119,7 @@ export function usePetMembers(petId: string) {
     if (error) throw error;
 
     const qs = new URLSearchParams({ from: inviterName, pet: petName, role });
-    const inviteLink = `https://multiversodigital.com.br/auexpert/invite/${token}?${qs}`;
+    const inviteLink = `https://invite.auexpert.multiversodigital.com.br/${token}?${qs}`;
 
     qc.invalidateQueries({ queryKey: ['pets', petId, 'members'] });
     return inviteLink;

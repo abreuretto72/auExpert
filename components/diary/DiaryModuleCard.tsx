@@ -89,14 +89,14 @@ function buildSummary(type: string, data: Record<string, unknown>): string {
       return [vet || clinic, diag].filter(Boolean).join(' · ');
     }
     case 'weight': {
-      const val = data['weight_value'] ?? data['weight'];
-      const unit = str('weight_unit') || 'kg';
-      return val ? `${val} ${unit}` : '';
+      const val = data['value'] ?? data['weight_value'] ?? data['weight'];
+      const unit = str('unit') || str('weight_unit') || 'kg';
+      return val != null ? `${val} ${unit}` : '';
     }
     case 'exam': {
       const name = str('exam_name') || str('exam_type');
-      const lab = str('laboratory') || str('lab');
-      return lab ? `${name} · ${lab}` : name;
+      const summary = str('results_summary') || str('laboratory') || str('lab');
+      return summary ? `${name} · ${summary}` : name;
     }
     case 'medication': {
       const name = str('medication_name') || str('drug_name');
@@ -115,7 +115,7 @@ function buildSummary(type: string, data: Record<string, unknown>): string {
       return qty ? `${name} · ${qty}` : name;
     }
     case 'symptom':
-      return str('symptom') || str('description') || str('observation');
+      return str('symptom_description') || str('symptom') || str('description') || str('observation');
     case 'travel': {
       const dest = str('destination');
       const mode = str('transport');
