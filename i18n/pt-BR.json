@@ -604,7 +604,11 @@
     "editedBy":            "Editado por {{name}} · {{date}}",
     "registeredByYou":     "você",
     "registeredByUnknown": "tutor",
-    "anotherTutor":        "outro tutor"
+    "anotherTutor":        "outro tutor",
+    "deletedBy":           "Excluído por {{name}} · {{date}}",
+    "restore":             "Restaurar",
+    "restoreSuccess":      "Registro restaurado com sucesso!",
+    "noDeleted":           "Nenhum registro excluído por aqui."
   },
   "health": {
     "vaccines": "Vacinas",
@@ -1584,7 +1588,8 @@
     "seeAll": "Ver tudo",
     "qrCode": "QR Code",
     "comingSoon": "Em breve! Estou preparando essa novidade pra você!",
-    "level": "Nível {{level}}"
+    "level": "Nível {{level}}",
+    "deletedRecords": "Registros Excluídos"
   },
   "tagline": "Uma inteligência única para o seu pet",
   "rede": {

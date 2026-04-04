@@ -22,7 +22,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import {
   Dog, Cat, Camera, AlertTriangle, ShieldCheck,
-  Sparkles, Clock, ChevronLeft, FileText, Users,
+  Sparkles, Clock, ChevronLeft, FileText, Users, Trash2,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -34,6 +34,7 @@ import { usePet } from '../../../../hooks/usePets';
 import { useVaccines, useAllergies, useMoodLogs } from '../../../../hooks/useHealth';
 import { useDiary } from '../../../../hooks/useDiary';
 import { useAuthStore } from '../../../../stores/authStore';
+import { useMyPetRole } from '../../../../hooks/usePetMembers';
 import { Skeleton } from '../../../../components/Skeleton';
 import { useToast } from '../../../../components/Toast';
 import { supabase } from '../../../../lib/supabase';
@@ -53,6 +54,9 @@ export default function PetScreen() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const user = useAuthStore((s) => s.user);
+
+  const myRole = useMyPetRole(id ?? '');
+  const canSeeDeleted = myRole.isOwner || myRole.role === 'co_parent';
 
   const [activeTab, setActiveTab] = useState<PetTab>((initialTab as PetTab) ?? 'diario');
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
@@ -280,6 +284,15 @@ export default function PetScreen() {
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{pet.name}</Text>
         <View style={s.headerRight}>
+          {canSeeDeleted && (
+            <TouchableOpacity
+              onPress={() => router.push(`/pet/${id}/deleted-records` as never)}
+              style={s.headerBtn}
+              activeOpacity={0.7}
+            >
+              <Trash2 size={rs(20)} color={colors.danger} strokeWidth={1.8} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => router.push(`/pet/${id}/coparents` as never)}
             style={s.headerBtn}

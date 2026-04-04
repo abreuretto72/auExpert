@@ -604,7 +604,11 @@
     "editedBy":            "Edited by {{name}} · {{date}}",
     "registeredByYou":     "you",
     "registeredByUnknown": "tutor",
-    "anotherTutor":        "another tutor"
+    "anotherTutor":        "another tutor",
+    "deletedBy":           "Deleted by {{name}} · {{date}}",
+    "restore":             "Restore",
+    "restoreSuccess":      "Record restored successfully!",
+    "noDeleted":           "No deleted records here."
   },
   "health": {
     "vaccines": "Vaccines",
@@ -1584,7 +1588,8 @@
     "seeAll": "See all",
     "qrCode": "QR Code",
     "comingSoon": "Coming soon! I'm preparing this for you!",
-    "level": "Level {{level}}"
+    "level": "Level {{level}}",
+    "deletedRecords": "Deleted Records"
   },
   "tagline": "A unique intelligence for your pet",
   "rede": {
