@@ -776,7 +776,9 @@ export interface SubmitEntryParams {
   text: string | null;
   photosBase64: string[] | null; // array of base64 images for AI analysis
   inputType: string;
-  mediaUris?: string[];      // local file URIs for storage upload + immediate display
+  mediaUris?: string[];      // local photo file URIs for storage upload + immediate display
+  videoUri?: string;         // local video URI (separate from photo mediaUris)
+  audioUri?: string;         // local audio URI (separate from photo mediaUris)
   videoDuration?: number;
   audioDuration?: number;
 }
@@ -800,23 +802,53 @@ async function _backgroundClassifyAndSave(opts: {
   photosBase64: string[] | null;
   inputType: string;
   photos: string[];
-  mediaUris?: string[];
+  mediaUris?: string[];   // photo URIs only
+  videoUri?: string;      // dedicated video URI
+  audioUri?: string;      // dedicated audio URI
   videoDuration?: number;
   audioDuration?: number;
 }): Promise<void> {
-  const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoDuration, audioDuration } = opts;
+  const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoUri, audioUri, videoDuration, audioDuration } = opts;
 
-  // Upload photo/gallery/scanner media before classify so URLs are ready for the DB entry
+  // Upload all media types in parallel before classify so URLs are ready
   let uploadedPhotos: string[] = photos;
-  if (mediaUris && mediaUris.length > 0 && ['photo', 'gallery', 'ocr_scan'].includes(inputType)) {
-    try {
-      const { uploadPetMedia, getPublicUrl } = await import('../lib/storage');
-      const paths = await Promise.all(
-        mediaUris.map((uri) => uploadPetMedia(userId, petId, uri, 'photo')),
-      );
-      uploadedPhotos = paths.map((p) => getPublicUrl('pet-photos', p));
-    } catch { /* non-critical — local URIs remain in temp entry */ }
-  }
+  let uploadedVideoUrl: string | null = null;
+  let uploadedAudioUrl: string | null = null;
+
+  const { uploadPetMedia, getPublicUrl } = await import('../lib/storage');
+
+  await Promise.allSettled([
+    // 1. Photos — mediaUris contains only photo URIs
+    (async () => {
+      if (!mediaUris || mediaUris.length === 0) return;
+      try {
+        const paths = await Promise.all(
+          mediaUris.map((uri) => uploadPetMedia(userId, petId, uri, 'photo')),
+        );
+        uploadedPhotos = paths.map((p) => getPublicUrl('pet-photos', p));
+      } catch { /* non-critical */ }
+    })(),
+
+    // 2. Video — dedicated videoUri; fallback to first mediaUri for single-type 'video' entries
+    (async () => {
+      const vUri = videoUri ?? (inputType === 'video' ? mediaUris?.[0] : undefined);
+      if (!vUri) return;
+      try {
+        const path = await uploadPetMedia(userId, petId, vUri, 'video');
+        uploadedVideoUrl = getPublicUrl('pet-photos', path);
+      } catch { /* non-critical */ }
+    })(),
+
+    // 3. Audio — dedicated audioUri; fallback to first mediaUri for single-type 'pet_audio' entries
+    (async () => {
+      const aUri = audioUri ?? (inputType === 'pet_audio' ? mediaUris?.[0] : undefined);
+      if (!aUri) return;
+      try {
+        const path = await uploadPetMedia(userId, petId, aUri, 'video'); // audio stored in video bucket
+        uploadedAudioUrl = getPublicUrl('pet-photos', path);
+      } catch { /* non-critical */ }
+    })(),
+  ]);
 
   try {
     // ── Run text classification and per-photo analysis in parallel ────────────
@@ -929,37 +961,23 @@ async function _backgroundClassifyAndSave(opts: {
       }
     }
 
-    // 3. Video upload + URL persistence
-    if (inputType === 'video' && mediaUris?.[0]) {
+    // 3. Video URL persistence (already uploaded above)
+    if (uploadedVideoUrl) {
       postSavePromises.push(
-        (async () => {
-          try {
-            const { uploadPetMedia, getPublicUrl } = await import('../lib/storage');
-            const path = await uploadPetMedia(userId, petId, mediaUris![0], 'video');
-            const url = getPublicUrl('pet-photos', path);
-            await supabase.from('diary_entries').update({
-              video_url: url,
-              video_duration: videoDuration ?? null,
-            }).eq('id', entryId);
-          } catch { /* non-critical */ }
-        })(),
+        supabase.from('diary_entries').update({
+          video_url: uploadedVideoUrl,
+          video_duration: videoDuration ?? null,
+        }).eq('id', entryId).then(() => undefined).catch(() => {}),
       );
     }
 
-    // 4. Audio upload + URL persistence
-    if (inputType === 'pet_audio' && mediaUris?.[0]) {
+    // 4. Audio URL persistence (already uploaded above)
+    if (uploadedAudioUrl) {
       postSavePromises.push(
-        (async () => {
-          try {
-            const { uploadPetMedia, getPublicUrl } = await import('../lib/storage');
-            const path = await uploadPetMedia(userId, petId, mediaUris![0], 'video');
-            const url = getPublicUrl('pet-photos', path);
-            await supabase.from('diary_entries').update({
-              audio_url: url,
-              audio_duration: audioDuration ?? null,
-            }).eq('id', entryId);
-          } catch { /* non-critical */ }
-        })(),
+        supabase.from('diary_entries').update({
+          audio_url: uploadedAudioUrl,
+          audio_duration: audioDuration ?? null,
+        }).eq('id', entryId).then(() => undefined).catch(() => {}),
       );
     }
 
@@ -1391,6 +1409,8 @@ export function useDiaryEntry(petId: string) {
       text: params.text, photosBase64: params.photosBase64,
       inputType: params.inputType, photos: [],
       mediaUris: params.mediaUris,
+      videoUri: params.videoUri,
+      audioUri: params.audioUri,
       videoDuration: params.videoDuration,
       audioDuration: params.audioDuration,
     });

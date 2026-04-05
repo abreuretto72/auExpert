@@ -144,10 +144,12 @@ const ENTRY_TYPE_TO_TIMELINE: Record<string, TimelineEventType> = {
 };
 
 const INPUT_TYPE_TO_TIMELINE: Record<string, TimelineEventType> = {
-  video: 'video_analysis',
-  photo: 'photo_analysis',
-  gallery: 'photo_analysis',
-  ocr_scan: 'photo_analysis',
+  // photo and gallery entries render as DiaryCard — analysis description appears inline
+  photo:     'diary',
+  gallery:   'diary',
+  // ocr_scan, video, pet_audio keep dedicated card types
+  ocr_scan:  'photo_analysis',
+  video:     'video_analysis',
   pet_audio: 'audio_analysis',
 };
 

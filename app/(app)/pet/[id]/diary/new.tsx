@@ -657,13 +657,48 @@ export default function NewDiaryEntryScreen() {
       toast(t('diary.contentMin'), 'warning');
       return;
     }
+
     const photoAttachments = attachments.filter((a) => a.type === 'photo');
+    const videoAttachments = attachments.filter((a) => a.type === 'video');
+    const audioAttachments = attachments.filter((a) => a.type === 'audio');
+    const docAttachments   = attachments.filter((a) => a.type === 'document');
+
+    // Base64 only for photos (AI photo analysis)
     const photosBase64 = photoAttachments.length > 0
       ? photoAttachments.map((a) => a.base64!).filter(Boolean)
       : null;
-    const mediaUris = attachments.map((a) => a.localUri);
-    const inputType = photoAttachments.length > 0 ? 'gallery' : 'text';
-    void submitEntry({ text: text || null, photosBase64, inputType, mediaUris });
+
+    // Photo URIs only (for photo upload in storage)
+    const mediaUris = photoAttachments.length > 0
+      ? photoAttachments.map((a) => a.localUri)
+      : undefined;
+
+    // Dedicated video and audio URIs (upload separately)
+    const videoUri = videoAttachments[0]?.localUri;
+    const audioUri = audioAttachments[0]?.localUri;
+
+    // Determine inputType by priority: video > audio > photo > document > text
+    let inputType = 'text';
+    if (videoAttachments.length > 0)      inputType = 'video';
+    else if (audioAttachments.length > 0) inputType = 'pet_audio';
+    else if (photoAttachments.length > 0) inputType = 'gallery';
+    else if (docAttachments.length > 0)   inputType = 'ocr_scan';
+
+    const videoDuration = videoAttachments[0]?.duration
+      ? Math.round(videoAttachments[0].duration) : undefined;
+    const audioDuration = audioAttachments[0]?.duration
+      ? Math.round(audioAttachments[0].duration) : undefined;
+
+    void submitEntry({
+      text: text || null,
+      photosBase64,
+      inputType,
+      mediaUris,
+      videoUri,
+      audioUri,
+      videoDuration,
+      audioDuration,
+    });
     showAnalyzingAndBack();
   }, [tutorText, attachments, toast, t, submitEntry, showAnalyzingAndBack]);
 
