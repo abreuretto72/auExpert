@@ -77,6 +77,31 @@ const WAVE_BARS = 20;
 
 // ── Component ──────────────────────────────────────────────────────────────
 
+// ── DotsText — animated trailing dots for the overlay title ──────────────────
+
+function DotsText({
+  baseText,
+  dotsAnim,
+  style,
+}: {
+  baseText: string;
+  dotsAnim: Animated.Value;
+  style?: object;
+}) {
+  const [dots, setDots] = React.useState('');
+
+  React.useEffect(() => {
+    const id = dotsAnim.addListener(({ value }) => {
+      setDots('.'.repeat(Math.round(value)));
+    });
+    return () => dotsAnim.removeListener(id);
+  }, [dotsAnim]);
+
+  return <Text style={style}>{baseText}{dots}</Text>;
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function NewDiaryEntryScreen() {
   const { id, edit } = useLocalSearchParams<{ id: string; edit?: string }>();
   const router = useRouter();
@@ -150,8 +175,11 @@ export default function NewDiaryEntryScreen() {
   ).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-  const pawAnim = useRef(new Animated.Value(1)).current;
+  const pawAnim    = useRef(new Animated.Value(1)).current;
   const pawLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const ringAnim    = useRef(new Animated.Value(0.8)).current;
+  const ringOpacity = useRef(new Animated.Value(0.6)).current;
+  const dotsAnim    = useRef(new Animated.Value(0)).current;
 
   // ── STT event handlers ───────────────────────────────────────────────────
 
@@ -408,18 +436,48 @@ export default function NewDiaryEntryScreen() {
 
   const showAnalyzingAndBack = useCallback(() => {
     setIsAnalyzing(true);
-    pawLoopRef.current = Animated.loop(
+
+    // Pata — pulso suave, never shrinks below 1.0
+    const pawLoop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pawAnim, { toValue: 1.25, duration: 450, useNativeDriver: true }),
-        Animated.timing(pawAnim, { toValue: 0.85, duration: 450, useNativeDriver: true }),
+        Animated.timing(pawAnim, { toValue: 1.18, duration: 700, useNativeDriver: true }),
+        Animated.timing(pawAnim, { toValue: 1.0,  duration: 700, useNativeDriver: true }),
       ]),
     );
-    pawLoopRef.current.start();
+
+    // Anel externo — ripple: expands and fades
+    ringAnim.setValue(0.8);
+    ringOpacity.setValue(0.6);
+    const ringLoop = Animated.loop(
+      Animated.parallel([
+        Animated.timing(ringAnim,    { toValue: 1.6, duration: 1400, useNativeDriver: true }),
+        Animated.timing(ringOpacity, { toValue: 0,   duration: 1400, useNativeDriver: true }),
+      ]),
+    );
+
+    // Dots — 0 → 1 → 2 → 3 → 0 (not native driver — drives JS state)
+    const dotsLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotsAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
+        Animated.timing(dotsAnim, { toValue: 2, duration: 400, useNativeDriver: false }),
+        Animated.timing(dotsAnim, { toValue: 3, duration: 400, useNativeDriver: false }),
+        Animated.timing(dotsAnim, { toValue: 0, duration: 400, useNativeDriver: false }),
+      ]),
+    );
+
+    pawLoopRef.current = pawLoop;
+    pawLoop.start();
+    ringLoop.start();
+    dotsLoop.start();
+
     setTimeout(() => {
-      pawLoopRef.current?.stop();
+      pawLoop.stop();
+      ringLoop.stop();
+      dotsLoop.stop();
+      pawAnim.setValue(1);
       router.back();
-    }, 2000);
-  }, [pawAnim, router]);
+    }, 2500);
+  }, [pawAnim, ringAnim, ringOpacity, dotsAnim, router]);
 
   // ── Confirm handlers (from preview steps) ────────────────────────────────
 
@@ -1071,13 +1129,28 @@ export default function NewDiaryEntryScreen() {
         </KeyboardAvoidingView>
       )}
 
-      {/* ── Analyzing overlay (shown 2s after Gravar no Diário) ── */}
+      {/* ── Analyzing overlay (shown 2.5s after Gravar no Diário) ── */}
       {isAnalyzing && (
         <View style={styles.analyzingOverlay}>
-          <Animated.View style={[styles.analyzingPawContainer, { transform: [{ scale: pawAnim }] }]}>
-            <PawPrint size={rs(52)} color={colors.accent} strokeWidth={1.6} />
-          </Animated.View>
-          <Text style={styles.analyzingTitle}>{t('diary.analyzing')}</Text>
+          <View style={styles.analyzingCenter}>
+            {/* Ripple ring */}
+            <Animated.View style={[
+              styles.analyzingRing,
+              { transform: [{ scale: ringAnim }], opacity: ringOpacity },
+            ]} />
+            {/* Paw container */}
+            <Animated.View style={[
+              styles.analyzingPawContainer,
+              { transform: [{ scale: pawAnim }] },
+            ]}>
+              <PawPrint size={rs(48)} color={colors.accent} strokeWidth={1.6} />
+            </Animated.View>
+          </View>
+          <DotsText
+            baseText={t('diary.analyzing')}
+            dotsAnim={dotsAnim}
+            style={styles.analyzingTitle}
+          />
           <Text style={styles.analyzingSubtitle}>{t('diary.analyzingWait')}</Text>
         </View>
       )}
@@ -1365,22 +1438,37 @@ const styles = StyleSheet.create({
   // Analyzing overlay
   analyzingOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(11,18,25,0.88)',
+    backgroundColor: 'rgba(11,18,25,0.92)',
     alignItems: 'center', justifyContent: 'center',
-    gap: rs(16), zIndex: 999,
+    gap: rs(20), zIndex: 999,
+  },
+  analyzingCenter: {
+    width: rs(140), height: rs(140),
+    alignItems: 'center', justifyContent: 'center',
+  },
+  analyzingRing: {
+    position: 'absolute',
+    width: rs(140), height: rs(140),
+    borderRadius: rs(70),
+    borderWidth: 2, borderColor: colors.accent,
   },
   analyzingPawContainer: {
-    width: rs(104), height: rs(104),
-    borderRadius: rs(52),
+    width: rs(96), height: rs(96),
+    borderRadius: rs(48),
     backgroundColor: colors.accentGlow,
-    borderWidth: 2, borderColor: colors.accent + '30',
+    borderWidth: 1.5, borderColor: colors.accent + '40',
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4, shadowRadius: rs(20),
+    elevation: 8,
   },
   analyzingTitle: {
-    fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text,
+    fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text,
+    letterSpacing: 0.5,
   },
   analyzingSubtitle: {
     fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec,
-    textAlign: 'center', maxWidth: rs(240), lineHeight: fs(20),
+    textAlign: 'center', maxWidth: rs(260), lineHeight: fs(20),
   },
 });
