@@ -1096,7 +1096,23 @@
     },
     "activity": {
       "missing": "{{pet}} has no physical activity logged this week"
-    }
+    },
+    "tab": "Insights"
+  },
+  "ia": {
+    "tab":                "Assistant",
+    "title":              "AI Assistant",
+    "subtitle":           "Health and wellness specialist",
+    "welcome":            "Hi! I'm {{name}}'s assistant. How can I help?",
+    "placeholder":        "Ask about {{name}}'s health...",
+    "send":               "Send",
+    "clear":              "Clear conversation",
+    "error":              "Couldn't respond right now. Please try again.",
+    "thinking":           "Thinking...",
+    "suggestionVaccine":  "When was the last vaccine?",
+    "suggestionWeight":   "How is the weight?",
+    "suggestionMedication": "What medications are prescribed?",
+    "suggestionHealth":   "How is the overall health?"
   },
   "achievements": {
     "filterAll": "All",

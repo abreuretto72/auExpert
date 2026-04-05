@@ -183,6 +183,95 @@ function buildEmbeddingContent(cls: {
   }
 }
 
+// ── Index pet health data (vaccines, consultations, medications, profile) ──
+
+export async function indexPetHealthData(
+  petId:  string,
+  userId: string,
+): Promise<void> {
+
+  // 1. Vaccines
+  const { data: vaccines } = await supabase
+    .from('vaccines')
+    .select('id, name, date_administered, next_due_date, veterinarian, clinic')
+    .eq('pet_id', petId)
+    .eq('is_active', true);
+
+  for (const v of vaccines ?? []) {
+    const content = [
+      `Vacina ${v.name} aplicada`,
+      v.date_administered ? `em ${v.date_administered}` : '',
+      v.veterinarian ? `pela ${v.veterinarian}` : '',
+      v.clinic ? `na ${v.clinic}` : '',
+      v.next_due_date ? `Próxima dose: ${v.next_due_date}` : '',
+    ].filter(Boolean).join('. ');
+
+    await generateEmbedding(petId, 'vaccine', v.id, content, 0.9, userId)
+      .catch(() => {});
+  }
+
+  // 2. Consultations
+  const { data: consultations } = await supabase
+    .from('consultations')
+    .select('id, date, veterinarian, clinic, diagnosis, type')
+    .eq('pet_id', petId)
+    .eq('is_active', true);
+
+  for (const c of consultations ?? []) {
+    const content = [
+      'Consulta veterinária',
+      c.veterinarian ? `com ${c.veterinarian}` : '',
+      c.clinic ? `na ${c.clinic}` : '',
+      c.date ? `em ${c.date}` : '',
+      c.diagnosis ? `Diagnóstico: ${c.diagnosis}` : '',
+    ].filter(Boolean).join('. ');
+
+    await generateEmbedding(petId, 'consultation', c.id, content, 0.8, userId)
+      .catch(() => {});
+  }
+
+  // 3. Medications
+  const { data: medications } = await supabase
+    .from('medications')
+    .select('id, name, dosage, frequency, start_date, end_date')
+    .eq('pet_id', petId)
+    .eq('is_active', true);
+
+  for (const m of medications ?? []) {
+    const content = [
+      `Medicamento: ${m.name}`,
+      m.dosage ? `Dose: ${m.dosage}` : '',
+      m.frequency ? `Frequência: ${m.frequency}` : '',
+      m.start_date ? `Início: ${m.start_date}` : '',
+      m.end_date ? `Término: ${m.end_date}` : '',
+    ].filter(Boolean).join('. ');
+
+    await generateEmbedding(petId, 'medication', m.id, content, 0.85, userId)
+      .catch(() => {});
+  }
+
+  // 4. Pet profile
+  const { data: pet } = await supabase
+    .from('pets')
+    .select('name, species, breed, birth_date, sex, weight_kg, blood_type, microchip_id')
+    .eq('id', petId)
+    .single();
+
+  if (pet) {
+    const content = [
+      `${pet.name} é um ${pet.species === 'dog' ? 'cão' : 'gato'}`,
+      pet.breed ? `da raça ${pet.breed}` : '',
+      pet.sex ? `sexo ${pet.sex === 'male' ? 'macho' : 'fêmea'}` : '',
+      pet.weight_kg ? `pesando ${pet.weight_kg} kg` : '',
+      pet.blood_type ? `tipo sanguíneo ${pet.blood_type}` : '',
+      pet.birth_date ? `nascido em ${pet.birth_date}` : '',
+    ].filter(Boolean).join(', ');
+
+    await generateEmbedding(petId, 'profile', petId, content, 1.0, userId)
+      .catch(() => {});
+  }
+}
+
 // ── Update RAG after saving a diary entry ─────────────────────────────────
 
 export async function updatePetRAG(

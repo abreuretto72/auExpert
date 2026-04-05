@@ -8,18 +8,22 @@
  *   One card expanded at a time; tap again to collapse
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView,
+  View, Text, TouchableOpacity, ScrollView, FlatList,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
   StyleSheet, RefreshControl,
 } from 'react-native';
-import { Sparkles, ChevronRight } from 'lucide-react-native';
+import { MessageCircle, Send, Sparkles, ChevronRight, RotateCcw } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { spacing, radii } from '../../constants/spacing';
 import { Skeleton } from '../Skeleton';
 import { useInsights, PetInsight, InsightUrgency } from '../../hooks/useInsights';
+import { usePetAssistant, ChatMessage } from '../../hooks/usePetAssistant';
+import { indexPetHealthData } from '../../lib/rag';
+import { useAuthStore } from '../../stores/authStore';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -220,7 +224,167 @@ function EmptyInsights({ filter }: { filter: InsightCategory | 'all' }) {
   );
 }
 
+// ── ChatView ──────────────────────────────────────────────────────────────────
+
+const SUGGESTIONS_KEYS = [
+  'ia.suggestionVaccine',
+  'ia.suggestionWeight',
+  'ia.suggestionMedication',
+  'ia.suggestionHealth',
+] as const;
+
+function ChatView({ petId, petName }: { petId: string; petName: string }) {
+  const { t } = useTranslation();
+  const { messages, isLoading, error, sendMessage, clearConversation } =
+    usePetAssistant(petId);
+  const [inputText, setInputText] = useState('');
+  const flatListRef = useRef<FlatList<ChatMessage>>(null);
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages]);
+
+  const handleSend = useCallback(() => {
+    const text = inputText.trim();
+    if (!text || isLoading) return;
+    setInputText('');
+    void sendMessage(text);
+  }, [inputText, isLoading, sendMessage]);
+
+  const handleSuggestion = useCallback((key: string) => {
+    void sendMessage(t(key as Parameters<typeof t>[0]));
+  }, [sendMessage, t]);
+
+  const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
+    const isUser = item.role === 'user';
+    return (
+      <View style={[styles.msgRow, isUser && styles.msgRowUser]}>
+        {!isUser && (
+          <View style={styles.msgAvatar}>
+            <Sparkles size={rs(14)} color={colors.purple} strokeWidth={1.8} />
+          </View>
+        )}
+        <View style={[styles.msgBubble, isUser ? styles.msgBubbleUser : styles.msgBubbleAssistant]}>
+          <Text style={[styles.msgText, isUser && styles.msgTextUser]}>
+            {item.content}
+          </Text>
+        </View>
+      </View>
+    );
+  }, []);
+
+  const showSuggestions = messages.length === 0 && !isLoading;
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.chatRoot}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={rs(120)}
+    >
+      {/* Header */}
+      <View style={styles.chatHeader}>
+        <View style={styles.chatHeaderLeft}>
+          <Sparkles size={rs(16)} color={colors.purple} strokeWidth={1.8} />
+          <View>
+            <Text style={styles.chatTitle}>{t('ia.title')}</Text>
+            <Text style={styles.chatSubtitle}>{t('ia.subtitle')}</Text>
+          </View>
+        </View>
+        {messages.length > 0 && (
+          <TouchableOpacity onPress={clearConversation} style={styles.clearBtn} activeOpacity={0.7}>
+            <RotateCcw size={rs(14)} color={colors.textDim} strokeWidth={1.8} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Messages */}
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(m) => m.id}
+        renderItem={renderMessage}
+        contentContainerStyle={styles.msgList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.welcomeWrap}>
+            <View style={styles.welcomeIcon}>
+              <Sparkles size={rs(28)} color={colors.purple} strokeWidth={1.4} />
+            </View>
+            <Text style={styles.welcomeText}>
+              {t('ia.welcome', { name: petName })}
+            </Text>
+          </View>
+        }
+      />
+
+      {/* Typing indicator */}
+      {isLoading && (
+        <View style={styles.thinkingRow}>
+          <ActivityIndicator size="small" color={colors.purple} />
+          <Text style={styles.thinkingText}>{t('ia.thinking')}</Text>
+        </View>
+      )}
+
+      {/* Error */}
+      {error && (
+        <View style={styles.errorRow}>
+          <Text style={styles.errorMsg}>{t('ia.error')}</Text>
+        </View>
+      )}
+
+      {/* Quick suggestion chips */}
+      {showSuggestions && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.suggestionsRow}
+        >
+          {SUGGESTIONS_KEYS.map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={styles.suggestionChip}
+              onPress={() => handleSuggestion(key)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.suggestionText}>{t(key)}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Input bar */}
+      <View style={styles.inputBar}>
+        <TextInput
+          style={styles.chatInput}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder={t('ia.placeholder', { name: petName })}
+          placeholderTextColor={colors.placeholder}
+          multiline
+          maxLength={500}
+          returnKeyType="send"
+          onSubmitEditing={handleSend}
+          blurOnSubmit
+        />
+        <TouchableOpacity
+          style={[styles.sendBtn, (!inputText.trim() || isLoading) && styles.sendBtnDisabled]}
+          onPress={handleSend}
+          disabled={!inputText.trim() || isLoading}
+          activeOpacity={0.8}
+        >
+          <Send size={rs(18)} color="#fff" strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
+
+type SubView = 'insights' | 'chat';
 
 interface IATabProps {
   petId: string;
@@ -230,9 +394,18 @@ interface IATabProps {
 export default function IATab({ petId, petName }: IATabProps) {
   const { t } = useTranslation();
   const { insights, isLoading, refetch } = useInsights(petId);
+  const resolvedName = petName ?? '';
 
-  const [filter, setFilter]         = useState<InsightCategory | 'all'>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [subView, setSubView]           = useState<SubView>('insights');
+  const [filter, setFilter]             = useState<InsightCategory | 'all'>('all');
+  const [expandedId, setExpandedId]     = useState<string | null>(null);
+
+  // Index health data in background when the IA tab mounts
+  useEffect(() => {
+    const userId = useAuthStore.getState().user?.id;
+    if (!petId || !userId) return;
+    indexPetHealthData(petId, userId).catch(() => {});
+  }, [petId]);
 
   const presentCategories = useMemo(
     () => CATEGORY_ORDER.filter((c) => insights.some((i) => i.category === c)),
@@ -255,58 +428,95 @@ export default function IATab({ petId, petName }: IATabProps) {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
-  if (isLoading) return <InsightsSkeleton />;
-
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.purple} />
-      }
-    >
-      {/* Section header */}
-      <View style={styles.sectionHeader}>
-        <Sparkles size={rs(16)} color={colors.purple} strokeWidth={1.8} />
-        <Text style={styles.sectionTitle}>
-          {t('insights.sectionTitle', { name: (petName ?? '').toUpperCase() })}
-        </Text>
-        {insights.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>
-              {t('insights.countBadge', { count: insights.length })}
-            </Text>
-          </View>
-        )}
+    <View style={styles.root}>
+      {/* Sub-view switcher */}
+      <View style={styles.switcher}>
+        <TouchableOpacity
+          style={[styles.switcherTab, subView === 'insights' && styles.switcherTabActive]}
+          onPress={() => setSubView('insights')}
+          activeOpacity={0.7}
+        >
+          <Sparkles
+            size={rs(14)}
+            color={subView === 'insights' ? colors.purple : colors.textDim}
+            strokeWidth={1.8}
+          />
+          <Text style={[styles.switcherLabel, subView === 'insights' && styles.switcherLabelActive]}>
+            {t('insights.tab')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.switcherTab, subView === 'chat' && styles.switcherTabActive]}
+          onPress={() => setSubView('chat')}
+          activeOpacity={0.7}
+        >
+          <MessageCircle
+            size={rs(14)}
+            color={subView === 'chat' ? colors.purple : colors.textDim}
+            strokeWidth={1.8}
+          />
+          <Text style={[styles.switcherLabel, subView === 'chat' && styles.switcherLabelActive]}>
+            {t('ia.tab')}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Summary bar */}
-      {insights.length > 0 && <SummaryBar insights={insights} />}
-
-      {/* Filter chips */}
-      {presentCategories.length > 0 && (
-        <FilterBar
-          categories={presentCategories}
-          active={filter}
-          onChange={handleFilterChange}
-        />
+      {/* Insights view */}
+      {subView === 'insights' && (
+        isLoading ? (
+          <InsightsSkeleton />
+        ) : (
+          <ScrollView
+            style={styles.insightsScroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.purple} />
+            }
+          >
+            <View style={styles.sectionHeader}>
+              <Sparkles size={rs(16)} color={colors.purple} strokeWidth={1.8} />
+              <Text style={styles.sectionTitle}>
+                {t('insights.sectionTitle', { name: resolvedName.toUpperCase() })}
+              </Text>
+              {insights.length > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>
+                    {t('insights.countBadge', { count: insights.length })}
+                  </Text>
+                </View>
+              )}
+            </View>
+            {insights.length > 0 && <SummaryBar insights={insights} />}
+            {presentCategories.length > 0 && (
+              <FilterBar
+                categories={presentCategories}
+                active={filter}
+                onChange={handleFilterChange}
+              />
+            )}
+            {filtered.length === 0 ? (
+              <EmptyInsights filter={filter} />
+            ) : (
+              filtered.map((insight) => (
+                <InsightCard
+                  key={insight.id}
+                  insight={insight}
+                  expanded={expandedId === insight.id}
+                  onToggle={() => handleToggle(insight.id)}
+                />
+              ))
+            )}
+          </ScrollView>
+        )
       )}
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <EmptyInsights filter={filter} />
-      ) : (
-        filtered.map((insight) => (
-          <InsightCard
-            key={insight.id}
-            insight={insight}
-            expanded={expandedId === insight.id}
-            onToggle={() => handleToggle(insight.id)}
-          />
-        ))
+      {/* Chat view */}
+      {subView === 'chat' && (
+        <ChatView petId={petId} petName={resolvedName} />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -314,12 +524,119 @@ export default function IATab({ petId, petName }: IATabProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+
+  // Sub-view switcher
+  switcher: {
+    flexDirection: 'row',
+    marginHorizontal: rs(spacing.md),
+    marginTop: rs(spacing.sm),
+    marginBottom: rs(spacing.xs),
+    backgroundColor: colors.card,
+    borderRadius: rs(radii.xl),
+    borderWidth: 1, borderColor: colors.border,
+    padding: rs(4),
+    gap: rs(4),
+  },
+  switcherTab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: rs(6), paddingVertical: rs(8), borderRadius: rs(radii.lg),
+  },
+  switcherTabActive: { backgroundColor: colors.purple + '20' },
+  switcherLabel: {
+    fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textDim,
+  },
+  switcherLabelActive: { color: colors.purple, fontFamily: 'Sora_700Bold' },
+
+  insightsScroll: { flex: 1 },
   content: {
     paddingHorizontal: rs(spacing.md),
     paddingTop: rs(spacing.md),
     paddingBottom: rs(spacing.xl),
     gap: rs(spacing.sm),
   },
+
+  // Chat
+  chatRoot: { flex: 1 },
+  chatHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: rs(spacing.md), paddingVertical: rs(spacing.sm),
+  },
+  chatHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: rs(10) },
+  chatTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(14), color: colors.text },
+  chatSubtitle: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim },
+  clearBtn: {
+    padding: rs(8), backgroundColor: colors.card, borderRadius: rs(radii.lg),
+    borderWidth: 1, borderColor: colors.border,
+  },
+  msgList: {
+    paddingHorizontal: rs(spacing.md), paddingBottom: rs(spacing.md), gap: rs(12),
+    flexGrow: 1,
+  },
+  welcomeWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: rs(40), gap: rs(12) },
+  welcomeIcon: {
+    width: rs(56), height: rs(56), borderRadius: rs(28),
+    backgroundColor: colors.purple + '15', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.purple + '30',
+  },
+  welcomeText: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec,
+    textAlign: 'center', lineHeight: fs(20), paddingHorizontal: rs(spacing.lg),
+  },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', gap: rs(8) },
+  msgRowUser: { justifyContent: 'flex-end' },
+  msgAvatar: {
+    width: rs(28), height: rs(28), borderRadius: rs(14),
+    backgroundColor: colors.purple + '15', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.purple + '20', flexShrink: 0,
+  },
+  msgBubble: {
+    maxWidth: '80%', borderRadius: rs(16), paddingHorizontal: rs(14), paddingVertical: rs(10),
+  },
+  msgBubbleAssistant: {
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
+    borderBottomLeftRadius: rs(4),
+  },
+  msgBubbleUser: {
+    backgroundColor: colors.accent, borderBottomRightRadius: rs(4),
+  },
+  msgText: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.text, lineHeight: fs(20),
+  },
+  msgTextUser: { color: '#fff' },
+  thinkingRow: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(8),
+    paddingHorizontal: rs(spacing.md), paddingVertical: rs(8),
+  },
+  thinkingText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim, fontStyle: 'italic' },
+  errorRow: { paddingHorizontal: rs(spacing.md), paddingVertical: rs(6) },
+  errorMsg: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.danger },
+  suggestionsRow: { gap: rs(8), paddingHorizontal: rs(spacing.md), paddingBottom: rs(8) },
+  suggestionChip: {
+    paddingHorizontal: rs(12), paddingVertical: rs(6),
+    backgroundColor: colors.purple + '12', borderRadius: rs(999),
+    borderWidth: 1, borderColor: colors.purple + '30',
+  },
+  suggestionText: { fontFamily: 'Sora_500Medium', fontSize: fs(11), color: colors.purple },
+  inputBar: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: rs(8),
+    paddingHorizontal: rs(spacing.md), paddingVertical: rs(spacing.sm),
+    borderTopWidth: 1, borderTopColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  chatInput: {
+    flex: 1, backgroundColor: colors.card, borderRadius: rs(radii.xl),
+    borderWidth: 1.5, borderColor: colors.border,
+    paddingHorizontal: rs(14), paddingVertical: rs(10),
+    color: colors.text, fontFamily: 'Sora_400Regular', fontSize: fs(13),
+    maxHeight: rs(100),
+  },
+  sendBtn: {
+    width: rs(42), height: rs(42), borderRadius: rs(21),
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.accent, shadowOffset: { width: 0, height: rs(4) },
+    shadowOpacity: 0.3, shadowRadius: rs(8), elevation: 4,
+  },
+  sendBtnDisabled: { opacity: 0.4 },
 
   // Section header
   sectionHeader: {

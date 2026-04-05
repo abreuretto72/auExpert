@@ -1096,7 +1096,23 @@
     },
     "activity": {
       "missing": "{{pet}} não tem registro de atividade física esta semana"
-    }
+    },
+    "tab": "Análises"
+  },
+  "ia": {
+    "tab":                "Assistente",
+    "title":              "Assistente IA",
+    "subtitle":           "Especialista em saúde e bem-estar",
+    "welcome":            "Olá! Sou a assistente da {{name}}. Como posso ajudar?",
+    "placeholder":        "Pergunte sobre a saúde da {{name}}...",
+    "send":               "Enviar",
+    "clear":              "Limpar conversa",
+    "error":              "Não consegui responder agora. Tente de novo.",
+    "thinking":           "Pensando...",
+    "suggestionVaccine":  "Quando foi a última vacina?",
+    "suggestionWeight":   "Como está o peso?",
+    "suggestionMedication": "Quais medicamentos toma?",
+    "suggestionHealth":   "Como está a saúde?"
   },
   "achievements": {
     "filterAll": "Todos",
