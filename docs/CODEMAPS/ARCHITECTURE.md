@@ -1,7 +1,7 @@
 # auExpert Architecture Codemap
 
-**Last Updated:** 2026-04-04
-**Status:** MVP Phase — Diário Inteligente + Co-Tutores
+**Last Updated:** 2026-04-06
+**Status:** MVP Phase — Diário Inteligente + Co-Tutores + Photo Analysis Enhancements
 
 ---
 
@@ -145,25 +145,65 @@ queryKeys.pets.diary(petId) → diário do pet
 **Queries:**
 - `useDiary(petId)` — entries com paginação
 - `useDiaryEntry(entryId)` — entry única
+- `useDeletedRecords(petId)` — entries deletadas (soft delete), visíveis apenas para owner/co_parent
 
 **Mutations:**
-- `addEntry(petId, data)` — nova entrada com narração IA
-  - Salva texto/foto/audio → gera embedding → fetch Claude para narração
+- `addEntry(petId, data)` — nova entrada com IA classification
+  - Salva texto/foto/audio → classifica com IA → gera embedding → processa módulos em background
   - Componente: `components/diary/InputSelector.tsx` (8 modos entrada)
-  - Edge function: `generate-diary-narration`
-- `updateEntry(entryId, data)` — edita texto + renarrativiza
-- `deleteEntry(entryId)` — soft delete
+  - Edge function: `classify-diary-entry` (primary) → `analyze-pet-photo` (foto mode)
+- `updateEntry(entryId, data)` — edita texto + reclassifica
+- `deleteEntry(entryId)` — soft delete com audit trail (deleted_by, deleted_at)
+- `restoreEntry(entryId)` — restore de entry deletada (apenas owner/co_parent)
+
+**IA Classification & Module Extraction:**
+```typescript
+// hooks/useDiaryEntry.ts
+// Fluxo:
+// 1. classifyDiaryEntry() retorna { classifications, narration, humor, tags }
+// 2. Para cada classificação: saveToModule() insere em tabela apropriada
+//    (vaccines, consultations, medications, expenses, etc.)
+// 3. createFutureEvent() agenda appointments detectados
+// 4. generateEmbedding() cria vetor RAG para memória do pet
+// 5. updatePetRAG() indexa a entrada
+```
+
+**Photo Analysis Pipeline:**
+```typescript
+// hooks/useDiaryEntry.ts → _photoAnalysis()
+// 1. Extrai videoThumbnailUrl do vídeo (frame 1) — NOT o tutor's photo
+// 2. Base64 encode foto
+// 3. Busca bgSession token (para background invoke)
+// 4. Chama analyze-pet-photo com: { photo_base64, species, language, media_type }
+// 5. Retorna: { identification, health, mood, environment, alerts, toxicity_check, description }
+// 6. Salva em photo_analyses table
+// 7. photoResultsRaw: []→map() mantém índice posicional com fotos array
+// [DIAG] logs para debugging análise
+```
+
+**DiaryModuleCard — buildModuleValue()**
+```typescript
+// components/diary/DiaryModuleCard.tsx
+// Mapeia extracted_data + moduleRow para resumo visual
+// Estratégia: tenta moduleRow (DB) primeiro, fallback para extracted_data (IA)
+// 
+// Casos especiais:
+// - weight: fallback chain: d.current_weight (adicionar após refactor)
+// - symptom: pode ser array — join com ', '
+// - consultation/return_visit: adiciona 'provider' à fallback chain
+```
 
 **Narração IA:**
 ```typescript
 // Edge function: supabase/functions/generate-diary-narration/index.ts
 Request: { text, petName, breed, humor, language, topMemories }
-Response: { narration: "Eca! Que dia legal..." }  // Máx 50 palavras, voz do pet
+Response: { narration: "Eca! Que dia legal..." }  // 1ª pessoa do pet
 ```
 
 **i18n keys:**
-- `diary.*` — entrada, narração, filtros, help
+- `diary.*` — entrada, narração, filtros, help, módulos
 - `diary.help{Voice,Photo,Scanner,Document,Video,Gallery,Listen,Text}`
+- `diary.module_{vaccine,consultation,weight,expense,symptom,travel,connection}`
 
 ---
 
@@ -570,6 +610,105 @@ updated_by_user:updated_by(full_name, email),
 
 ---
 
+## AI Analysis Pipeline — Photo + Text Classification
+
+### Photo Analysis Flow (Vision)
+
+**Entry point:** `hooks/useDiaryEntry.ts` → `_photoAnalysis()`
+
+```
+1. User captures photo/video
+   ↓
+2. Extract video frame 1 as thumbnail (videoThumbnailUrl — NOT tutor's photo)
+   ↓
+3. Base64 encode photo/frame
+   ↓
+4. Fetch bgSession token (background invocation auth)
+   ↓
+5. invoke('analyze-pet-photo') with:
+   - photo_base64: string
+   - species: 'dog' | 'cat'
+   - language: i18n.language (pt-BR, en-US, etc.)
+   - media_type: 'image/jpeg' | 'image/png' | 'image/webp'
+   ↓
+6. Edge Function returns:
+   {
+     identification: { breed, size, age, weight, sex, coat },
+     health: { body_condition_score, skin_coat[], eyes[], ears[], mouth_teeth[], posture[] },
+     mood: { primary, confidence, signals[] },
+     environment: { location, accessories[], other_animals, visible_risks[] },
+     alerts: [{ message, severity, category }],
+     description: "string — REQUIRED, never null",
+     toxicity_check: { has_toxic_items, items[] },
+     // backward compat
+     breed: { name, confidence },
+     estimated_weight_kg: number,
+     estimated_age_months: number
+   }
+   ↓
+7. Save to photo_analyses table
+   ↓
+8. photoResultsRaw: use .map() (not .filter()) to preserve positional indices
+   - photoResultsRaw[i] aligns with photos[i]
+   ↓
+9. [DIAG] diagnostic logs for debugging
+```
+
+**Key details:**
+- **Video thumbnail extraction:** First frame of video used as photo input, not the tutor's profile pic
+- **Species parameter:** CRITICAL — app passes species for IA context ("analyze as dog" vs "analyze as cat")
+- **Language parameter:** Resposta sempre no idioma do dispositivo
+- **bgAuthHeader:** Background invocations fetch `bgSession` token to prevent 401 JWT errors
+- **photoResultsRaw array:** Must use `.map()` not `.filter()` to maintain index alignment with photos
+- **[DIAG] logging:** Helps debug analyses that fail or give unexpected results
+
+### Text Classification Flow (Diary Entry)
+
+**Entry point:** `hooks/useDiaryEntry.ts` → `savePending()`
+
+```
+1. User submits diary text/voice (STT transcrived)
+   ↓
+2. classify-diary-entry Edge Function returns:
+   - classifications[]: { type, confidence, extracted_data }
+   - narration: "1ª pessoa do pet"
+   - inferred_humor: string
+   - tags: string[]
+   ↓
+3. For each classification: saveToModule()
+   - type='vaccine' → INSERT vaccines
+   - type='consultation' → INSERT consultations
+   - type='medication' → INSERT medications
+   - type='weight' → INSERT clinical_metrics
+   - type='expense' → INSERT expenses
+   - type='symptom' → store in diary_entry.symptoms_detected JSON
+   ↓
+4. createFutureEvent() if appointment detected
+   ↓
+5. generateEmbedding() + updatePetRAG()
+```
+
+### Module Extraction & Display
+
+**Types:** vaccine, consultation, medication, weight, exam, expense, symptom, food, travel, connection, clinical_metric, surgery, allergy, plan
+
+**buildModuleValue() strategy:**
+- Tries moduleRow first (DB values — source of truth)
+- Falls back to extracted_data (IA suggested values)
+- Handles arrays (symptom → join with ', ')
+- Special fields:
+  - `weight`: checks `m.current_weight` in fallback chain
+  - `symptom`: handles both string and array of strings
+  - `consultation`/`return_visit`: adds 'provider' to fallback keys
+
+**DiaryCard display:**
+- Shows summary line per module
+- Edit icon (✏️) inline
+- Delete icon (🗑️) only in edit screen, never on timeline
+- Expandable to full editor per module type
+
+---
+
 ## Deleted Records History
 
 Soft deletes are audited and browseable by owner and co_parent.
@@ -618,14 +757,24 @@ function useDeletedRecords(petId: string) {
 
 | Função | Input | Output | Uso |
 |--------|-------|--------|-----|
-| `generate-diary-narration` | texto + pet + humor + memórias | narração IA (50 palavras) | Diário |
-| `analyze-pet-photo` | foto base64 + pet | raça, humor, saúde | Diário (foto mode) |
-| `bridge-health-to-diary` | vacina/alergia + pet | entrada diário automática | Saúde → Diário |
-| `ocr-document` | documento PDF/foto | texto extraído | Carteira vacina |
-| `send-reset-email` | email | link reset | Auth reset password |
-| `classify-diary-entry` | entrada | tags, momento especial | Diário |
-| `generate-personality` | histórico | traços de personalidade | Pet profile |
-| `translate-strings` | texto + idioma | tradução | i18n dinâmica |
+| `analyze-pet-photo` | { photo_base64, species, language, media_type } | { identification, health, mood, environment, alerts, toxicity_check, description } | Diário (foto mode) — Vision analysis |
+| `classify-diary-entry` | { text, petId, language } | { classifications[], narration, humor, tags, moments } | Diário — IA classification |
+| `generate-diary-narration` | { text, petName, breed, humor, language, topMemories } | { narration } | Fallback narração adicional |
+| `bridge-health-to-diary` | { event_type, petId } | { diary_entry } | Saúde → Diário automático |
+| `ocr-document` | { document_base64, language } | { extracted_text, structured_data } | Carteira vacina |
+| `send-reset-email` | { email } | { status } | Auth reset password |
+| `generate-personality` | { diaryEntries[], petId } | { personality_traits } | Pet profile |
+| `translate-strings` | { text, language } | { translated_text } | i18n dinâmica |
+
+**analyze-pet-photo Enhancements (2026-04-06):**
+- **Content-aware:** Detecta se é pet direto, feces, plants, wounds, food, objects, environment
+- **Obrigatório `description`:** Nunca null — resumo clínico apropriado ao conteúdo
+- **Toxicity check:** Lista itens tóxicos com level (mild/moderate/severe)
+- **Feces identification:** Color/consistency guide (yellow→rapid transit, black→bleeding, etc.)
+- **Species parameter:** Passado do app (`species: 'dog'|'cat'`) para IA usar contexto correto
+- **Language:** Responde sempre no idioma do tutor (`language: i18n.language`)
+- **Removed `--no-verify-jwt`:** Gateway já verifica, function recebe request autenticada
+- **JWT header:** App passa `bgAuthHeader` em background invocations (previne 401)
 
 ---
 

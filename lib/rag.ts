@@ -281,17 +281,21 @@ export async function updatePetRAG(
   classifications: Array<{ type: string; confidence: number; extracted_data?: Record<string, unknown> }>,
 ) {
   for (const cls of classifications) {
-    if (cls.confidence < 0.6) continue;
+    if (cls.confidence < 0.6) {
+      continue;
+    }
 
     const content = buildEmbeddingContent(cls);
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
 
     const importance = IMPORTANCE[cls.type] ?? 0.5;
 
     try {
       await generateEmbedding(petId, cls.type, diaryEntryId, content, importance, userId);
-    } catch {
-      // Non-critical — continue with next classification
+    } catch (err) {
+      console.warn('[RAG] erro ao gerar embedding:', cls.type, String(err));
     }
   }
 }

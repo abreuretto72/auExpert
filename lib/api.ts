@@ -92,44 +92,36 @@ export async function deletePet(id: string): Promise<void> {
 // DIARY
 // ══════════════════════════════════════
 
-const DIARY_MODULE_SELECT = `
-  *,
-  registered_by_user:registered_by(full_name, email),
-  updated_by_user:updated_by(full_name, email),
-  expenses(id, total, currency, category, notes, vendor),
-  vaccines(id, name, laboratory, veterinarian, clinic, date_administered, next_due_date, batch_number),
-  consultations(id, veterinarian, clinic, type, diagnosis, date),
-  clinical_metrics(id, metric_type, value, unit, measured_at),
-  medications(id, name, dosage, frequency, veterinarian)
-`.trim();
-
-export async function fetchDiaryEntries(petId: string, page = 1, perPage = 20): Promise<DiaryEntry[]> {
-  // Direct query with module JOINs — richer than the RPC (which doesn't have module data)
+export async function fetchDiaryEntries(
+  petId: string, page = 1, perPage = 20,
+): Promise<DiaryEntry[]> {
   const from = (page - 1) * perPage;
-  const to = page * perPage - 1;
+  const to   = page * perPage - 1;
 
   const { data, error } = await supabase
     .from('diary_entries')
-    .select(DIARY_MODULE_SELECT)
+    .select('*')
     .eq('pet_id', petId)
     .eq('is_active', true)
     .order('entry_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (error) {
-    // Fallback to RPC if direct query fails (e.g. missing FK relationships)
-    const { data: rpc, error: rpcError } = await supabase
-      .rpc('fn_get_diary_timeline', {
-        p_pet_id: petId,
-        p_page: page,
-        p_per_page: perPage,
-      });
-    if (rpcError) throw rpcError;
-    return (rpc as DiaryEntry[]) ?? [];
+  console.log('[API] fetchDiaryEntries petId:', petId.slice(-8));
+  console.log('[API] total:', data?.length ?? 0, '| erro:', error?.message ?? 'ok');
+  if (data && data.length > 0) {
+    const e = data[0] as Record<string, unknown>;
+    console.log('[API] entry[0]:', (e.id as string).slice(-8),
+      '| fotos:', (e.photos as unknown[] | null)?.length ?? 0,
+      '| photo_analysis:', !!e.photo_analysis_data,
+      '| narration:', !!e.narration,
+      '| video_url:', !!e.video_url,
+      '| classif:', (e.classifications as unknown[] | null)?.length ?? 0,
+    );
   }
 
-  return (data as unknown as DiaryEntry[]) ?? [];
+  if (error) throw error;
+  return (data as DiaryEntry[]) ?? [];
 }
 
 export interface CreateDiaryParams {
@@ -149,20 +141,24 @@ export interface CreateDiaryParams {
 
 export async function createDiaryEntry(params: CreateDiaryParams): Promise<string> {
   // Try using the DB function (atomic: creates entry + mood_log)
-  const { data, error } = await supabase.rpc('fn_create_diary_entry', {
-    p_pet_id: params.pet_id,
+  // p_tags and p_photos are omitted when empty so the DB default '[]'::jsonb is used —
+  // passing a JS [] can arrive as a scalar to jsonb_array_length() in some Supabase client versions.
+  const rpcParams: Record<string, unknown> = {
+    p_pet_id:    params.pet_id,
     p_author_id: params.user_id,
-    p_content: params.content,
+    p_content:   params.content,
     p_input_method: params.input_method,
-    p_mood_id: params.mood_id,
+    p_mood_id:   params.mood_id,
     p_mood_score: params.mood_score ?? null,
     p_mood_source: params.mood_source ?? 'manual',
-    p_entry_type: params.entry_type ?? 'manual',
-    p_tags: JSON.stringify(params.tags ?? []),
-    p_is_special: params.is_special ?? false,
-    p_photos: JSON.stringify(params.photos ?? []),
+    p_entry_type:  params.entry_type ?? 'manual',
+    p_is_special:  params.is_special ?? false,
     p_linked_photo_analysis_id: params.linked_photo_analysis_id ?? null,
-  });
+  };
+  if (params.tags?.length)   rpcParams.p_tags   = params.tags;
+  if (params.photos?.length) rpcParams.p_photos = params.photos;
+
+  const { data, error } = await supabase.rpc('fn_create_diary_entry', rpcParams);
 
   if (error) {
     console.warn('[api.createDiaryEntry] rpc fn_create_diary_entry failed →', error.code, error.message);
@@ -244,7 +240,7 @@ export async function updateDiaryNarration(
     p_entry_id: entryId,
     p_narration: narration,
     p_mood_score: moodScore ?? null,
-    p_tags: tags ? JSON.stringify(tags) : null,
+    p_tags: tags ?? null,
   });
 
   // Fallback to direct update — only columns that exist in the table

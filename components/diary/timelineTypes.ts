@@ -11,6 +11,33 @@ import {
 import { colors } from '../../constants/colors';
 import type { DiaryEntry } from '../../types/database';
 
+// ── MediaAnalysisItem ──
+
+export interface MediaAnalysisItem {
+  type: 'photo' | 'video' | 'audio' | 'document';
+  mediaUrl: string;
+  fileName?: string | null;
+  thumbnailUrl?: string | null;
+  analysis?: Record<string, unknown> | null;
+  videoAnalysis?: {
+    locomotion_score: number;
+    energy_score: number;
+    calm_score: number;
+    behavior_summary: string;
+    health_observations: string[];
+  } | null;
+  petAudioAnalysis?: {
+    sound_type: string;
+    emotional_state: string;
+    intensity: 'low' | 'medium' | 'high';
+    pattern_notes: string;
+  } | null;
+  ocrData?: {
+    fields: Array<{ key: string; value: string; confidence?: number }>;
+    document_type: string;
+  } | null;
+}
+
 // ── Timeline event types ──
 
 export type TimelineEventType =
@@ -85,6 +112,8 @@ export interface TimelineEvent {
   photoAnalysisData?: Record<string, unknown> | null;
   // Optimistic UI processing state
   processingStatus?: 'pending' | 'processing' | 'done' | 'error';
+  // Per-media analyses — one item per photo/video/audio/document
+  mediaAnalyses?: MediaAnalysisItem[] | null;
   // AI classifications attached to this entry
   classifications?: Array<{
     type: string;
@@ -177,10 +206,20 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
 }): TimelineEvent {
   // input_type takes precedence over entry_type for newer entries
   const inputType = entry.input_type;
-  const timelineType =
+  const e = entry as unknown as Record<string, unknown>;
+
+  let timelineType: TimelineEventType =
     (inputType ? INPUT_TYPE_TO_TIMELINE[inputType] : undefined)
     ?? ENTRY_TYPE_TO_TIMELINE[entry.entry_type ?? 'manual']
     ?? 'diary';
+
+  // Only use dedicated analysis cards if analysis data actually exists
+  if (timelineType === 'video_analysis' && !(e.video_analysis as { behavior_summary?: string } | null)?.behavior_summary) {
+    timelineType = 'diary';
+  }
+  if (timelineType === 'audio_analysis' && !(e.pet_audio_analysis as { pattern_notes?: string } | null)?.pattern_notes) {
+    timelineType = 'diary';
+  }
 
   return {
     id: entry.id,
@@ -210,6 +249,9 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     updatedAt:        entry.updated_at ?? null,
     inputType: entry.input_type ?? null,
     photoAnalysisData: (entry as unknown as Record<string, unknown>).photo_analysis_data as Record<string, unknown> | null ?? null,
+    mediaAnalyses: Array.isArray((e as Record<string, unknown>).media_analyses)
+      ? (e as Record<string, unknown>).media_analyses as MediaAnalysisItem[]
+      : null,
     processingStatus: entry.processing_status ?? 'done',
     classifications: Array.isArray((entry as unknown as Record<string, unknown>).classifications)
       ? (entry as unknown as Record<string, unknown>).classifications as TimelineEvent['classifications']

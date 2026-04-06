@@ -5,18 +5,19 @@
  */
 
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import {
-  AlertCircle, Camera, Calendar, Gift, Heart, Lightbulb, Lock,
-  Mic, Music2, PawPrint, Pencil, RefreshCw, ShieldCheck, Star, Trophy, Video, WifiOff,
+  AlertCircle, AlertTriangle, Camera, Calendar, FileText, Gift, Heart, LayoutGrid,
+  Lightbulb, Lock, Mic, Music2, PawPrint, Pencil, RefreshCw, ShieldCheck, Star,
+  Trophy, Video, WifiOff,
 } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import i18n from '../../i18n';
 import { getPublicUrl } from '../../lib/storage';
 import { useAuthStore } from '../../stores/authStore';
-import type { TimelineEvent } from './timelineTypes';
-import { DiaryModuleCard, DiaryModuleSeparator, type ModuleRow } from './DiaryModuleCard';
+import type { TimelineEvent, MediaAnalysisItem } from './timelineTypes';
+import { DiaryModuleCard, type ModuleRow } from './DiaryModuleCard';
 import DiaryNarration from './DiaryNarration';
 
 // ── Shared types ──
@@ -59,6 +60,144 @@ function resolveModuleRow(
   return arr[sameTypeIndex] ?? arr[0];
 }
 
+// ── PhotoSubcard ──
+
+function PhotoSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: string, opts?: Record<string, string>) => string }) {
+  const uri = media.mediaUrl?.startsWith('http')
+    ? media.mediaUrl
+    : media.mediaUrl ? getPublicUrl('pet-photos', media.mediaUrl) : null;
+  const desc = (media.analysis as Record<string, unknown> | undefined)?.description as string | undefined;
+  const toxCheck = (media.analysis as Record<string, unknown> | undefined)?.toxicity_check as Record<string, unknown> | undefined;
+  const hasToxic = toxCheck?.has_toxic_items === true;
+  const toxItems = toxCheck?.items as Array<{name: string; toxicity_level: string; description: string}> | undefined;
+
+  return (
+    <View style={styles.subcard}>
+      <View style={styles.subcardHeader}>
+        <Camera size={rs(12)} color={colors.success} strokeWidth={1.8} />
+        <Text style={styles.subcardLabel}>{t('diary.photoAnalysis').toUpperCase()}</Text>
+      </View>
+      {uri && <Image source={{ uri }} style={styles.subcardImage} resizeMode="cover" />}
+      {hasToxic && toxItems && toxItems.length > 0 && (
+        <View style={[styles.toxicAlert, { backgroundColor: colors.danger + '12' }]}>
+          <AlertTriangle size={rs(14)} color={colors.danger} strokeWidth={1.8} />
+          <View style={{ flex: 1, gap: rs(2) }}>
+            {toxItems.map((item, i) => (
+              <Text key={i} style={[styles.toxicText, { color: colors.danger }]}>
+                {item.name}: {item.description}
+              </Text>
+            ))}
+          </View>
+        </View>
+      )}
+      {desc && <Text style={styles.subcardBodyText}>{desc}</Text>}
+    </View>
+  );
+}
+
+// ── VideoSubcard ──
+
+function VideoSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: string, opts?: Record<string, string>) => string }) {
+  const thumbUri = media.thumbnailUrl
+    ? (media.thumbnailUrl.startsWith('http') ? media.thumbnailUrl : getPublicUrl('pet-photos', media.thumbnailUrl))
+    : null;
+  const desc = (media.analysis as Record<string, unknown> | undefined)?.description as string | undefined;
+  const va = media.videoAnalysis;
+
+  return (
+    <View style={[styles.subcard, { borderColor: colors.sky + '30' }]}>
+      <View style={styles.subcardHeader}>
+        <Video size={rs(12)} color={colors.sky} strokeWidth={1.8} />
+        <Text style={[styles.subcardLabel, { color: colors.sky }]}>{t('diary.videoAnalysis').toUpperCase()}</Text>
+      </View>
+      {thumbUri && <Image source={{ uri: thumbUri }} style={styles.subcardImage} resizeMode="cover" />}
+      {desc && <Text style={styles.subcardBodyText}>{desc}</Text>}
+      {va?.behavior_summary && <Text style={styles.subcardBodyText}>{va.behavior_summary}</Text>}
+      {va && (va.energy_score != null || va.calm_score != null || va.locomotion_score != null) && (
+        <View style={styles.subcardScores}>
+          {va.energy_score != null && <SubcardScore label={t('diary.energy')} value={va.energy_score} color={colors.gold} />}
+          {va.calm_score != null && <SubcardScore label={t('diary.calm')} value={va.calm_score} color={colors.success} />}
+          {va.locomotion_score != null && <SubcardScore label={t('diary.locomotion')} value={va.locomotion_score} color={colors.sky} />}
+        </View>
+      )}
+      {va?.health_observations && va.health_observations.length > 0 && (
+        <View style={{ paddingHorizontal: rs(10), paddingBottom: rs(8), gap: rs(4) }}>
+          {va.health_observations.map((obs, i) => (
+            <View key={i} style={styles.observationRow}>
+              <Lightbulb size={rs(12)} color={colors.gold} strokeWidth={1.8} />
+              <Text style={styles.observationText}>{obs}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── AudioSubcard ──
+
+function AudioSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: string, opts?: Record<string, string>) => string }) {
+  const pa = media.petAudioAnalysis;
+  const fileName = media.fileName ?? t('diary.audioFile');
+
+  return (
+    <View style={[styles.subcard, { borderColor: colors.rose + '30' }]}>
+      <View style={styles.subcardHeader}>
+        <Mic size={rs(12)} color={colors.rose} strokeWidth={1.8} />
+        <Text style={[styles.subcardLabel, { color: colors.rose }]}>{t('diary.audioAnalysis').toUpperCase()}</Text>
+      </View>
+      <View style={styles.audioFileRow}>
+        <Music2 size={rs(20)} color={colors.rose} strokeWidth={1.6} />
+        <Text style={styles.audioFileName} numberOfLines={1}>{fileName}</Text>
+      </View>
+      {pa && (
+        <>
+          <Text style={styles.subcardBodyText}>
+            {t('listen.soundType')}: {pa.sound_type}{'  ·  '}{pa.intensity}
+          </Text>
+          {pa.pattern_notes ? <Text style={styles.subcardBodyText}>{pa.pattern_notes}</Text> : null}
+        </>
+      )}
+    </View>
+  );
+}
+
+// ── OCRSubcard ──
+
+function OCRSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: string, opts?: Record<string, string>) => string }) {
+  const uri = media.mediaUrl?.startsWith('http')
+    ? media.mediaUrl
+    : media.mediaUrl ? getPublicUrl('pet-photos', media.mediaUrl) : null;
+  const fields = media.ocrData?.fields ?? [];
+
+  return (
+    <View style={[styles.subcard, { borderColor: colors.purple + '30' }]}>
+      <View style={styles.subcardHeader}>
+        <FileText size={rs(12)} color={colors.purple} strokeWidth={1.8} />
+        <Text style={[styles.subcardLabel, { color: colors.purple }]}>{t('diary.ocrAnalysis').toUpperCase()}</Text>
+      </View>
+      {uri && <Image source={{ uri }} style={styles.subcardImage} resizeMode="cover" />}
+      {fields.slice(0, 5).map((field, i) => (
+        <View key={i} style={styles.ocrField}>
+          <Text style={styles.ocrKey}>{field.key}</Text>
+          <Text style={styles.ocrValue}>{field.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ── SubcardScore (used by VideoSubcard) ──
+
+function SubcardScore({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={styles.subcardScoreItem}>
+      <Text style={[styles.subcardScoreValue, { color }]}>{value}</Text>
+      <Text style={styles.subcardScoreLabel}>{label}</Text>
+    </View>
+  );
+}
+
 // ── MonthSummaryCard ──
 
 export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
@@ -94,6 +233,7 @@ export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
 
 export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, onRetry }: DiaryCardProps) => {
   const currentUserId = useAuthStore((s) => s.user?.id);
+  console.log('[CARD]', event.id.slice(-8), '| fotos:', event.photos?.length ?? 0, '| narration:', !!event.narration, '| photoAnalysis:', !!event.photoAnalysisData, '| videoUrl:', !!event.videoUrl, '| classif:', event.classifications?.length ?? 0, '| modules:', !!event.modules);
   const moodData = getMoodData(event.moodId);
   const dateObj = new Date(event.date);
   const dateStr = dateObj.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -198,58 +338,7 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
         </View>
       )}
 
-      {event.content && (
-        <View style={styles.tutorSection}>
-          <Text style={styles.tutorLabel}>{t('diary.tutorWrote')}</Text>
-          <Text style={styles.tutorContent}>{event.content}</Text>
-        </View>
-      )}
-
-      {/* Photos row */}
-      {event.photos && event.photos.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow} contentContainerStyle={styles.photosRowContent}>
-          {event.photos.map((path, idx) => {
-            const isVideo = path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.webm');
-            const uri = getPublicUrl('pet-photos', path);
-            return isVideo ? (
-              <View key={`${path}-${idx}`} style={styles.videoThumb}>
-                <Video size={rs(24)} color={colors.sky} strokeWidth={1.5} />
-                <Text style={styles.videoLabel}>{t('diary.video')}</Text>
-              </View>
-            ) : (
-              <Image key={`${path}-${idx}`} source={{ uri }} style={styles.photoThumb} />
-            );
-          })}
-        </ScrollView>
-      )}
-
-      {/* Video thumbnail */}
-      {event.videoUrl && (
-        <View style={styles.mediaAttachRow}>
-          <View style={styles.videoAttachThumb}>
-            <Video size={rs(22)} color="#fff" strokeWidth={1.8} />
-            {event.videoDuration != null && (
-              <Text style={styles.mediaDurationText}>
-                {Math.floor(event.videoDuration / 60)}:{String(event.videoDuration % 60).padStart(2, '0')}
-              </Text>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Audio thumbnail */}
-      {event.audioUrl && (
-        <View style={styles.mediaAttachRow}>
-          <View style={styles.audioAttachThumb}>
-            <Music2 size={rs(22)} color="#fff" strokeWidth={1.8} />
-            {event.audioDuration != null && (
-              <Text style={styles.mediaDurationText}>
-                {Math.floor(event.audioDuration / 60)}:{String(event.audioDuration % 60).padStart(2, '0')}
-              </Text>
-            )}
-          </View>
-        </View>
-      )}
+      {/* Original tutor text hidden — narration only shown */}
 
       {event.narration ? (
         <View style={styles.narrationWrapper}>
@@ -261,10 +350,63 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
         </View>
       ) : null}
 
-      {/* Module cards — AI-classified health/finance data */}
+      {/* Media subcards — one per attachment */}
+      {event.mediaAnalyses && event.mediaAnalyses.length > 0 ? (
+        <View style={styles.mediaSubcardsContainer}>
+          {event.mediaAnalyses.map((media, idx) => {
+            if (media.type === 'photo') return <PhotoSubcard key={idx} media={media} t={t} />;
+            if (media.type === 'video') return <VideoSubcard key={idx} media={media} t={t} />;
+            if (media.type === 'audio') return <AudioSubcard key={idx} media={media} t={t} />;
+            if (media.type === 'document') return <OCRSubcard key={idx} media={media} t={t} />;
+            return null;
+          })}
+        </View>
+      ) : (
+        /* Fallback for legacy entries without media_analyses */
+        <>
+          {event.photos && event.photos.length > 0 && (
+            <PhotoSubcard
+              media={{
+                type: 'photo',
+                mediaUrl: event.photos[0],
+                analysis: event.photoAnalysisData ?? null,
+              }}
+              t={t}
+            />
+          )}
+          {event.videoUrl && (
+            <VideoSubcard
+              media={{
+                type: 'video',
+                mediaUrl: event.videoUrl,
+                thumbnailUrl: event.photos?.[0] ?? null,
+                videoAnalysis: event.videoAnalysis,
+                analysis: event.photoAnalysisData ?? null,
+              }}
+              t={t}
+            />
+          )}
+          {event.audioUrl && (
+            <AudioSubcard
+              media={{
+                type: 'audio',
+                mediaUrl: event.audioUrl,
+                petAudioAnalysis: event.petAudioAnalysis,
+                analysis: null,
+              }}
+              t={t}
+            />
+          )}
+        </>
+      )}
+
+      {/* Lenses subcard — AI-classified health/finance data */}
       {event.classifications && event.classifications.filter((c) => c.confidence >= 0.5).length > 0 && (
-        <View style={styles.moduleSection}>
-          <DiaryModuleSeparator t={t} />
+        <View style={styles.subcard}>
+          <View style={styles.subcardHeader}>
+            <LayoutGrid size={rs(12)} color={colors.accent} strokeWidth={1.8} />
+            <Text style={styles.subcardLabel}>{t('diary.registered').toUpperCase()}</Text>
+          </View>
           <View style={styles.moduleList}>
             {event.classifications
               .filter((c) => c.confidence >= 0.5)
@@ -282,37 +424,6 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
           </View>
         </View>
       )}
-
-      {/* Per-attachment analysis descriptions */}
-      {event.photoAnalysisData && (event.photoAnalysisData.description as string | undefined) && (
-        <View style={styles.analysisBlock}>
-          <View style={styles.analysisHeader}>
-            <Camera size={rs(14)} color={colors.accent} strokeWidth={1.8} />
-            <Text style={styles.analysisLabel}>{t('diary.photoAnalysis').toUpperCase()}</Text>
-          </View>
-          <Text style={styles.analysisText}>{event.photoAnalysisData.description as string}</Text>
-        </View>
-      )}
-
-      {event.videoAnalysis?.behavior_summary ? (
-        <View style={styles.analysisBlock}>
-          <View style={styles.analysisHeader}>
-            <Video size={rs(14)} color={colors.petrol} strokeWidth={1.8} />
-            <Text style={[styles.analysisLabel, { color: colors.petrol }]}>{t('diary.videoAnalysis').toUpperCase()}</Text>
-          </View>
-          <Text style={styles.analysisText}>{event.videoAnalysis.behavior_summary}</Text>
-        </View>
-      ) : null}
-
-      {event.petAudioAnalysis?.pattern_notes ? (
-        <View style={styles.analysisBlock}>
-          <View style={styles.analysisHeader}>
-            <Music2 size={rs(14)} color={colors.purple} strokeWidth={1.8} />
-            <Text style={[styles.analysisLabel, { color: colors.purple }]}>{t('diary.audioAnalysis').toUpperCase()}</Text>
-          </View>
-          <Text style={styles.analysisText}>{event.petAudioAnalysis.pattern_notes}</Text>
-        </View>
-      ) : null}
 
       {event.tags && event.tags.length > 0 && (
         <View style={styles.tagsRow}>
@@ -482,6 +593,17 @@ export const PhotoAnalysisCard = React.memo(({ event, t }: CardProps) => (
   </View>
 ));
 
+// ── ScoreBadge (used by VideoAnalysisCard) ──
+
+function ScoreBadge({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={styles.scoreBadgeItem}>
+      <Text style={[styles.scoreBadgeValue, { color }]}>{value}</Text>
+      <Text style={styles.scoreBadgeLabel}>{label}</Text>
+    </View>
+  );
+}
+
 // ── VideoAnalysisCard ──
 
 export const VideoAnalysisCard = React.memo(({ event, t }: CardProps) => {
@@ -496,11 +618,20 @@ export const VideoAnalysisCard = React.memo(({ event, t }: CardProps) => {
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   };
 
+  // First frame: stored as photos[0] (uploaded), falling back to nothing
+  const framePhoto = event.photos?.[0];
+  const frameUri = framePhoto
+    ? (framePhoto.startsWith('http') ? framePhoto : getPublicUrl('pet-photos', framePhoto))
+    : null;
+
+  const photoDesc = event.photoAnalysisData?.description as string | undefined;
+
   return (
-    <View style={styles.cardBase}>
-      <View style={styles.cardIconRow}>
-        <Video size={rs(16)} color={colors.sky} strokeWidth={1.8} />
-        <Text style={[styles.cardTypeLabel, { color: colors.sky }]}>{t('diary.videoAnalysis')}</Text>
+    <View style={styles.videoCard}>
+      {/* Header row */}
+      <View style={styles.videoCardHeader}>
+        <Video size={rs(14)} color={colors.sky} strokeWidth={1.8} />
+        <Text style={styles.videoCardLabel}>{t('diary.videoAnalysis').toUpperCase()}</Text>
         {event.videoDuration != null && (
           <View style={[styles.severityBadge, { backgroundColor: colors.sky + '20', marginLeft: 'auto' }]}>
             <Text style={[styles.severityText, { color: colors.sky }]}>
@@ -517,45 +648,66 @@ export const VideoAnalysisCard = React.memo(({ event, t }: CardProps) => {
         )}
       </View>
 
-      <Text style={styles.entryDate}>{dateStr}</Text>
-      <Text style={[styles.entryTime, { marginBottom: rs(8) }]}>{timeStr}</Text>
+      <Text style={[styles.entryDate, { paddingHorizontal: rs(12) }]}>{dateStr}</Text>
+      <Text style={[styles.entryTime, { paddingHorizontal: rs(12), marginBottom: rs(8) }]}>{timeStr}</Text>
 
-      {event.content && (
-        <View style={styles.tutorSection}>
-          <Text style={styles.tutorLabel}>{t('diary.tutorWrote')}</Text>
-          <Text style={styles.tutorContent}>{event.content}</Text>
+      {/* Frame image (uploaded as photos[0]) */}
+      {frameUri && (
+        <Image source={{ uri: frameUri }} style={styles.videoCardFrame} resizeMode="cover" />
+      )}
+
+      {/* Frame description from analyze-pet-photo */}
+      {photoDesc && (
+        <View style={styles.videoCardFrameDesc}>
+          <Camera size={rs(12)} color={colors.success} strokeWidth={1.8} />
+          <Text style={styles.videoCardFrameDescText}>{photoDesc}</Text>
         </View>
       )}
 
+      <View style={{ paddingHorizontal: rs(12), paddingBottom: rs(4) }}>
+        {/* Behavior summary */}
+        {va?.behavior_summary && (
+          <Text style={styles.videoCardBehavior}>{va.behavior_summary}</Text>
+        )}
+
+        {/* Scores row */}
+        {va && (va.energy_score != null || va.calm_score != null || va.locomotion_score != null) && (
+          <View style={styles.videoCardScores}>
+            {va.energy_score != null && (
+              <ScoreBadge label={t('diary.energy')} value={va.energy_score} color={colors.gold} />
+            )}
+            {va.calm_score != null && (
+              <ScoreBadge label={t('diary.calm')} value={va.calm_score} color={colors.success} />
+            )}
+            {va.locomotion_score != null && (
+              <ScoreBadge label={t('diary.locomotion')} value={va.locomotion_score} color={colors.sky} />
+            )}
+          </View>
+        )}
+
+        {/* Health observations */}
+        {va?.health_observations && va.health_observations.length > 0 && (
+          <View style={[styles.observationsContainer, { marginTop: rs(8) }]}>
+            {va.health_observations.map((obs, i) => (
+              <View key={i} style={styles.observationRow}>
+                <Lightbulb size={rs(12)} color={colors.warning} strokeWidth={1.8} />
+                <Text style={styles.observationText}>{obs}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Narration */}
       {event.narration && (
-        <View style={styles.narrationSection}>
+        <View style={styles.videoCardNarration}>
           <Text style={styles.narrationText}>{event.narration}</Text>
         </View>
       )}
 
-      {va?.behavior_summary ? (
-        <View style={styles.analysisBlock}>
-          <View style={styles.analysisHeader}>
-            <Video size={rs(14)} color={colors.sky} strokeWidth={1.8} />
-            <Text style={[styles.analysisLabel, { color: colors.sky }]}>{t('diary.videoAnalysis').toUpperCase()}</Text>
-          </View>
-          <Text style={styles.analysisText}>{va.behavior_summary}</Text>
-        </View>
-      ) : null}
-
-      {va?.health_observations && va.health_observations.length > 0 && (
-        <View style={styles.observationsContainer}>
-          {va.health_observations.map((obs, i) => (
-            <View key={i} style={styles.observationRow}>
-              <Lightbulb size={rs(12)} color={colors.warning} strokeWidth={1.8} />
-              <Text style={styles.observationText}>{obs}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
+      {/* Tags */}
       {event.tags && event.tags.length > 0 && (
-        <View style={styles.tagsRow}>
+        <View style={[styles.tagsRow, { paddingHorizontal: rs(12), paddingBottom: rs(12) }]}>
           {event.tags.map((tag) => (
             <View key={tag} style={styles.tagChip}>
               <Text style={styles.tagText}>#{tag}</Text>
@@ -669,18 +821,12 @@ const styles = StyleSheet.create({
   tutorSection: { backgroundColor: colors.bgCard, borderLeftWidth: 3, borderLeftColor: colors.textGhost, borderRadius: rs(10), padding: rs(12), marginBottom: rs(10) },
   tutorLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.textDim, letterSpacing: 1, marginBottom: rs(6) },
   tutorContent: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec, lineHeight: fs(20) },
-  photosRow: { marginBottom: rs(10) },
-  photosRowContent: { flexDirection: 'row', gap: rs(8) },
-  photoThumb: { width: rs(80), height: rs(80), borderRadius: rs(10), borderWidth: 1, borderColor: colors.border },
-  videoThumb: { width: rs(80), height: rs(80), borderRadius: rs(10), borderWidth: 1, borderColor: colors.border, backgroundColor: colors.sky + '12', alignItems: 'center', justifyContent: 'center', gap: rs(4) },
-  videoLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(9), color: colors.sky },
   narrationSection: { backgroundColor: colors.accent + '08', borderWidth: 1, borderColor: colors.accent + '12', borderRadius: rs(12), padding: rs(12) },
   narrationHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) },
   narrationTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.accent, flex: 1 },
   narrationText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: rs(27), fontStyle: 'italic' },
   narrationWrapper: { marginTop: rs(10) },
-  moduleSection: { marginTop: rs(10) },
-  moduleList: { gap: rs(6) },
+  moduleList: { gap: rs(6), padding: rs(4) },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(6), marginTop: rs(10) },
   tagChip: { backgroundColor: colors.bgCard, borderRadius: rs(8), paddingHorizontal: rs(10), paddingVertical: rs(4) },
   tagText: { fontFamily: 'Sora_500Medium', fontSize: fs(10), color: colors.textDim },
@@ -719,6 +865,22 @@ const styles = StyleSheet.create({
   badgeChip: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.gold + '15', paddingHorizontal: rs(12), paddingVertical: rs(6), borderRadius: rs(8), marginTop: rs(10) },
   badgeChipText: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.gold },
 
+  // VideoAnalysisCard
+  videoCard: { backgroundColor: colors.card, borderRadius: rs(16), borderWidth: 1, borderColor: colors.sky + '30', overflow: 'hidden' },
+  videoCardHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), padding: rs(12), paddingBottom: rs(4) },
+  videoCardLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.sky, letterSpacing: 1.2, flex: 1 },
+  videoCardFrame: { width: '100%', height: rs(180) },
+  videoCardFrameDesc: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(6), padding: rs(10), backgroundColor: colors.success + '08' },
+  videoCardFrameDescText: { flex: 1, fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, fontStyle: 'italic', lineHeight: fs(18) },
+  videoCardBehavior: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.text, lineHeight: fs(20), marginTop: rs(10) },
+  videoCardScores: { flexDirection: 'row', marginTop: rs(10), gap: rs(8) },
+  videoCardNarration: { borderTopWidth: 1, borderTopColor: colors.border, padding: rs(12) },
+
+  // ScoreBadge
+  scoreBadgeItem: { flex: 1, backgroundColor: colors.bgCard, borderRadius: rs(10), borderWidth: 1, borderColor: colors.border, padding: rs(8), alignItems: 'center' },
+  scoreBadgeValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(18) },
+  scoreBadgeLabel: { fontFamily: 'Sora_500Medium', fontSize: fs(9), color: colors.textDim, marginTop: rs(2) },
+
   // Video health observations
   observationsContainer: { marginTop: rs(8), gap: rs(6) },
   observationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(6) },
@@ -746,18 +908,27 @@ const styles = StyleSheet.create({
   retryText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
 
   // Media attachment thumbnails (video/audio in DiaryCard)
-  mediaAttachRow: { marginBottom: rs(8) },
-  videoAttachThumb: { flexDirection: 'row', alignItems: 'center', gap: rs(8), backgroundColor: colors.sky + '20', borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(8), alignSelf: 'flex-start' },
-  audioAttachThumb: { flexDirection: 'row', alignItems: 'center', gap: rs(8), backgroundColor: colors.purple + '20', borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(8), alignSelf: 'flex-start' },
-  mediaDurationText: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(11), color: colors.textSec },
-
-  // Per-attachment analysis description blocks
-  analysisBlock: { backgroundColor: colors.bgCard, borderRadius: rs(14), borderWidth: 1, borderColor: colors.border, padding: rs(12), marginTop: rs(8), gap: rs(6) },
-  analysisHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
-  analysisLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.accent, letterSpacing: 1 },
-  analysisText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, fontStyle: 'italic', lineHeight: fs(24) },
 
   // Audit
   auditSection: { marginTop: rs(8), gap: rs(2) },
   auditText: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textGhost, lineHeight: fs(15) },
+
+  // Subcards (media: photo/video/audio/document + lenses)
+  mediaSubcardsContainer: { gap: rs(4), marginTop: rs(10) },
+  subcard: { borderRadius: rs(12), borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, overflow: 'hidden', marginTop: rs(8) },
+  subcardHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), paddingHorizontal: rs(12), paddingVertical: rs(8) },
+  subcardLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.success, letterSpacing: 1.2 },
+  subcardImage: { width: '100%', height: rs(180) },
+  subcardBodyText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, fontStyle: 'italic', lineHeight: fs(18), padding: rs(10), paddingTop: rs(4) },
+  toxicAlert: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(6), padding: rs(10) },
+  toxicText: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(12), lineHeight: fs(18) },
+  subcardScores: { flexDirection: 'row', paddingHorizontal: rs(10), paddingBottom: rs(8) },
+  subcardScoreItem: { flex: 1, alignItems: 'center' },
+  subcardScoreValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(16) },
+  subcardScoreLabel: { fontFamily: 'Sora_400Regular', fontSize: fs(9), color: colors.textDim },
+  audioFileRow: { flexDirection: 'row', alignItems: 'center', gap: rs(10), padding: rs(12), paddingTop: rs(4) },
+  audioFileName: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.text },
+  ocrField: { flexDirection: 'row', paddingHorizontal: rs(12), paddingVertical: rs(3), gap: rs(8) },
+  ocrKey: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textDim, minWidth: rs(80) },
+  ocrValue: { flex: 1, fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.text },
 });

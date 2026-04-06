@@ -9,7 +9,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import {
-  Syringe, Stethoscope, Scale, FlaskConical, Pill,
+  Syringe, Stethoscope, Scale, FlaskConical, Pill, Activity,
   DollarSign, UtensilsCrossed, AlertCircle, Plane, Heart,
   ChevronDown, ChevronUp, Check, X, Trash2,
 } from 'lucide-react-native';
@@ -58,9 +58,10 @@ const MODULE_CONFIG: Record<string, {
   medication:    { icon: Pill,           color: '#3B6D11', labelKey: 'diary.module_medication',   table: 'medications' },
   food:          { icon: UtensilsCrossed,color: '#3B6D11', labelKey: 'diary.module_food',         table: 'nutrition_records' },
   expense:       { icon: DollarSign,     color: '#534AB7', labelKey: 'diary.module_expense',      table: 'expenses' },
-  symptom:       { icon: AlertCircle,    color: '#E24B4A', labelKey: 'diary.module_symptom',      table: '' },
-  travel:        { icon: Plane,          color: colors.sky,  labelKey: 'diary.module_travel',     table: '' },
-  connection:    { icon: Heart,          color: colors.rose, labelKey: 'diary.module_connection', table: '' },
+  symptom:         { icon: AlertCircle,    color: '#E24B4A',   labelKey: 'diary.module_symptom',         table: '' },
+  travel:          { icon: Plane,          color: colors.sky,  labelKey: 'diary.module_travel',          table: '' },
+  connection:      { icon: Heart,          color: colors.rose, labelKey: 'diary.module_connection',      table: '' },
+  clinical_metric: { icon: Activity,       color: colors.petrol, labelKey: 'diary.module_clinical_metric', table: 'clinical_metrics' },
 };
 
 const FALLBACK_CONFIG = {
@@ -70,59 +71,122 @@ const FALLBACK_CONFIG = {
   table: '',
 };
 
-// ── Summary builder (read-only collapsed view) ──
+// ── Summary builder: extracted_data (primary) + moduleRow (secondary) ──
 
-function buildSummary(type: string, data: Record<string, unknown>): string {
-  const str = (key: string) => (data[key] as string | undefined) ?? '';
+function buildModuleValue(
+  type: string,
+  classification: { extracted_data?: Record<string, unknown> },
+  moduleRow?: ModuleRow | null,
+  t?: (key: string) => string,
+): string {
+  const d = (classification.extracted_data ?? {}) as Record<string, unknown>;
+  const m = (moduleRow ?? {}) as Record<string, unknown>;
+
+  const s = (obj: Record<string, unknown>, ...keys: string[]): string => {
+    for (const k of keys) {
+      if (obj[k] && typeof obj[k] === 'string') return obj[k] as string;
+    }
+    return '';
+  };
 
   switch (type) {
-    case 'vaccine': {
-      const name = str('vaccine_name') || str('vaccine_type') || str('name');
-      const lab = str('laboratory') || str('lab');
-      return lab ? `${name} · ${lab}` : name;
-    }
+    case 'vaccine':
+      return s(m, 'name') || s(d, 'vaccine_name', 'vaccine_type') || '';
+
     case 'consultation':
-    case 'return_visit': {
-      const vet = str('veterinarian') || str('vet_name');
-      const clinic = str('clinic') || str('clinic_name');
-      const diag = str('diagnosis');
-      return [vet || clinic, diag].filter(Boolean).join(' · ');
-    }
+    case 'return_visit':
+      return s(m, 'diagnosis', 'veterinarian')
+        || s(d, 'diagnosis', 'reason', 'vet_name', 'veterinarian', 'summary', 'description', 'provider')
+        || '';
+
+    case 'exam':
+      return s(m, 'name')
+        || [s(d, 'exam_name'), s(d, 'results_summary')].filter(Boolean).join(' · ')
+        || '';
+
+    case 'medication':
+      return s(m, 'name')
+        || [s(d, 'medication_name'), s(d, 'dosage')].filter(Boolean).join(' · ')
+        || '';
+
     case 'weight': {
-      const val = data['value'] ?? data['weight_value'] ?? data['weight'];
-      const unit = str('unit') || str('weight_unit') || 'kg';
+      const val = m.value ?? d.value ?? d.weight ?? d.weight_kg ?? d.weight_value ?? d.current_weight;
+      const unit = m.unit ?? d.unit ?? 'kg';
       return val != null ? `${val} ${unit}` : '';
     }
-    case 'exam': {
-      const name = str('exam_name') || str('exam_type');
-      const summary = str('results_summary') || str('laboratory') || str('lab');
-      return summary ? `${name} · ${summary}` : name;
-    }
-    case 'medication': {
-      const name = str('medication_name') || str('drug_name');
-      const dosage = str('dosage');
-      return dosage ? `${name} · ${dosage}` : name;
-    }
+
     case 'expense': {
-      const total = data['amount'] ?? data['total'];
-      const currency = str('currency') || 'R$';
-      const category = str('category');
-      return total ? `${currency} ${total}${category ? ` · ${category}` : ''}` : '';
+      const amount = m.total ?? d.amount;
+      const currency = (m.currency ?? d.currency ?? 'BRL') as string;
+      // Prefer human description over raw category code
+      const description = (m.notes ?? d.description ?? d.category ?? '') as string;
+      if (amount == null) return '';
+      const formatted = Number(amount).toLocaleString('pt-BR', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
+      });
+      return description ? `${currency} ${formatted} · ${description}` : `${currency} ${formatted}`;
     }
-    case 'food': {
-      const name = str('food_name') || str('product_name') || str('brand');
-      const qty = str('quantity');
-      return qty ? `${name} · ${qty}` : name;
+
+    case 'symptom': {
+      // symptoms pode ser array ou string
+      const raw = d.symptom_description ?? d.symptoms ?? d.symptom
+        ?? d.description ?? d.observation ?? d.name ?? d.summary ?? d.details ?? d.notes;
+      if (Array.isArray(raw)) return (raw as string[]).join(', ');
+      if (typeof raw === 'string' && raw) return raw;
+      return '';
     }
-    case 'symptom':
-      return str('symptom_description') || str('symptom') || str('description') || str('observation');
-    case 'travel': {
-      const dest = str('destination');
-      const mode = str('transport');
-      return dest || mode ? [dest, mode].filter(Boolean).join(' · ') : '';
+
+    case 'food':
+      return s(m, 'product_name')
+        || [s(d, 'food_name', 'product_name'), s(d, 'brand')].filter(Boolean).join(' · ')
+        || '';
+
+    case 'purchase':
+      return s(d, 'product_name', 'item_name') || '';
+
+    case 'allergy':
+      return s(d, 'allergen', 'substance') || '';
+
+    case 'surgery':
+      return s(d, 'procedure', 'procedure_name') || '';
+
+    case 'plan':
+      return s(d, 'provider', 'provider_name') || '';
+
+    case 'clinical_metric': {
+      const metricType = s(d, 'metric_type');
+      const val = d.value;
+      const unit = s(d, 'unit');
+      if (t) {
+        const METRIC_LABEL_KEYS: Record<string, string> = {
+          temperature:          'diary.metric.temperature',
+          blood_glucose:        'diary.metric.blood_glucose',
+          blood_pressure:       'diary.metric.blood_pressure',
+          heart_rate:           'diary.metric.heart_rate',
+          respiratory_rate:     'diary.metric.respiratory_rate',
+          oxygen_saturation:    'diary.metric.oxygen_saturation',
+          body_condition_score: 'diary.metric.body_condition',
+          lab_result:           'diary.metric.lab_result',
+        };
+        const labelKey = METRIC_LABEL_KEYS[metricType];
+        const metricLabel = labelKey ? t(labelKey) : metricType;
+        if (metricType === 'blood_pressure' && d.secondary_value != null) {
+          return `${metricLabel}: ${val}/${d.secondary_value}${unit ? ' ' + unit : ''}`;
+        }
+        return val != null ? `${metricLabel}: ${val}${unit ? ' ' + unit : ''}` : metricLabel;
+      }
+      return val != null ? `${metricType}: ${val}${unit ? ' ' + unit : ''}` : metricType;
     }
+
+    case 'travel':
+      return s(d, 'destination', 'city') || '';
+
     case 'connection':
-      return str('friend_name') || str('name');
+      return s(d, 'friend_name', 'pet_name') || '';
+
+    case 'moment':
+      return s(d, 'description') || '';
+
     default:
       return '';
   }
@@ -196,9 +260,7 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
 
-  // Source for summary: prefer moduleRow data, fall back to extracted_data
-  const displayData: Record<string, unknown> = moduleRow ?? classification.extracted_data;
-  const summary = buildSummary(classification.type, displayData);
+  const summary = buildModuleValue(classification.type, classification, moduleRow, t);
 
   const handleExpand = useCallback(() => {
     if (!canEdit) return;
@@ -262,6 +324,7 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
     }
   }, [moduleRow, cfg.table, editFields, editValues, onUpdated]);
 
+  if (!summary && classification.type === 'moment') return null;
   if (!summary && !label) return null;
   if (isDeleted) return null;
 

@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as base64Decode } from 'base-64';
 import { supabase } from './supabase';
+import { MEDIA_LIMITS } from '../constants/media';
 
 export type MediaType = 'photo' | 'video';
 
@@ -58,6 +59,16 @@ export async function uploadPetMedia(
   uri: string,
   mediaType: MediaType,
 ): Promise<string> {
+  const info = await FileSystem.getInfoAsync(uri);
+  if (info.exists && 'size' in info && info.size != null) {
+    const limitBytes = mediaType === 'video'
+      ? MEDIA_LIMITS.video.maxSizeBytes
+      : MEDIA_LIMITS.photo.maxSizeBytes;
+    const limitMB = mediaType === 'video'
+      ? MEDIA_LIMITS.video.maxSizeMB
+      : MEDIA_LIMITS.photo.maxSizeMB;
+    if (info.size > limitBytes) throw new Error(`FILE_TOO_LARGE:${limitMB}`);
+  }
   const bytes = await readFileAsBytes(uri);
 
   const ext = mediaType === 'video' ? 'mp4' : 'webp';
@@ -68,10 +79,7 @@ export async function uploadPetMedia(
     .from('pet-photos')
     .upload(path, bytes, { contentType, upsert: false });
 
-  if (error) {
-    console.error('[Storage] Upload FAILED →', error.message);
-    throw error;
-  }
+  if (error) throw error;
   return data.path;
 }
 

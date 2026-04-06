@@ -22,8 +22,9 @@ import {
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { useToast } from '../Toast';
+import { MEDIA_LIMITS } from '../../constants/media';
 
-const MAX_DURATION = 30; // seconds
+const MAX_DURATION = MEDIA_LIMITS.audio.maxDurationSec;
 const WAVEFORM_BARS = 24;
 
 const RECORDING_OPTIONS = {

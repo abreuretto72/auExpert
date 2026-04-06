@@ -71,6 +71,8 @@ async function saveToModule(
   classification: ClassifyDiaryResponse,
 ): Promise<void> {
   const classifications = classification.classifications ?? [];
+  console.log('[MOD] saveToModule | classifications:', classifications.length);
+  classifications.forEach((c: {type: string; confidence: number}, i: number) => console.log(`[MOD] cls[${i}]: ${c.type} (${c.confidence})`));
   if (classifications.length === 0) return;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -83,7 +85,7 @@ async function saveToModule(
       switch (cls.type) {
 
         case 'vaccine': {
-          const { data } = await supabase.from('vaccines').insert({
+          const { data, error: vaccErr } = await supabase.from('vaccines').insert({
             pet_id:           petId,
             user_id:          userId,
             name:             (extracted.vaccine_name as string) ?? (extracted.vaccine_type as string) ?? i18n.t('ai.default.vaccine'),
@@ -96,6 +98,7 @@ async function saveToModule(
             status:           'up_to_date',
             source:           'ai',
           }).select('id').single();
+          console.log('[MOD] vacina salva:', data?.id?.slice(-8), '| erro:', vaccErr?.message);
           if (data?.id) {
             linkedField.linked_vaccine_id = data.id;
             const nextDue = extracted.next_due as string | undefined;
@@ -115,7 +118,7 @@ async function saveToModule(
 
         case 'consultation':
         case 'return_visit': {
-          const { data } = await supabase.from('consultations').insert({
+          const { data, error: consErr } = await supabase.from('consultations').insert({
             pet_id:      petId,
             user_id:     userId,
             date:        (extracted.date as string) ?? today,
@@ -128,6 +131,7 @@ async function saveToModule(
             follow_up_at:(extracted.return_date as string) ?? null,
             source:      'ai',
           }).select('id').single();
+          console.log('[MOD] consulta salva:', data?.id?.slice(-8), '| erro:', consErr?.message);
           if (data?.id) {
             linkedField.linked_consultation_id = data.id;
             const returnDate = extracted.return_date as string | undefined;
@@ -266,7 +270,7 @@ async function saveToModule(
           })();
           const normalizedCategory = inferredFromContext ?? CATEGORY_ALIASES[rawCategory] ?? rawCategory;
           const category = VALID_EXPENSE_CATEGORIES.includes(normalizedCategory) ? normalizedCategory : 'outros';
-          const { data } = await supabase.from('expenses').insert({
+          const { data, error: expErr } = await supabase.from('expenses').insert({
             pet_id:        petId,
             user_id:       userId,
             diary_entry_id:diaryEntryId,
@@ -279,6 +283,7 @@ async function saveToModule(
             items:         items,
             source:        'ai',
           }).select('id').single();
+          console.log('[MOD] gasto salvo:', data?.id?.slice(-8), 'total:', extracted.amount ?? total, '| erro:', expErr?.message);
           if (data?.id) linkedField.linked_expense_id = data.id;
           break;
         }
@@ -384,7 +389,7 @@ async function saveToModule(
         case 'weight': {
           const weightVal = extracted.value ?? extracted.weight;
           if (weightVal != null) {
-            const { data } = await supabase.from('clinical_metrics').insert({
+            const { data, error: wErr } = await supabase.from('clinical_metrics').insert({
               pet_id:        petId,
               user_id:       userId,
               diary_entry_id:diaryEntryId,
@@ -395,6 +400,7 @@ async function saveToModule(
               source:        'ai',
               measured_at:   new Date().toISOString(),
             }).select('id').single();
+            console.log('[MOD] métrica salva: weight', data?.id?.slice(-8), '| erro:', wErr?.message);
             if (data?.id) linkedField.linked_weight_metric_id = data.id;
           }
           break;
@@ -651,7 +657,8 @@ async function saveToModule(
           // Derive status from is_abnormal flag
           metricRow.status = extracted.is_abnormal ? 'high' : 'normal';
 
-          await supabase.from('clinical_metrics').insert(metricRow);
+          const { data: metricData, error: metricErr } = await supabase.from('clinical_metrics').insert(metricRow).select('id').single();
+          console.log('[MOD] métrica salva:', metricType, metricData?.id?.slice(-8), '| erro:', metricErr?.message);
 
           // Generate pet_insights for clinically significant values
           checkMetricAlert(petId, userId, metricType, metricValue, {
@@ -679,8 +686,17 @@ async function saveToModule(
   }
 
   // Update diary_entry with linked_*_id fields for any modules that were created
+  console.log('[MOD] linkedField:', JSON.stringify(linkedField));
   if (Object.keys(linkedField).length > 0) {
-    await supabase.from('diary_entries').update(linkedField).eq('id', diaryEntryId);
+    const { error: linkedErr } = await supabase
+      .from('diary_entries')
+      .update(linkedField)
+      .eq('id', diaryEntryId);
+    if (linkedErr) {
+      console.warn('[LENTES] erro ao gravar linked IDs:', linkedErr.message, linkedField);
+    } else {
+      console.log('[MOD] linkedField gravado no banco');
+    }
   }
 }
 
@@ -776,11 +792,11 @@ export interface SubmitEntryParams {
   text: string | null;
   photosBase64: string[] | null; // array of base64 images for AI analysis
   inputType: string;
-  mediaUris?: string[];      // local photo file URIs for storage upload + immediate display
-  videoUri?: string;         // local video URI (separate from photo mediaUris)
-  audioUri?: string;         // local audio URI (separate from photo mediaUris)
+  mediaUris?: string[];      // all attachment URIs (photos + video + audio) in attachment order
   videoDuration?: number;
   audioDuration?: number;
+  additionalContext?: string; // e.g. "The media shows a DIFFERENT pet, not the owner's pet."
+  hasVideo?: boolean;         // true when video URIs are present regardless of inputType
 }
 
 export interface PDFImportParams {
@@ -802,73 +818,195 @@ async function _backgroundClassifyAndSave(opts: {
   photosBase64: string[] | null;
   inputType: string;
   photos: string[];
-  mediaUris?: string[];   // photo URIs only
-  videoUri?: string;      // dedicated video URI
-  audioUri?: string;      // dedicated audio URI
+  species?: string;
+  mediaUris?: string[];   // all attachment URIs (photos first, then video/audio)
   videoDuration?: number;
   audioDuration?: number;
+  additionalContext?: string;
+  hasVideo?: boolean;
 }): Promise<void> {
-  const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoUri, audioUri, videoDuration, audioDuration } = opts;
+  const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoDuration, audioDuration, additionalContext } = opts;
+
+  // Mark as processing immediately so useSyncQueue doesn't pick it up and create a duplicate
+  updatePendingStatus(tempId, 'processing');
 
   // Upload all media types in parallel before classify so URLs are ready
   let uploadedPhotos: string[] = photos;
-  let uploadedVideoUrl: string | null = null;
+  let uploadedVideoUrls: string[] = [];
   let uploadedAudioUrl: string | null = null;
 
   const { uploadPetMedia, getPublicUrl } = await import('../lib/storage');
 
+  // Photos: first N URIs where N = photosBase64.length (photos are always added before video/audio)
+  const photoCount = photosBase64?.length ?? 0;
+  const photoUris = photoCount > 0 ? (mediaUris ?? []).slice(0, photoCount) : [];
+  // Video/audio: the URI right after the photos (if any)
+  const mediaUri = (mediaUris ?? []).slice(photoCount)[0] ?? undefined;
+
   await Promise.allSettled([
-    // 1. Photos — mediaUris contains only photo URIs
+    // 1. Photos — upload whenever photoUris exist, regardless of inputType
     (async () => {
-      if (!mediaUris || mediaUris.length === 0) return;
+      if (photoUris.length === 0 || !photosBase64?.length) return;
       try {
         const paths = await Promise.all(
-          mediaUris.map((uri) => uploadPetMedia(userId, petId, uri, 'photo')),
+          photoUris.map((uri) => uploadPetMedia(userId, petId, uri, 'photo')),
         );
         uploadedPhotos = paths.map((p) => getPublicUrl('pet-photos', p));
-      } catch { /* non-critical */ }
+      } catch (e) {
+        console.warn('[BG] photo upload failed:', String(e));
+      }
     })(),
 
-    // 2. Video — dedicated videoUri; fallback to first mediaUri for single-type 'video' entries
+    // 2. Videos — upload all video URIs (may be multiple)
     (async () => {
-      const vUri = videoUri ?? (inputType === 'video' ? mediaUris?.[0] : undefined);
-      if (!vUri) return;
+      const videoUris = (mediaUris ?? []).filter((u) => /\.(mp4|mov|webm|m4v|avi)$/i.test(u ?? ''));
+      if (videoUris.length === 0) return;
       try {
-        const path = await uploadPetMedia(userId, petId, vUri, 'video');
-        uploadedVideoUrl = getPublicUrl('pet-photos', path);
-      } catch { /* non-critical */ }
+        const paths = await Promise.all(
+          videoUris.map((u) => uploadPetMedia(userId, petId, u, 'video')),
+        );
+        uploadedVideoUrls = paths.map((p) => getPublicUrl('pet-photos', p));
+      } catch (e) {
+        console.warn('[BG] video upload failed:', String(e));
+      }
     })(),
 
-    // 3. Audio — dedicated audioUri; fallback to first mediaUri for single-type 'pet_audio' entries
+    // 3. Audio — primary: mediaUri (after photos); fallback: scan by extension
     (async () => {
-      const aUri = audioUri ?? (inputType === 'pet_audio' ? mediaUris?.[0] : undefined);
+      const aUri = inputType === 'pet_audio'
+        ? (mediaUri ?? mediaUris?.[0])
+        : mediaUris?.find((u) => /\.(m4a|aac|mp3|wav|ogg)$/i.test(u ?? ''));
       if (!aUri) return;
       try {
         const path = await uploadPetMedia(userId, petId, aUri, 'video'); // audio stored in video bucket
         uploadedAudioUrl = getPublicUrl('pet-photos', path);
-      } catch { /* non-critical */ }
+      } catch (e) {
+        console.warn('[BG] audio upload failed:', String(e));
+      }
     })(),
   ]);
 
+  console.log('[S2] uploadedPhotos:', uploadedPhotos?.length, uploadedPhotos?.[0]?.slice(0,60));
+  console.log('[S2] uploadedVideoUrls:', uploadedVideoUrls.length, uploadedVideoUrls[0]?.slice(0,60));
+  console.log('[S2] uploadedAudioUrl:', uploadedAudioUrl?.slice(0,60));
+
   try {
+    // ── Extract video frames for visual analysis ──────────────────────────────
+    let videoFramesBase64: string[] = [];
+    let videoThumbnailUrl: string | null = null;
+    if ((inputType === 'video' || opts.hasVideo) && (mediaUris?.length ?? 0) > 0) {
+      const photoCount = photosBase64?.length ?? 0;
+      const videoUri = (mediaUris ?? []).slice(photoCount)[0]
+        ?? mediaUris?.find((u) => /\.(mp4|mov|webm|m4v|avi)$/i.test(u ?? ''))
+        ?? null;
+      if (videoUri) {
+        const [{ extractVideoFrames }, VideoThumbnails] = await Promise.all([
+          import('../lib/videoAnalysis'),
+          import('expo-video-thumbnails'),
+        ]);
+        // Limit to 1 frame when photos are also present to avoid OOM with mixed media
+        const maxFrames = (photosBase64?.length ?? 0) > 0 ? 1 : 3;
+        videoFramesBase64 = await extractVideoFrames(videoUri, maxFrames);
+        console.log('[S3] frames extraídos do vídeo:', videoFramesBase64.length, '(maxFrames:', maxFrames, ')');
+
+        // Upload first frame as thumbnail for video card display (always, regardless of photos)
+        if (videoFramesBase64.length > 0) {
+          try {
+            const { uri: thumbUri } = await VideoThumbnails.getThumbnailAsync(videoUri, { time: 1000, quality: 0.3 });
+            const thumbPath = await uploadPetMedia(userId, petId, thumbUri, 'photo');
+            videoThumbnailUrl = getPublicUrl('pet-photos', thumbPath);
+            console.log('[S3] frame thumbnail upado:', videoThumbnailUrl?.slice(0, 60));
+            // If no tutor photos, also store as uploadedPhotos so DB photo field is populated
+            if (uploadedPhotos.length === 0) {
+              uploadedPhotos = [videoThumbnailUrl];
+            }
+          } catch (e) {
+            console.warn('[BG] frame thumbnail upload failed:', String(e));
+          }
+        }
+      }
+    }
+
     // ── Run text classification and per-photo analysis in parallel ────────────
-    const hasPhotos = (photosBase64?.length ?? 0) > 0 && ['photo', 'gallery', 'ocr_scan'].includes(inputType);
+    // hasPhotos: true whenever photos or video frames are available for analysis
+    // Fotos têm prioridade sobre frames de vídeo (mais dados clínicos; evita OOM com mídia mista)
+    const analysisFrames = photosBase64 && photosBase64.length > 0
+      ? photosBase64
+      : videoFramesBase64.length > 0
+        ? videoFramesBase64
+        : [];
+    // Limit to 3 images max for classify and per-photo analysis to prevent OOM
+    const analysisFramesCapped = analysisFrames.slice(0, 3);
+    const hasVisualInput = analysisFramesCapped.length > 0;
+
+    // Append additionalContext (e.g. "other pet") to text for classify
+    const textForClassify = additionalContext
+      ? `${text ?? ''}\n\n[CONTEXT: ${additionalContext}]`.trim()
+      : text;
+
+    // Fetch token explicitly so analyze-pet-photo invoke works from background context
+    const { data: { session: bgSession } } = await supabase.auth.getSession();
+    const bgAuthHeader = bgSession?.access_token ? { Authorization: `Bearer ${bgSession.access_token}` } : {};
+    console.log('[DIAG] bgSession token present:', !!bgSession?.access_token);
 
     const [classification, photoAnalysisResults] = await Promise.all([
-      // A: unified classify — text + photos + input type (always runs)
-      classifyDiaryEntry(petId, text, photosBase64, inputType, i18n.language),
+      // A: unified classify — text + frames/photos + input type (always runs)
+      classifyDiaryEntry(petId, textForClassify, analysisFramesCapped.length > 0 ? analysisFramesCapped : photosBase64, inputType, i18n.language),
 
-      // B: per-photo deep analysis via analyze-pet-photo (parallel, non-blocking)
-      hasPhotos
+      // B: per-frame/photo deep analysis via analyze-pet-photo (parallel, non-blocking)
+      // Fotos primeiro, depois frames de vídeo se houver espaço (max 3 total)
+      hasVisualInput
         ? Promise.allSettled(
-            (photosBase64 ?? []).map((b64) =>
+            [...(photosBase64 ?? []), ...videoFramesBase64].slice(0, 3).map((b64, idx) =>
               supabase.functions
-                .invoke('analyze-pet-photo', { body: { photo_base64: b64, language: i18n.language } })
-                .then(({ data }) => data as Record<string, unknown> | null),
+                .invoke('analyze-pet-photo', {
+                  headers: bgAuthHeader,
+                  body: {
+                    photo_base64: b64,
+                    language: i18n.language,
+                    species: opts.species ?? 'dog',
+                    ...((photosBase64?.length ?? 0) === 0 || idx >= (photosBase64?.length ?? 0)
+                      ? { context: 'video_frame' }
+                      : {}),
+                  },
+                })
+                .then(({ data, error }) => {
+                  if (error) console.log('[DIAG-ERR] analyze-pet-photo idx=' + idx + ':', JSON.stringify(error));
+                  return data as Record<string, unknown> | null;
+                }),
             ),
           )
         : Promise.resolve(null),
     ]);
+
+    console.log('[S3] classify OK | narration:', !!classification.narration, '| usou fotos:', (photosBase64?.length ?? 0) > 0, '| frames:', videoFramesBase64.length);
+    console.log('[DIAG] photoAnalysisResults:', JSON.stringify(
+      Array.isArray(photoAnalysisResults)
+        ? photoAnalysisResults.map((r, i) => ({
+            idx: i,
+            status: r.status,
+            hasValue: r.status === 'fulfilled' && r.value != null,
+            desc: r.status === 'fulfilled' && r.value
+              ? String((r.value as Record<string,unknown>).description ?? 'NULL').slice(0, 80)
+              : r.status === 'rejected'
+                ? String((r as PromiseRejectedResult).reason).slice(0, 80)
+                : 'NULL',
+          }))
+        : 'photoAnalysisResults is null'
+    ));
+    // PASSO 7: Clear base64 references after classify to free memory
+    // (JS GC will collect them once no references remain)
+    videoFramesBase64 = [];
+    console.log('[S3] classifications:', classification.classifications?.map((c: {type: string}) => c.type));
+    console.log('[S3] extracted_data:', JSON.stringify(
+      classification.classifications
+        ?.filter((c: {type: string}) => ['symptom','consultation','weight'].includes(c.type))
+        ?.map((c: {type: string; extracted_data: Record<string,unknown>}) => ({
+          type: c.type,
+          data: c.extracted_data,
+        }))
+    ));
+    console.log('[S3] photoAnalysisResults count:', Array.isArray(photoAnalysisResults) ? photoAnalysisResults.length : 0);
 
     const inputMethod: import('../types/database').DiaryEntry['input_method'] =
       ['photo', 'gallery', 'ocr_scan'].includes(inputType) ? 'photo'
@@ -889,6 +1027,7 @@ async function _backgroundClassifyAndSave(opts: {
     };
 
     const entryId = await api.createDiaryEntry(entryData);
+    console.log('[S4] entryId:', entryId?.slice(-8));
 
     if (classification.narration) {
       await api.updateDiaryNarration(
@@ -898,6 +1037,9 @@ async function _backgroundClassifyAndSave(opts: {
         classification.tags_suggested,
       );
     }
+
+    // ── Build media_analyses array (declared here so insights can access it after await) ──
+    const mediaAnalysesArr: Array<Record<string, unknown>> = [];
 
     // ── Run all post-creation updates concurrently ────────────────────────────
     const postSavePromises: Promise<unknown>[] = [];
@@ -913,11 +1055,28 @@ async function _backgroundClassifyAndSave(opts: {
     if (classification.video_analysis) extraFields.video_analysis = classification.video_analysis;
     if (classification.pet_audio_analysis) extraFields.pet_audio_analysis = classification.pet_audio_analysis;
 
+    // Inferir pet_audio_analysis a partir do behavior_summary quando há frames de vídeo
+    if (inputType === 'video' && uploadedVideoUrls.length > 0 && classification.video_analysis && !classification.pet_audio_analysis) {
+      const behavior = (classification.video_analysis as { behavior_summary?: string }).behavior_summary ?? '';
+      const moodContext = classification.mood;
+      if (/lat|barkin|vocal|miand|meow/i.test(behavior)) {
+        const isBark = /lat|barkin/i.test(behavior);
+        extraFields.pet_audio_analysis = {
+          sound_type: isBark ? 'bark' : 'meow',
+          emotional_state: moodContext ?? 'alert',
+          intensity: classification.urgency === 'high' ? 'high' : 'medium',
+          pattern_notes: `Inferido do comportamento visual: ${behavior}`,
+        };
+      }
+    }
+
     postSavePromises.push(
       supabase.from('diary_entries').update(extraFields).eq('id', entryId).then(() => undefined).catch(() => {}),
     );
 
     // 2. Save per-photo analyses (photo_analyses table + link to entry)
+    let primaryPhotoAnalysis: Record<string, unknown> | null = null;
+
     if (photoAnalysisResults) {
       const successfulAnalyses = (photoAnalysisResults as PromiseSettledResult<Record<string, unknown> | null>[])
         .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> =>
@@ -926,6 +1085,8 @@ async function _backgroundClassifyAndSave(opts: {
         .map((r) => r.value);
 
       if (successfulAnalyses.length > 0) {
+        primaryPhotoAnalysis = successfulAnalyses[0];
+
         // Save primary photo_analysis_data JSONB to diary_entries (first/best result)
         postSavePromises.push(
           supabase.from('diary_entries')
@@ -961,27 +1122,192 @@ async function _backgroundClassifyAndSave(opts: {
       }
     }
 
-    // 3. Video URL persistence (already uploaded above)
-    if (uploadedVideoUrl) {
+    // 3. Video URL + analysis persistence (already uploaded above)
+    if (uploadedVideoUrls.length > 0) {
       postSavePromises.push(
         supabase.from('diary_entries').update({
-          video_url: uploadedVideoUrl,
+          video_url:      uploadedVideoUrls[0],  // primary video in main field
           video_duration: videoDuration ?? null,
+          ...(classification.video_analysis ? { video_analysis: classification.video_analysis } : {}),
         }).eq('id', entryId).then(() => undefined).catch(() => {}),
       );
     }
 
-    // 4. Audio URL persistence (already uploaded above)
+    // 4. Audio URL + analysis persistence (already uploaded above)
     if (uploadedAudioUrl) {
       postSavePromises.push(
         supabase.from('diary_entries').update({
-          audio_url: uploadedAudioUrl,
+          audio_url:      uploadedAudioUrl,
           audio_duration: audioDuration ?? null,
+          ...(classification.pet_audio_analysis ? { pet_audio_analysis: classification.pet_audio_analysis } : {}),
         }).eq('id', entryId).then(() => undefined).catch(() => {}),
       );
     }
 
+    // 5. Module saves (vaccines, consultations, etc.) + linked_*_id writes back
+    postSavePromises.push(
+      saveToModule(petId, userId, entryId, classification).catch((err) => {
+        console.warn('[LENTES] saveToModule falhou (non-critical):', err);
+      }),
+    );
+
+    // 6. Build media_analyses array and save it
+    {
+      const photoResultsRaw = Array.isArray(photoAnalysisResults)
+        ? (photoAnalysisResults as PromiseSettledResult<Record<string, unknown> | null>[])
+            .map((r) => r.status === 'fulfilled' ? (r.value ?? null) : null)
+        : [];
+
+      // A) Fotos (not video/audio)
+      if (inputType !== 'video' && inputType !== 'pet_audio' && uploadedPhotos.length > 0) {
+        uploadedPhotos.forEach((photoUrl, idx) => {
+          mediaAnalysesArr.push({ type: 'photo', mediaUrl: photoUrl, analysis: photoResultsRaw[idx] ?? null });
+        });
+      }
+
+      // B) Vídeos — um subcard por vídeo
+      uploadedVideoUrls.forEach((videoUrl, idx) => {
+        const videoThumb = idx === 0 ? videoThumbnailUrl : null;
+        const videoFrameAnalysis = idx === 0
+          ? (photoResultsRaw[(photosBase64?.length ?? 0) + idx] ?? null)
+          : null;
+        mediaAnalysesArr.push({
+          type: 'video',
+          mediaUrl: videoUrl,
+          thumbnailUrl: videoThumb,
+          analysis: videoFrameAnalysis,
+          videoAnalysis: idx === 0
+            ? ((classification as Record<string, unknown>).video_analysis ?? null)
+            : null,
+        });
+      });
+
+      // C) Áudio
+      if (uploadedAudioUrl) {
+        const audioFilename = (mediaUris ?? [])
+          .find((u) => /\.(m4a|aac|mp3|wav|ogg)$/i.test(u ?? ''))
+          ?.split('/').pop() ?? 'audio';
+        mediaAnalysesArr.push({
+          type: 'audio',
+          mediaUrl: uploadedAudioUrl,
+          fileName: audioFilename,
+          petAudioAnalysis: (classification as Record<string, unknown>).pet_audio_analysis ?? null,
+          analysis: null,
+        });
+      }
+
+      // D) Documento OCR
+      if (inputType === 'ocr_scan' && uploadedPhotos[0]) {
+        const ocrCls = classification as Record<string, unknown>;
+        mediaAnalysesArr.push({
+          type: 'document',
+          mediaUrl: uploadedPhotos[0],
+          ocrData: {
+            fields: (ocrCls.ocr_data as { fields?: Array<{key: string; value: string}> } | undefined)?.fields ?? [],
+            document_type: (ocrCls.document_type as string) ?? 'other',
+          },
+          analysis: photoResultsRaw[0] ?? null,
+        });
+      }
+
+      if (mediaAnalysesArr.length > 0) {
+        console.log('[S5] media_analyses:', mediaAnalysesArr.length, 'items');
+        postSavePromises.push(
+          supabase.from('diary_entries')
+            .update({ media_analyses: mediaAnalysesArr })
+            .eq('id', entryId)
+            .then(() => undefined).catch(() => {}),
+        );
+      }
+    }
+
     await Promise.allSettled(postSavePromises);
+    console.log('[S5] postSave concluído');
+    console.log('[S5] primaryPhotoAnalysis:', !!primaryPhotoAnalysis);
+    console.log('[S5] primaryPhotoAnalysis.description:', (primaryPhotoAnalysis as Record<string,unknown> | null)?.description?.toString().slice(0,60));
+
+    // ── 7. Generate pet_insights from media analyses (fire-and-forget) ────────
+    {
+      const insightsToCreate: Array<Record<string, unknown>> = [];
+
+      for (const media of mediaAnalysesArr) {
+        // Photo: toxicity alerts
+        if (media.type === 'photo' && media.analysis) {
+          const toxCheck = (media.analysis as Record<string, unknown>).toxicity_check as Record<string, unknown> | undefined;
+          if (toxCheck?.has_toxic_items) {
+            const items = toxCheck.items as Array<{name: string; toxicity_level: string; description: string}> | undefined;
+            const severeItems = (items ?? []).filter((i) => i.toxicity_level === 'severe' || i.toxicity_level === 'moderate');
+            if (severeItems.length > 0) {
+              insightsToCreate.push({
+                pet_id: petId,
+                user_id: userId,
+                diary_entry_id: entryId,
+                category: 'saude',
+                urgency: severeItems.some((i) => i.toxicity_level === 'severe') ? 'high' : 'medium',
+                title: 'Planta/objeto tóxico detectado na foto',
+                body: severeItems.map((i) => `${i.name}: ${i.description}`).join('\n'),
+                source: 'photo_analysis',
+                is_active: true,
+              });
+            }
+          }
+        }
+        // Video: low energy or locomotion
+        if (media.type === 'video' && media.videoAnalysis) {
+          const va = media.videoAnalysis as Record<string, unknown>;
+          const energy = va.energy_score as number | undefined;
+          const locomotion = va.locomotion_score as number | undefined;
+          if ((energy != null && energy < 30) || (locomotion != null && locomotion < 40)) {
+            insightsToCreate.push({
+              pet_id: petId,
+              user_id: userId,
+              diary_entry_id: entryId,
+              category: 'comportamento',
+              urgency: 'medium',
+              title: 'Baixa energia ou dificuldade de locomoção detectada',
+              body: `${(va.behavior_summary as string) ?? ''} Energia: ${energy ?? '?'}/100. Locomoção: ${locomotion ?? '?'}/100.`.trim(),
+              source: 'video_analysis',
+              is_active: true,
+            });
+          }
+        }
+      }
+
+      if (insightsToCreate.length > 0) {
+        console.log('[S5] insights a criar:', insightsToCreate.length);
+        supabase.from('pet_insights')
+          .insert(insightsToCreate)
+          .then(() => { qc.invalidateQueries({ queryKey: ['pets', petId, 'insights'] }); })
+          .catch(() => {});
+      }
+    }
+
+    // Fetch the complete entry from DB with all fields and module joins.
+    // All postSavePromises (narration, classifications, photo_analysis_data, video/audio) are
+    // already awaited above, so the DB has the full data at this point.
+    const { data: freshEntry, error: freshError } = await supabase
+      .from('diary_entries')
+      .select(`
+        *,
+        expenses:expenses!diary_entries_linked_expense_id_fkey(id, total, currency, category, notes, vendor),
+        vaccines:vaccines!diary_entries_linked_vaccine_id_fkey(id, name, laboratory, veterinarian, clinic, date_administered, next_due_date, batch_number),
+        consultations:consultations!diary_entries_linked_consultation_id_fkey(id, veterinarian, clinic, type, diagnosis, date),
+        clinical_metrics:clinical_metrics!diary_entries_linked_weight_metric_id_fkey(id, metric_type, value, unit, measured_at),
+        medications:medications!diary_entries_linked_medication_id_fkey(id, name, dosage, frequency, veterinarian)
+      `)
+      .eq('id', entryId)
+      .single();
+    console.log('[S6] freshEntry fromDB:', !!freshEntry, freshError?.message);
+    console.log('[S6] freshEntry.photos:', (freshEntry as unknown as Record<string,unknown>)?.photos);
+    console.log('[S6] freshEntry.photo_analysis_data:', !!(freshEntry as unknown as Record<string,unknown>)?.photo_analysis_data);
+    console.log('[S6] freshEntry.narration:', !!(freshEntry as unknown as Record<string,unknown>)?.narration);
+    console.log('[S6] freshEntry.video_url:', !!(freshEntry as unknown as Record<string,unknown>)?.video_url);
+    console.log('[S6] freshEntry.classifications:', ((freshEntry as unknown as Record<string,unknown>)?.classifications as unknown[] | null)?.length ?? 0);
+    console.log('[S6] expenses:', ((freshEntry as unknown as Record<string,unknown>)?.expenses as unknown[] | null)?.length ?? 0);
+    console.log('[S6] vaccines:', ((freshEntry as unknown as Record<string,unknown>)?.vaccines as unknown[] | null)?.length ?? 0);
+    if (freshError) {
+      console.warn('[BG] freshEntry fetch failed:', freshError.message, freshError.code);
+    }
 
     // Best-effort side effects
     const embeddingText = classification.narration
@@ -989,61 +1315,85 @@ async function _backgroundClassifyAndSave(opts: {
       : (text ?? '');
     generateEmbedding(petId, 'diary', entryId, embeddingText, 0.5, userId).catch(() => {});
     updatePetRAG(petId, userId, entryId, classification.classifications ?? []).catch(() => {});
-    saveToModule(petId, userId, entryId, classification).catch(() => {});
     import('../lib/achievements').then(({ checkAndAwardAchievements }) => {
       checkAndAwardAchievements(petId, userId, entryId).catch(() => {});
     }).catch(() => {});
 
-    // Replace temp entry with real entry in cache
-    const realEntry: import('../types/database').DiaryEntry = {
-      ...entryData,
-      id: entryId,
-      narration: classification.narration ?? null,
-      entry_type: 'manual',
-      primary_type: classification.primary_type ?? 'moment',
-      classifications: classification.classifications ?? [],
-      input_type: inputType,
-      urgency: classification.urgency ?? 'none',
-      mood_confidence: classification.mood_confidence ?? null,
-      is_registration_entry: false,
-      linked_photo_analysis_id: null,
-      entry_date: new Date().toISOString().split('T')[0],
-      is_active: true,
-      processing_status: 'done',
-      created_at: originalEntry.created_at,
-      updated_at: new Date().toISOString(),
-    };
-
     // Mark SQLite pending entry as synced
     updatePendingStatus(tempId, 'synced');
 
-    // Cache the real entry locally for offline reads
+    // Build final entry: fresh DB row if available, otherwise manual construction.
+    // Fallback includes all data available in memory so the card renders correctly
+    // even if the DB fetch failed (e.g. timing / RLS).
+    const finalEntry = (freshEntry ?? {
+      ...entryData,
+      id: entryId,
+      narration:               classification.narration ?? null,
+      entry_type:              'manual' as const,
+      primary_type:            classification.primary_type ?? 'moment',
+      classifications:         classification.classifications ?? [],
+      input_type:              inputType,
+      urgency:                 classification.urgency ?? 'none',
+      mood_confidence:         classification.mood_confidence ?? null,
+      is_registration_entry:   false,
+      linked_photo_analysis_id: null,
+      entry_date:              new Date().toISOString().split('T')[0],
+      is_active:               true,
+      processing_status:       'done' as const,
+      created_at:              originalEntry.created_at,
+      updated_at:              new Date().toISOString(),
+      photos:                  uploadedPhotos,
+      video_url:               uploadedVideoUrls[0] ?? null,
+      audio_url:               uploadedAudioUrl,
+      photo_analysis_data:     primaryPhotoAnalysis,
+      video_analysis:          (classification as Record<string, unknown>).video_analysis ?? null,
+      pet_audio_analysis:      (classification as Record<string, unknown>).pet_audio_analysis ?? null,
+    }) as import('../types/database').DiaryEntry;
+
+    // Cache locally for offline reads
     cacheEntry({
-      id:               realEntry.id,
-      pet_id:           realEntry.pet_id,
-      content:          realEntry.content,
-      narration:        realEntry.narration,
-      mood_id:          realEntry.mood_id,
-      mood_score:       realEntry.mood_score,
-      input_method:     realEntry.input_method,
-      input_type:       (realEntry as unknown as Record<string, unknown>).input_type as string | null,
-      primary_type:     (realEntry as unknown as Record<string, unknown>).primary_type as string | null,
-      tags:             Array.isArray(realEntry.tags) ? realEntry.tags : [],
-      photos:           Array.isArray(realEntry.photos) ? realEntry.photos : [],
+      id:               finalEntry.id,
+      pet_id:           finalEntry.pet_id,
+      content:          finalEntry.content,
+      narration:        finalEntry.narration,
+      mood_id:          finalEntry.mood_id,
+      mood_score:       finalEntry.mood_score,
+      input_method:     finalEntry.input_method,
+      input_type:       (finalEntry as unknown as Record<string, unknown>).input_type as string | null,
+      primary_type:     (finalEntry as unknown as Record<string, unknown>).primary_type as string | null,
+      tags:             Array.isArray(finalEntry.tags) ? finalEntry.tags : [],
+      photos:           Array.isArray(finalEntry.photos) ? finalEntry.photos : [],
       processing_status:'done',
-      is_special:       realEntry.is_special,
-      created_at:       realEntry.created_at,
-      updated_at:       realEntry.updated_at,
+      is_special:       finalEntry.is_special,
+      created_at:       finalEntry.created_at,
+      updated_at:       finalEntry.updated_at,
     });
 
+    // Replace temp entry with the complete fresh entry from DB.
+    // Do NOT invalidate diary immediately — an instant refetch could overwrite
+    // the cache with a stale row if any write is still propagating. Schedule it
+    // after 3 s so the card shows correct data right away.
+    console.log('[S7] setQueryData com finalEntry | photoAnalysisData:', !!(finalEntry as unknown as Record<string,unknown>)?.photo_analysis_data);
     qc.setQueryData<import('../types/database').DiaryEntry[]>(queryKey as unknown as ['pets', string, 'diary'], (old) => {
-      // Remove the temp entry (and any stale temp entries) then prepend the real entry
       const withoutTemp = (old ?? []).filter((e) => !e.id.startsWith('temp-'));
-      return [realEntry, ...withoutTemp];
+      return [finalEntry, ...withoutTemp];
     });
-    // Force a refetch so the diary gets the full DB row (with joined module data)
-    qc.invalidateQueries({ queryKey: ['pets', petId, 'diary'] });
-    qc.refetchQueries({ queryKey: ['pets', petId, 'diary'] });
+    // Refetch silencioso após 5s — não zera cache se o banco retornar vazio
+    setTimeout(() => {
+      qc.fetchQuery({
+        queryKey: ['pets', petId, 'diary'],
+        queryFn: async () => {
+          const { fetchDiaryEntries } = await import('../lib/api');
+          const fresh = await fetchDiaryEntries(petId);
+          if (fresh && fresh.length > 0) {
+            return fresh;
+          }
+          // Banco retornou vazio (propagação lenta) — manter cache atual
+          return qc.getQueryData(['pets', petId, 'diary']) ?? [];
+        },
+      }).catch(() => {});
+    }, 5000);
+
     qc.invalidateQueries({ queryKey: ['pets', petId, 'moods'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'expenses'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'metrics'] });
@@ -1052,9 +1402,13 @@ async function _backgroundClassifyAndSave(opts: {
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'mood_trend'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'agenda'] });
     qc.invalidateQueries({ queryKey: ['pets', petId, 'scheduled_events'] });
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'vaccines'] });
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'consultations'] });
+    qc.invalidateQueries({ queryKey: ['pets', petId, 'insights'] });
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[BG] _backgroundClassifyAndSave failed:', msg);
     // Keep SQLite pending entry so useSyncQueue can retry when online
     updatePendingStatus(tempId, 'error', msg);
 
@@ -1346,6 +1700,9 @@ export function useDiaryEntry(petId: string) {
       qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'mood_trend'] });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'lens', 'agenda'] });
       qc.invalidateQueries({ queryKey: ['pets', petId, 'scheduled_events'] });
+      qc.invalidateQueries({ queryKey: ['pets', petId, 'vaccines'] });
+      qc.invalidateQueries({ queryKey: ['pets', petId, 'consultations'] });
+      qc.invalidateQueries({ queryKey: ['pets', petId, 'insights'] });
     },
   });
 
@@ -1403,16 +1760,20 @@ export function useDiaryEntry(petId: string) {
     qc.setQueryData<DiaryEntry[]>(queryKey, (old) => [tempEntry, ...(old ?? [])]);
 
     // Background: classify → save → update cache entry to done/error
+    const cachedPets = qc.getQueryData<Array<{id: string; species?: string}>>(['pets']) ?? [];
+    const petSpecies = cachedPets.find(p => p.id === petId)?.species ?? 'dog';
+
     void _backgroundClassifyAndSave({
       qc, petId, userId: user.id, queryKey,
       tempId, originalEntry: tempEntry,
       text: params.text, photosBase64: params.photosBase64,
       inputType: params.inputType, photos: [],
       mediaUris: params.mediaUris,
-      videoUri: params.videoUri,
-      audioUri: params.audioUri,
       videoDuration: params.videoDuration,
       audioDuration: params.audioDuration,
+      additionalContext: params.additionalContext,
+      hasVideo: params.hasVideo,
+      species: petSpecies,
     });
   }, [petId, user, qc, queryKey]);
 

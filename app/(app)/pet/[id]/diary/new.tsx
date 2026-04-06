@@ -17,13 +17,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
-import { ChevronLeft, Mic, Check, Trash2, Camera, Video, Music2, FileText, Ear, Square, Image as ImageIcon, HelpCircle, PawPrint, X as XIcon } from 'lucide-react-native';
+import { ChevronLeft, Mic, Check, Trash2, Camera, Video, Music2, FileText, Ear, Square, Image as ImageIcon, HelpCircle, PawPrint, X as XIcon, ShieldCheck, Stethoscope, FlaskConical, Pill, Scale, DollarSign, ThermometerSun, Utensils, AlertTriangle, Scissors, Activity, ShoppingBag, MapPin, Sparkles } from 'lucide-react-native';
 import { Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { colors } from '../../../../../constants/colors';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { spacing, radii } from '../../../../../constants/spacing';
+import { MEDIA_LIMITS } from '../../../../../constants/media';
 import { useDiary } from '../../../../../hooks/useDiary';
 import { usePet } from '../../../../../hooks/usePets';
 import { useToast } from '../../../../../components/Toast';
@@ -126,9 +127,8 @@ export default function NewDiaryEntryScreen() {
   // Capture state (shared across preview steps)
   const [captureCaption, setCaptureCaption] = useState('');
   const [capturedPhotoUri, setCapturedPhotoUri] = useState<string | null>(null);
-  const [capturedPhotoBase64, setCapturedPhotoBase64] = useState<string | null>(null);
+  // base64 no longer stored in state — read lazily at confirm/submit time to avoid OOM
   const [capturedGalleryUris, setCapturedGalleryUris] = useState<string[]>([]);
-  const [capturedGalleryBase64s, setCapturedGalleryBase64s] = useState<string[]>([]);
   const [capturedVideoUri, setCapturedVideoUri] = useState<string | null>(null);
   const [capturedVideoDuration, setCapturedVideoDuration] = useState(0);
   const [capturedAudioUri, setCapturedAudioUri] = useState<string | null>(null);
@@ -140,6 +140,7 @@ export default function NewDiaryEntryScreen() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showPetAudioModal, setShowPetAudioModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [helpTab, setHelpTab] = useState<'uso' | 'painel'>('uso');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const MAX_PHOTOS    = 5;
@@ -168,6 +169,7 @@ export default function NewDiaryEntryScreen() {
   const intentionalStopRef = useRef(false);
   const isListeningRef = useRef(isListening);
   isListeningRef.current = isListening;
+  const isPickerOpenRef = useRef(false);
 
   // Waveform animated bars (driven by isListening state)
   const barAnims = useRef(
@@ -342,10 +344,8 @@ export default function NewDiaryEntryScreen() {
       });
       if (result.canceled || !result.assets[0]) return;
       const uri = result.assets[0].uri;
-      const FileSystem = require('expo-file-system/legacy');
-      const base64: string = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+      // No base64 read here — deferred to handleConfirmPhoto to avoid OOM
       setCapturedPhotoUri(uri);
-      setCapturedPhotoBase64(base64);
       setCaptureCaption('');
       setStep('photo_preview');
     } catch (err) {
@@ -366,12 +366,8 @@ export default function NewDiaryEntryScreen() {
       });
       if (result.canceled || result.assets.length === 0) return;
       const uris = result.assets.map((a) => a.uri);
-      const FileSystem = require('expo-file-system/legacy');
-      const base64Array: string[] = await Promise.all(
-        uris.map((uri) => FileSystem.readAsStringAsync(uri, { encoding: 'base64' })),
-      );
+      // No base64 read here — deferred to handleConfirmGallery to avoid OOM
       setCapturedGalleryUris(uris);
-      setCapturedGalleryBase64s(base64Array);
       setCaptureCaption('');
       setStep('gallery_preview');
     } catch (err) {
@@ -481,25 +477,44 @@ export default function NewDiaryEntryScreen() {
 
   // ── Confirm handlers (from preview steps) ────────────────────────────────
 
-  const handleConfirmPhoto = useCallback(() => {
+  const handleConfirmPhoto = useCallback(async () => {
+    showAnalyzingAndBack();
+    let b64: string | null = null;
+    try {
+      const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
+      b64 = await readAsStringAsync(capturedPhotoUri!, { encoding: EncodingType.Base64 });
+    } catch (e) {
+      console.warn('[handleConfirmPhoto] base64 read failed:', e);
+    }
     void submitEntry({
       text: captureCaption.trim() || null,
-      photosBase64: [capturedPhotoBase64!],
+      photosBase64: b64 ? [b64] : null,
       inputType: 'photo',
       mediaUris: [capturedPhotoUri!],
     });
-    showAnalyzingAndBack();
-  }, [captureCaption, capturedPhotoBase64, capturedPhotoUri, submitEntry, showAnalyzingAndBack]);
+  }, [captureCaption, capturedPhotoUri, submitEntry, showAnalyzingAndBack]);
 
-  const handleConfirmGallery = useCallback(() => {
+  const handleConfirmGallery = useCallback(async () => {
+    showAnalyzingAndBack();
+    let galleryBase64: string[] | null = null;
+    try {
+      const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
+      const results: string[] = [];
+      for (const uri of capturedGalleryUris) {
+        const b64 = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
+        if (b64) results.push(b64);
+      }
+      galleryBase64 = results.length > 0 ? results : null;
+    } catch (e) {
+      console.warn('[handleConfirmGallery] base64 read failed:', e);
+    }
     void submitEntry({
       text: captureCaption.trim() || null,
-      photosBase64: capturedGalleryBase64s,
+      photosBase64: galleryBase64,
       inputType: 'gallery',
       mediaUris: capturedGalleryUris,
     });
-    showAnalyzingAndBack();
-  }, [captureCaption, capturedGalleryBase64s, capturedGalleryUris, submitEntry, showAnalyzingAndBack]);
+  }, [captureCaption, capturedGalleryUris, submitEntry, showAnalyzingAndBack]);
 
   const handleConfirmVideo = useCallback(() => {
     void submitEntry({
@@ -536,7 +551,11 @@ export default function NewDiaryEntryScreen() {
   // ── Attachment handlers (text/voice step) ───────────────────────────────
 
   const handleAttachPhoto = useCallback(async () => {
-    if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); return; }
+    console.log('[ATTACH] handleAttachPhoto iniciado');
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    console.log('[ATTACH] abrindo picker...');
+    isPickerOpenRef.current = true;
+    if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); isPickerOpenRef.current = false; return; }
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') { toast(t('toast.galleryPermission'), 'warning'); return; }
@@ -548,26 +567,42 @@ export default function NewDiaryEntryScreen() {
         quality: 0.7,
       });
       if (result.canceled || result.assets.length === 0) return;
-      const FileSystem = require('expo-file-system/legacy');
-      const newPhotos: Attachment[] = await Promise.all(
-        result.assets.map(async (asset) => {
-          const base64: string = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
-          return {
-            id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:         'photo' as const,
-            localUri:     asset.uri,
-            thumbnailUri: asset.uri,
-            mimeType:     asset.mimeType ?? 'image/jpeg',
-            base64,
-          };
-        }),
-      );
+      result.assets.forEach((a, i) => {
+        console.log(`[ATTACH] photo selecionada[${i}] | uri:`, a.uri?.slice(-30), '| size:', a.fileSize);
+      });
+      const newPhotos: Attachment[] = result.assets
+        .filter((asset) => {
+          if (asset.fileSize && asset.fileSize > MEDIA_LIMITS.photo.maxSizeBytes) {
+            toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
+            return false;
+          }
+          return true;
+        })
+        .map((asset) => ({
+          id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          type:         'photo' as const,
+          localUri:     asset.uri,
+          thumbnailUri: asset.uri,
+          mimeType:     asset.mimeType ?? 'image/jpeg',
+          fileSize:     asset.fileSize,
+          // base64 not stored here — read lazily in handleSubmitText
+        }));
       setAttachments((prev) => [...prev, ...newPhotos]);
+      console.log('[ATTACH] photo adicionada | total attachments:', attachments.length + newPhotos.length);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
+    finally {
+      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — liberando guard');
+    }
   }, [attachments, canAddAttachment, toast, t]);
 
   const handleAttachTakePhoto = useCallback(async () => {
-    if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); return; }
+    console.log('[ATTACH] handleAttachTakePhoto iniciado');
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    console.log('[ATTACH] abrindo picker...');
+    isPickerOpenRef.current = true;
+    if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); isPickerOpenRef.current = false; return; }
     const wasListening = isListeningRef.current;
     if (wasListening) stopListening();
     try {
@@ -575,41 +610,62 @@ export default function NewDiaryEntryScreen() {
       if (status !== 'granted') { toast(t('toast.cameraPermission'), 'warning'); return; }
       const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7 });
       if (result.canceled || !result.assets[0]) return;
-      const FileSystem = require('expo-file-system/legacy');
-      const base64: string = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: 'base64' });
+      const asset = result.assets[0];
+      console.log('[ATTACH] foto câmera | uri:', asset.uri?.slice(-30), '| size:', asset.fileSize);
+      if (asset.fileSize && asset.fileSize > MEDIA_LIMITS.photo.maxSizeBytes) {
+        toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
+        return;
+      }
       setAttachments((prev) => [...prev, {
         id:           `photo-${Date.now()}`,
         type:         'photo' as const,
-        localUri:     result.assets[0].uri,
-        thumbnailUri: result.assets[0].uri,
+        localUri:     asset.uri,
+        thumbnailUri: asset.uri,
         mimeType:     'image/jpeg',
-        base64,
+        fileSize:     asset.fileSize,
+        // base64 not stored here — read lazily in handleSubmitText
       }]);
+      console.log('[ATTACH] foto câmera adicionada | total:', attachments.length + 1);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally { if (wasListening) await startListening(); }
+    finally {
+      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — liberando guard');
+      if (wasListening) await startListening();
+    }
   }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
 
   // ── Galeria unificada — fotos, vídeos e documentos num único picker ──────
 
   const handleAttachGallery = useCallback(async () => {
+    console.log('[ATTACH] handleAttachGallery iniciado');
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    console.log('[ATTACH] abrindo picker...');
+    isPickerOpenRef.current = true;
     const wasListening = isListeningRef.current;
     if (wasListening) stopListening();
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: '*/*',
         multiple: true,
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false,
       });
       if (result.canceled || !result.assets?.length) return;
+      console.log('[ATTACH] galeria selecionada | assets:', result.assets.length);
+      result.assets.forEach((a, i) => {
+        console.log(`[ATTACH] asset[${i}]: type=${a.mimeType} size=${a.size} name=${a.name}`);
+      });
 
-      const FileSystem = require('expo-file-system/legacy');
       const newAttachments: Attachment[] = [];
 
       for (const asset of result.assets) {
         const mime = asset.mimeType ?? '';
         if (mime.startsWith('image/')) {
           if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); continue; }
-          const base64: string = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
+          if (asset.size && asset.size > MEDIA_LIMITS.photo.maxSizeBytes) {
+            toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
+            continue;
+          }
           newAttachments.push({
             id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             type:         'photo',
@@ -617,7 +673,8 @@ export default function NewDiaryEntryScreen() {
             thumbnailUri: asset.uri,
             mimeType:     mime,
             fileName:     asset.name,
-            base64,
+            fileSize:     asset.size,
+            // base64 not stored here — read lazily in handleSubmitText
           });
         } else if (mime.startsWith('video/')) {
           if (!canAddAttachment('video')) { toast(t('mic.maxVideos'), 'warning'); continue; }
@@ -642,13 +699,25 @@ export default function NewDiaryEntryScreen() {
         }
       }
 
-      if (newAttachments.length > 0) setAttachments((prev) => [...prev, ...newAttachments]);
+      if (newAttachments.length > 0) {
+        setAttachments((prev) => [...prev, ...newAttachments]);
+        console.log('[ATTACH] galeria adicionada | total:', attachments.length + newAttachments.length);
+      }
     } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally { if (wasListening) await startListening(); }
+    finally {
+      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — liberando guard');
+      if (wasListening) await startListening();
+    }
   }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
 
   const handleAttachVideo = useCallback(async () => {
-    if (!canAddAttachment('video')) { toast(t('mic.maxVideos'), 'warning'); return; }
+    console.log('[ATTACH] handleAttachVideo iniciado');
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    console.log('[ATTACH] abrindo picker...');
+    isPickerOpenRef.current = true;
+    if (!canAddAttachment('video')) { toast(t('mic.maxVideos'), 'warning'); isPickerOpenRef.current = false; return; }
     const wasListening = isListeningRef.current;
     if (wasListening) stopListening();
     try {
@@ -660,29 +729,53 @@ export default function NewDiaryEntryScreen() {
         quality: 0.7,
       });
       if (result.canceled || !result.assets[0]) return;
+      const asset = result.assets[0];
+      console.log('[ATTACH] video selecionado | uri:', asset.uri?.slice(-30), '| size:', asset.fileSize, '| duration:', asset.duration);
+      if (asset.duration != null && asset.duration > MEDIA_LIMITS.video.maxDurationSec * 1000) {
+        toast(t('diary.videoTooLong', { max: MEDIA_LIMITS.video.maxDurationSec }), 'warning');
+        return;
+      }
+      if (asset.fileSize != null && asset.fileSize > MEDIA_LIMITS.video.maxSizeBytes) {
+        toast(t('diary.videoTooLarge', { max: MEDIA_LIMITS.video.maxSizeMB }), 'warning');
+        return;
+      }
       setAttachments((prev) => [...prev, {
         id:       `video-${Date.now()}`,
         type:     'video' as const,
-        localUri: result.assets[0].uri,
-        duration: result.assets[0].duration ?? undefined,
+        localUri: asset.uri,
+        duration: asset.duration ?? undefined,
         mimeType: 'video/mp4',
       }]);
+      console.log('[ATTACH] video adicionado | total:', attachments.length + 1);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally { if (wasListening) await startListening(); }
+    finally {
+      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — liberando guard');
+      if (wasListening) await startListening();
+    }
   }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
 
   const handleAttachDocument = useCallback(async () => {
-    if (!canAddAttachment('document')) { toast(t('mic.maxDocuments'), 'warning'); return; }
+    console.log('[ATTACH] handleAttachDocument iniciado');
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    console.log('[ATTACH] abrindo picker...');
+    isPickerOpenRef.current = true;
+    if (!canAddAttachment('document')) { toast(t('mic.maxDocuments'), 'warning'); isPickerOpenRef.current = false; return; }
     const wasListening = isListeningRef.current;
     if (wasListening) stopListening();
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'image/*'],
         multiple: false,
-        copyToCacheDirectory: true,
+        copyToCacheDirectory: false,
       });
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
+      if (asset.size != null && asset.size > MEDIA_LIMITS.document.maxSizeBytes) {
+        toast(t('diary.documentTooLarge', { max: MEDIA_LIMITS.document.maxSizeMB }), 'warning');
+        return;
+      }
       setAttachments((prev) => [...prev, {
         id:       `doc-${Date.now()}`,
         type:     'document' as const,
@@ -692,10 +785,130 @@ export default function NewDiaryEntryScreen() {
         mimeType: asset.mimeType ?? 'application/octet-stream',
       }]);
     } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally { if (wasListening) await startListening(); }
+    finally {
+      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — liberando guard');
+      if (wasListening) await startListening();
+    }
+  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
+
+  // ── Fotos + vídeos — ImagePicker (roda dentro da Activity do app, sem crash) ─
+  const handleAttachMedia = useCallback(async () => {
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    const wasListening = isListeningRef.current;
+    if (wasListening) stopListening();
+    isPickerOpenRef.current = true;
+    console.log('[ATTACH] abrindo ImagePicker (fotos+vídeos)...');
+
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { toast(t('toast.galleryPermission'), 'warning'); return; }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        videoMaxDuration: MEDIA_LIMITS.video.maxDurationSec,
+        selectionLimit: 10,
+        orderedSelection: true,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      console.log('[ATTACH] ImagePicker selecionados:', result.assets.length);
+
+      const newAttachments: Attachment[] = [];
+      for (const asset of result.assets) {
+        if (asset.type === 'image') {
+          if (!canAddAttachment('photo')) { toast(t('mic.maxPhotos'), 'warning'); continue; }
+          if (asset.fileSize && asset.fileSize > MEDIA_LIMITS.photo.maxSizeBytes) {
+            toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
+            continue;
+          }
+          newAttachments.push({
+            id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type:         'photo',
+            localUri:     asset.uri,
+            thumbnailUri: asset.uri,
+            mimeType:     'image/jpeg',
+            fileSize:     asset.fileSize,
+          });
+        } else if (asset.type === 'video') {
+          if (!canAddAttachment('video')) { toast(t('mic.maxVideos'), 'warning'); continue; }
+          if (asset.fileSize && asset.fileSize > MEDIA_LIMITS.video.maxSizeBytes) {
+            toast(t('diary.videoTooLarge', { max: MEDIA_LIMITS.video.maxSizeMB }), 'warning');
+            continue;
+          }
+          newAttachments.push({
+            id:           `video-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type:         'video',
+            localUri:     asset.uri,
+            thumbnailUri: asset.uri,
+            mimeType:     'video/mp4',
+            duration:     asset.duration ? asset.duration / 1000 : undefined,
+            fileSize:     asset.fileSize,
+          });
+        }
+      }
+
+      if (newAttachments.length > 0) {
+        setAttachments((prev) => [...prev, ...newAttachments]);
+        console.log('[ATTACH] total após seleção:', attachments.length + newAttachments.length);
+      }
+
+    } catch (err) { toast(getErrorMessage(err), 'error'); }
+    finally {
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — guard liberado');
+      if (wasListening) await startListening();
+    }
+  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
+
+  // ── Áudio de arquivo — DocumentPicker (uma única vez) ──────────────────────
+  const handleAttachAudio = useCallback(async () => {
+    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
+    const wasListening = isListeningRef.current;
+    if (wasListening) stopListening();
+    isPickerOpenRef.current = true;
+    console.log('[ATTACH] abrindo DocumentPicker (áudio)...');
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'audio/*',
+        multiple: false,
+        copyToCacheDirectory: false,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+
+      const asset = result.assets[0];
+      if (!canAddAttachment('audio')) { toast(t('mic.maxAudios'), 'warning'); return; }
+      if (asset.size && asset.size > MEDIA_LIMITS.audio.maxSizeBytes) {
+        toast(t('diary.audioTooLarge', { max: MEDIA_LIMITS.audio.maxSizeMB }), 'warning');
+        return;
+      }
+
+      setAttachments((prev) => [...prev, {
+        id:       `audio-${Date.now()}`,
+        type:     'audio',
+        localUri: asset.uri,
+        mimeType: asset.mimeType ?? 'audio/mpeg',
+        fileName: asset.name,
+        fileSize: asset.size,
+      }]);
+      console.log('[ATTACH] áudio adicionado:', asset.name);
+
+    } catch (err) { toast(getErrorMessage(err), 'error'); }
+    finally {
+      isPickerOpenRef.current = false;
+      console.log('[ATTACH] picker fechado — guard liberado');
+      if (wasListening) await startListening();
+    }
   }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
 
   const onPetAudioCaptured = useCallback(async (uri: string, duration: number) => {
+    console.log('[ATTACH] audio adicionado | uri:', uri?.slice(-30), '| duration:', duration);
     setAttachments((prev) => [...prev, {
       id:       `audio-${Date.now()}`,
       type:     'audio' as const,
@@ -708,8 +921,15 @@ export default function NewDiaryEntryScreen() {
 
   // ── Text step handlers ────────────────────────────────────────────────────
 
-  const handleSubmitText = useCallback(() => {
+  const handleSubmitText = useCallback(async () => {
+    console.log('[SUBMIT] handleSubmitText chamado');
+    console.log('[SUBMIT] attachments:', attachments.length);
+    attachments.forEach((a, i) => {
+      console.log(`[SUBMIT] attachment[${i}]: type=${a.type} uri=${a.localUri?.slice(-30)} size=${a.fileSize}`);
+    });
+
     const text = tutorText.trim();
+
     const hasContent = text.length >= 3 || attachments.length > 0;
     if (!hasContent) {
       toast(t('diary.contentMin'), 'warning');
@@ -721,44 +941,84 @@ export default function NewDiaryEntryScreen() {
     const audioAttachments = attachments.filter((a) => a.type === 'audio');
     const docAttachments   = attachments.filter((a) => a.type === 'document');
 
-    // Base64 only for photos (AI photo analysis)
-    const photosBase64 = photoAttachments.length > 0
-      ? photoAttachments.map((a) => a.base64!).filter(Boolean)
-      : null;
-
-    // Photo URIs only (for photo upload in storage)
-    const mediaUris = photoAttachments.length > 0
-      ? photoAttachments.map((a) => a.localUri)
-      : undefined;
-
-    // Dedicated video and audio URIs (upload separately)
-    const videoUri = videoAttachments[0]?.localUri;
-    const audioUri = audioAttachments[0]?.localUri;
-
-    // Determine inputType by priority: video > audio > photo > document > text
+    // Determine inputType for classify:
+    // fotos + vídeo → 'gallery' (prompt clínico vê fotos; hasVideo garante extração de frames)
+    // só vídeo      → 'video'   (prompt de comportamento)
     let inputType = 'text';
-    if (videoAttachments.length > 0)      inputType = 'video';
-    else if (audioAttachments.length > 0) inputType = 'pet_audio';
-    else if (photoAttachments.length > 0) inputType = 'gallery';
-    else if (docAttachments.length > 0)   inputType = 'ocr_scan';
+    if (videoAttachments.length > 0 && photoAttachments.length > 0) {
+      inputType = 'gallery';  // classify usa prompt clínico das fotos
+    } else if (videoAttachments.length > 0) {
+      inputType = 'video';
+    } else if (audioAttachments.length > 0) {
+      inputType = 'pet_audio';
+    } else if (photoAttachments.length > 0) {
+      inputType = 'gallery';
+    } else if (docAttachments.length > 0) {
+      inputType = 'ocr_scan';
+    }
+    const hasVideo = videoAttachments.length > 0;
+
+    // Log BEFORE base64 read so we know if crash is during read or before
+    console.log('[S1] handleSubmitText iniciado');
+    console.log('[S1] inputType:', inputType);
+    console.log('[S1] photoAttachments:', photoAttachments.length);
+    console.log('[S1] videoAttachments:', videoAttachments.length);
+    console.log('[S1] audioAttachments:', audioAttachments.length);
+
+    // Read base64 only at submit time — sequentially + compressed to avoid OOM with 10 media
+    // Max 3 photos for AI analysis — remaining photos (4-10) are upload-only (no AI)
+    const photosForAI     = photoAttachments.slice(0, 3);
+    const photosOnlyUpload = photoAttachments.slice(3);
+    let photosBase64: string[] | null = null;
+    if (photosForAI.length > 0) {
+      console.log('[S1] iniciando leitura de base64 (', photosForAI.length, 'fotos para IA,', photosOnlyUpload.length, 'só upload)...');
+      try {
+        const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
+        const ImageManipulator = require('expo-image-manipulator');
+        const results: string[] = [];
+        for (const photo of photosForAI) {
+          console.log('[S1] comprimindo foto:', photo.localUri.slice(-30));
+          const compressed = await ImageManipulator.manipulateAsync(
+            photo.localUri,
+            [{ resize: { width: 800 } }],
+            { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG },
+          );
+          console.log('[S1] lendo base64 comprimida:', compressed.uri.slice(-30));
+          const b64 = await readAsStringAsync(compressed.uri, { encoding: EncodingType.Base64 });
+          console.log('[S1] base64 lido:', Math.round(b64.length * 0.75 / 1024), 'KB');
+          if (b64) results.push(b64);
+        }
+        photosBase64 = results.length > 0 ? results : null;
+      } catch (e) {
+        console.warn('[S1] base64 read failed:', e);
+        photosBase64 = null;
+      }
+    }
+
+    // All attachment URIs: photos first, then video/audio (order matters for BG upload logic)
+    const mediaUris = [
+      ...photoAttachments.map((a) => a.localUri),
+      ...videoAttachments.map((a) => a.localUri),
+      ...audioAttachments.map((a) => a.localUri),
+    ].filter((uri): uri is string => !!uri);
 
     const videoDuration = videoAttachments[0]?.duration
       ? Math.round(videoAttachments[0].duration) : undefined;
     const audioDuration = audioAttachments[0]?.duration
       ? Math.round(audioAttachments[0].duration) : undefined;
 
+    console.log('[S1] submitEntry chamado | photosBase64:', photosBase64?.length ?? 0, '| mediaUris:', mediaUris.length, mediaUris);
     void submitEntry({
       text: text || null,
       photosBase64,
       inputType,
       mediaUris,
-      videoUri,
-      audioUri,
       videoDuration,
       audioDuration,
+      hasVideo,
     });
-    showAnalyzingAndBack();
-  }, [tutorText, attachments, toast, t, submitEntry, showAnalyzingAndBack]);
+    router.back();
+  }, [tutorText, attachments, toast, t, submitEntry, router]);
 
   // ── Edit mode handlers ────────────────────────────────────────────────────
 
@@ -916,21 +1176,52 @@ export default function NewDiaryEntryScreen() {
             </TouchableOpacity>
           </View>
 
-          {[
-            { icon: <Mic size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpMic'), desc: t('mic.helpMicDesc') },
-            { icon: <Camera size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpFoto'), desc: t('mic.helpFotoDesc') },
-            { icon: <Video size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpVideo'), desc: t('mic.helpVideoDesc') },
-            { icon: <Ear size={rs(22)} color={colors.rose} strokeWidth={1.8} />, title: t('mic.helpSom'), desc: t('mic.helpSomDesc') },
-            { icon: <ImageIcon size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpGaleria'), desc: t('mic.helpGaleriaDesc') },
-          ].map((item, idx) => (
-            <View key={idx} style={styles.helpItem}>
-              <View style={styles.helpItemIcon}>{item.icon}</View>
-              <View style={styles.helpItemText}>
-                <Text style={styles.helpItemTitle}>{item.title}</Text>
-                <Text style={styles.helpItemDesc}>{item.desc}</Text>
-              </View>
-            </View>
-          ))}
+          {/* Tab toggle */}
+          <View style={styles.helpTabRow}>
+            <TouchableOpacity
+              style={[styles.helpTabBtn, helpTab === 'uso' && styles.helpTabBtnActive]}
+              onPress={() => setHelpTab('uso')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.helpTabText, helpTab === 'uso' && styles.helpTabTextActive]}>
+                {t('mic.helpTabUso')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.helpTabBtn, helpTab === 'painel' && styles.helpTabBtnActive]}
+              onPress={() => setHelpTab('painel')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.helpTabText, helpTab === 'painel' && styles.helpTabTextActive]}>
+                {t('mic.helpTabPainel')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Como usar */}
+          {helpTab === 'uso' && (
+            <>
+              {[
+                { icon: <Mic size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpMic'), desc: t('mic.helpMicDesc') },
+                { icon: <Camera size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpFoto'), desc: t('mic.helpFotoDesc'), limit: t('mic.helpFotoLimit', { max: MEDIA_LIMITS.photo.maxSizeMB, count: MEDIA_LIMITS.photo.maxCount }) },
+                { icon: <Video size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpVideo'), desc: t('mic.helpVideoDesc'), limit: t('mic.helpVideoLimit', { maxSec: MEDIA_LIMITS.video.maxDurationSec, maxMB: MEDIA_LIMITS.video.maxSizeMB }) },
+                { icon: <Ear size={rs(22)} color={colors.rose} strokeWidth={1.8} />, title: t('mic.helpSom'), desc: t('mic.helpSomDesc'), limit: t('mic.helpAudioLimit', { max: MEDIA_LIMITS.audio.maxDurationSec }) },
+                { icon: <ImageIcon size={rs(22)} color={colors.accent} strokeWidth={1.8} />, title: t('mic.helpGaleria'), desc: t('mic.helpGaleriaDesc') },
+              ].map((item, idx) => (
+                <View key={idx} style={styles.helpItem}>
+                  <View style={styles.helpItemIcon}>{item.icon}</View>
+                  <View style={styles.helpItemText}>
+                    <Text style={styles.helpItemTitle}>{item.title}</Text>
+                    <Text style={styles.helpItemDesc}>{item.desc}</Text>
+                    {'limit' in item && item.limit ? <Text style={styles.helpItemLimit}>{item.limit}</Text> : null}
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* Painel de lentes */}
+          {helpTab === 'painel' && <PainelLentes t={t} />}
         </View>
       </Modal>
 
@@ -979,15 +1270,23 @@ export default function NewDiaryEntryScreen() {
             {/* Attachments */}
             <AttachmentsPreview attachments={attachments} onRemove={removeAttachment} />
 
-            {/* 4 attachment buttons: Foto · Vídeo · Som · Galeria */}
+            {attachments.length > 0 && (
+              <Text style={styles.mediaDisclaimer}>{t('diary.mediaDisclaimer')}</Text>
+            )}
+
+            {/* 4 attachment buttons: Câmera · Fotos+Vídeos · Áudio · Som do pet */}
             <View style={styles.attachRow}>
               <TouchableOpacity style={styles.attachThumb} onPress={handleAttachTakePhoto} activeOpacity={0.7}>
                 <Camera size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                 <Text style={styles.attachLabel}>{t('mic.takePhoto')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.attachThumb} onPress={handleAttachVideo} activeOpacity={0.7}>
-                <Video size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                <Text style={styles.attachLabel}>{t('mic.addVideo')}</Text>
+              <TouchableOpacity style={styles.attachThumb} onPress={handleAttachMedia} activeOpacity={0.7}>
+                <ImageIcon size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                <Text style={styles.attachLabel}>{t('mic.addMedia')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.attachThumb} onPress={handleAttachAudio} activeOpacity={0.7}>
+                <Music2 size={rs(18)} color={colors.gold} strokeWidth={1.8} />
+                <Text style={styles.attachLabel}>{t('mic.addAudio')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.attachThumb}
@@ -999,10 +1298,6 @@ export default function NewDiaryEntryScreen() {
               >
                 <Ear size={rs(18)} color={colors.rose} strokeWidth={1.8} />
                 <Text style={styles.attachLabel}>{t('mic.addPetAudio')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.attachThumb} onPress={handleAttachGallery} activeOpacity={0.7}>
-                <ImageIcon size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                <Text style={styles.attachLabel}>{t('mic.addPhoto')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -1029,7 +1324,7 @@ export default function NewDiaryEntryScreen() {
                 styles.recordBtn,
                 (tutorText.trim().length < 3 && attachments.length === 0) && styles.recordBtnDisabled,
               ]}
-              onPress={handleSubmitText}
+              onPress={() => { console.log('[BTN] Gravar no Diário pressionado'); void handleSubmitText(); }}
               disabled={tutorText.trim().length < 3 && attachments.length === 0}
               activeOpacity={0.8}
             >
@@ -1072,18 +1367,23 @@ export default function NewDiaryEntryScreen() {
             {!isEditing && (
               <>
                 <AttachmentsPreview attachments={attachments} onRemove={removeAttachment} />
+
+                {attachments.length > 0 && (
+                  <Text style={styles.mediaDisclaimer}>{t('diary.mediaDisclaimer')}</Text>
+                )}
+
                 <View style={styles.attachRow}>
-                  <TouchableOpacity style={styles.attachBtn} onPress={handleAttachPhoto} activeOpacity={0.7}>
-                    <Camera size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                    <Text style={styles.attachLabel}>{t('mic.addPhoto')}</Text>
-                  </TouchableOpacity>
                   <TouchableOpacity style={styles.attachBtn} onPress={handleAttachTakePhoto} activeOpacity={0.7}>
                     <Camera size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                     <Text style={styles.attachLabel}>{t('mic.takePhoto')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.attachBtn} onPress={handleAttachVideo} activeOpacity={0.7}>
-                    <Video size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                    <Text style={styles.attachLabel}>{t('mic.addVideo')}</Text>
+                  <TouchableOpacity style={styles.attachBtn} onPress={handleAttachMedia} activeOpacity={0.7}>
+                    <ImageIcon size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                    <Text style={styles.attachLabel}>{t('mic.addMedia')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.attachBtn} onPress={handleAttachAudio} activeOpacity={0.7}>
+                    <Music2 size={rs(18)} color={colors.gold} strokeWidth={1.8} />
+                    <Text style={styles.attachLabel}>{t('mic.addAudio')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.attachBtn}
@@ -1093,12 +1393,8 @@ export default function NewDiaryEntryScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Music2 size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                    <Ear size={rs(18)} color={colors.rose} strokeWidth={1.8} />
                     <Text style={styles.attachLabel}>{t('mic.addPetAudio')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.attachBtn} onPress={handleAttachDocument} activeOpacity={0.7}>
-                    <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-                    <Text style={styles.attachLabel}>{t('mic.addDocument')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -1117,7 +1413,7 @@ export default function NewDiaryEntryScreen() {
             ) : (
               <TouchableOpacity
                 style={[styles.primaryBtn, (tutorText.trim().length < 3 && attachments.length === 0) && styles.primaryBtnDisabled]}
-                onPress={handleSubmitText}
+                onPress={() => { console.log('[BTN] Gravar no Diário pressionado'); void handleSubmitText(); }}
                 disabled={tutorText.trim().length < 3 && attachments.length === 0}
                 activeOpacity={0.8}
               >
@@ -1152,12 +1448,91 @@ export default function NewDiaryEntryScreen() {
             style={styles.analyzingTitle}
           />
           <Text style={styles.analyzingSubtitle}>{t('diary.analyzingWait')}</Text>
+          <Text style={styles.analyzerDisclaimer}>{t('diary.analyzerDisclaimer')}</Text>
         </View>
       )}
 
     </View>
   );
 }
+
+// ── PainelLentes ───────────────────────────────────────────────────────────
+
+function PainelLentes({ t }: { t: (k: string, opts?: Record<string, unknown>) => string }) {
+  const LENTES = [
+    { icon: <ShieldCheck   size={rs(14)} color={colors.success} strokeWidth={1.8} />, color: colors.success, labelKey: 'mic.lenteVacina',      descKey: 'mic.lenteVacinaDesc' },
+    { icon: <Stethoscope   size={rs(14)} color={colors.petrol}  strokeWidth={1.8} />, color: colors.petrol,  labelKey: 'mic.lenteConsulta',     descKey: 'mic.lenteConsultaDesc' },
+    { icon: <FlaskConical  size={rs(14)} color={colors.sky}     strokeWidth={1.8} />, color: colors.sky,     labelKey: 'mic.lenteExame',        descKey: 'mic.lenteExameDesc' },
+    { icon: <Pill          size={rs(14)} color={colors.purple}  strokeWidth={1.8} />, color: colors.purple,  labelKey: 'mic.lenteMedicamento',  descKey: 'mic.lenteMedicamentoDesc' },
+    { icon: <Scale         size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lentePeso',         descKey: 'mic.lentePesoDesc' },
+    { icon: <DollarSign    size={rs(14)} color={colors.warning} strokeWidth={1.8} />, color: colors.warning, labelKey: 'mic.lenteGasto',        descKey: 'mic.lenteGastoDesc' },
+    { icon: <ThermometerSun size={rs(14)} color={colors.danger} strokeWidth={1.8} />, color: colors.danger,  labelKey: 'mic.lenteSintoma',      descKey: 'mic.lenteSintomaDesc' },
+    { icon: <Utensils      size={rs(14)} color={colors.success} strokeWidth={1.8} />, color: colors.success, labelKey: 'mic.lenteAlimentacao',  descKey: 'mic.lenteAlimentacaoDesc' },
+    { icon: <AlertTriangle size={rs(14)} color={colors.warning} strokeWidth={1.8} />, color: colors.warning, labelKey: 'mic.lenteAlergia',      descKey: 'mic.lenteAlergiaDesc' },
+    { icon: <Scissors      size={rs(14)} color={colors.petrol}  strokeWidth={1.8} />, color: colors.petrol,  labelKey: 'mic.lenteCirurgia',     descKey: 'mic.lenteCirurgiaDesc' },
+    { icon: <Activity      size={rs(14)} color={colors.rose}    strokeWidth={1.8} />, color: colors.rose,    labelKey: 'mic.lenteMetrica',      descKey: 'mic.lenteMetricaDesc' },
+    { icon: <ShoppingBag   size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lenteCompra',       descKey: 'mic.lenteCompraDesc' },
+    { icon: <MapPin        size={rs(14)} color={colors.sky}     strokeWidth={1.8} />, color: colors.sky,     labelKey: 'mic.lenteViagem',       descKey: 'mic.lenteViagemDesc' },
+    { icon: <PawPrint      size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lenteConexao',      descKey: 'mic.lenteConexaoDesc' },
+    { icon: <Sparkles      size={rs(14)} color={colors.gold}    strokeWidth={1.8} />, color: colors.gold,    labelKey: 'mic.lenteMomento',      descKey: 'mic.lenteMomentoDesc' },
+  ];
+
+  return (
+    <View style={painelStyles.container}>
+      <Text style={painelStyles.subtitle}>{t('mic.painelSubtitle')}</Text>
+      {LENTES.map((lente, idx) => (
+        <View key={idx} style={painelStyles.item}>
+          <View style={[painelStyles.iconBox, { backgroundColor: lente.color + '18' }]}>
+            {lente.icon}
+          </View>
+          <View style={painelStyles.textCol}>
+            <Text style={[painelStyles.label, { color: lente.color }]}>
+              {t(lente.labelKey).toUpperCase()}
+            </Text>
+            <Text style={painelStyles.desc}>{t(lente.descKey)}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const painelStyles = StyleSheet.create({
+  container: { gap: rs(8) },
+  subtitle: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(12),
+    color: colors.textSec,
+    marginBottom: rs(4),
+    lineHeight: fs(18),
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(10),
+    paddingVertical: rs(6),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border + '50',
+  },
+  iconBox: {
+    width: rs(28), height: rs(28),
+    borderRadius: rs(8),
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
+  },
+  textCol: { flex: 1, gap: rs(2) },
+  label: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(10),
+    letterSpacing: 0.5,
+  },
+  desc: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(11),
+    color: colors.textSec,
+    lineHeight: fs(16),
+  },
+});
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 
@@ -1252,6 +1627,40 @@ const styles = StyleSheet.create({
     fontSize: fs(13),
     fontFamily: 'Sora_400Regular',
     lineHeight: fs(13) * 1.5,
+  },
+  helpItemLimit: {
+    color: colors.textDim,
+    fontSize: fs(11),
+    fontFamily: 'Sora_400Regular',
+    marginTop: rs(2),
+  },
+  helpTabRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgCard,
+    borderRadius: rs(10),
+    padding: rs(3),
+    marginBottom: rs(16),
+  },
+  helpTabBtn: {
+    flex: 1,
+    paddingVertical: rs(7),
+    borderRadius: rs(8),
+    alignItems: 'center',
+  },
+  helpTabBtnActive: {
+    backgroundColor: colors.card,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: rs(4),
+    elevation: 2,
+  },
+  helpTabText: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: fs(12),
+    color: colors.textDim,
+  },
+  helpTabTextActive: {
+    color: colors.text,
   },
 
   // Text step
@@ -1471,4 +1880,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec,
     textAlign: 'center', maxWidth: rs(260), lineHeight: fs(20),
   },
+  analyzerDisclaimer: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textGhost,
+    textAlign: 'center', paddingHorizontal: rs(24), marginTop: rs(8),
+  },
+  mediaDisclaimer: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(10), color: '#FFFFFF',
+    textAlign: 'center', paddingHorizontal: rs(20), paddingVertical: rs(4),
+    fontStyle: 'italic',
+  },
+  mediaHint: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(9), color: colors.textGhost,
+    textAlign: 'center', marginTop: rs(2),
+  },
+
 });

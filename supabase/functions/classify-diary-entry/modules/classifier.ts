@@ -733,45 +733,48 @@ Return ONLY valid JSON:
 
 function buildVideoPrompt(pet: PetContext, lang: string): string {
   const speciesWord = pet.species === 'dog' ? 'dog' : 'cat';
-  return `You are the AI analyzer for AuExpert, a pet care app.
-The tutor has recorded a video of their pet and described what they observed.
+  return `You are the pet behavior AI analyzer for AuExpert.
+Video frames have been extracted from a pet video for visual analysis.
 
 Pet: ${pet.name}, ${pet.breed ?? 'mixed/unknown'}, ${speciesWord}
 Recent memories: ${pet.recent_memories || 'none yet'}
 
-## NARRATION RULES (CRITICAL)
-- Write in THIRD PERSON about ${pet.name}
-- Examples: "Today ${pet.name} showed great energy...", "${pet.name} was recorded moving..."
-- NEVER use first person: "I ran", "My paws"
-- Warm, observational tone — describe movement, behavior, mood
-- Maximum 150 words
-- Respond in ${lang}
+The tutor is responsible for the content they attach.
+Assume the animal in the frames IS ${pet.name}.
 
-## VIDEO ANALYSIS
-Based on the tutor's description, analyze the pet's:
-- locomotion_score: 0-100 (how well/freely the pet moves)
-- energy_score: 0-100 (energy level observed)
-- calm_score: 0-100 (calmness level)
-- behavior_summary: 1-2 sentence description of behavior
-- health_observations: array of notable health-relevant observations (empty if nothing notable)
+## ANALYZE THE FRAMES:
+1. POSTURE: relaxed, tense, submissive, alert, playful
+2. BODY LANGUAGE: ears, tail, coat, body position
+3. EXPRESSION: snout, eyes, mouth
+4. BEHAVIOR: what ${pet.name} is doing
+5. EMOTIONAL STATE: calm, excited, anxious, fearful, playful
+6. VISIBLE HEALTH: coat condition, movement, signs of discomfort
+7. VOCALIZATION: if mouth open suggesting barking/meowing/growling
 
-## OUTPUT FORMAT
+## NARRATION (THIRD PERSON, max 150 words, respond in ${lang})
+Describe what ${pet.name} is doing and expressing in the video.
+
 Return ONLY valid JSON:
 {
-  "classifications": [{"type": "moment", "confidence": 0.9, "extracted_data": {}}],
+  "classifications": [{"type": "moment", "confidence": 0.9, "extracted_data": {
+    "behavior": "...",
+    "posture": "relaxed|tense|alert|submissive|playful",
+    "emotional_state": "calm|excited|anxious|fearful|playful",
+    "vocalization_detected": false
+  }}],
   "primary_type": "moment",
-  "narration": "${pet.name} was recorded...",
+  "narration": "${pet.name} foi filmado...",
   "mood": "happy",
   "mood_confidence": 0.8,
   "urgency": "none",
   "clinical_metrics": [],
   "suggestions": [],
-  "tags_suggested": ["video", "activity"],
+  "tags_suggested": ["video", "comportamento"],
   "video_analysis": {
-    "locomotion_score": 85,
+    "locomotion_score": 80,
     "energy_score": 75,
-    "calm_score": 60,
-    "behavior_summary": "Moving freely with good energy",
+    "calm_score": 65,
+    "behavior_summary": "1-2 sentence description",
     "health_observations": []
   }
 }`;

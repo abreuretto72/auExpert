@@ -29,7 +29,11 @@ interface AttachmentThumbProps {
 
 export function AttachmentThumb({ attachment, onRemove }: AttachmentThumbProps) {
   return (
-    <View style={styles.container}>
+    <TouchableOpacity
+      style={styles.container}
+      activeOpacity={1}
+      onPress={() => {/* absorve o toque — evita propagação */}}
+    >
       {attachment.type === 'photo' && (
         <Image
           source={{ uri: attachment.localUri }}
@@ -80,7 +84,7 @@ export function AttachmentThumb({ attachment, onRemove }: AttachmentThumbProps) 
       >
         <X size={rs(10)} color="#fff" strokeWidth={2.5} />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 

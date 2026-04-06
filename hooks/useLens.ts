@@ -44,6 +44,7 @@ export function useLensExpenses(petId: string) {
         .eq('pet_id', petId)
         .eq('is_active', true)
         .order('date', { ascending: false });
+      console.log('[LENS] expenses:', data?.length ?? 0, '| erro:', error?.message ?? 'ok');
       if (error) throw error;
       return (data ?? []).map((r) => ({
         ...r,

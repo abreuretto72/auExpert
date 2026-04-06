@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getAIConfig } from '../_shared/ai-config.ts';
-import { validateAuth } from '../_shared/validate-auth.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
@@ -16,9 +15,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const authResult = await validateAuth(req, CORS_HEADERS);
-    if (authResult instanceof Response) return authResult;
-
     if (!ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
@@ -97,18 +93,57 @@ Respond in ${lang}.`;
     "other_animals": boolean,
     "visible_risks": ["string"] | null
   },
-  "alerts": [{ "message": "string", "severity": "info|attention|concern", "category": "health|safety|care" }],
+  "alerts": [{ "message": "string", "severity": "info|attention|concern", "category": "health|safety|care|toxicity" }],
   "disclaimer": "string",
-  "description": "1-2 sentence summary in 3rd person describing the pet's visible health and mood based on this photo"
+  "description": "REQUIRED — never null. If a pet is visible: 1-2 sentence summary of health and mood. If NO pet visible (feces, plant, food, object, wound, environment): describe what is shown and its clinical or safety relevance to pet health.",
+  "toxicity_check": {
+    "has_toxic_items": boolean,
+    "items": [{ "name": "string", "toxicity_level": "mild|moderate|severe", "description": "string" }] | null
+  }
 }`;
 
-    const userPrompt = `Analyze this photo of a ${species === 'dog' ? (language === 'pt-BR' ? 'cão' : 'dog') : (language === 'pt-BR' ? 'gato' : 'cat')}.
+    const userPrompt = `Analyze this photo in the context of pet health. The photo may show the pet directly, or pet-related content (feces, food, plants, objects, wounds, or environment) belonging to a ${species === 'dog' ? (language === 'pt-BR' ? 'cão' : 'dog') : (language === 'pt-BR' ? 'gato' : 'cat')}.
 
 Return a JSON object with this EXACT structure (null for anything not visible/assessable):
 
 ${jsonSchema}
 
-Be thorough. Analyze every visible detail. The tutor relies on this to care for their pet.`;
+Be thorough. Analyze every visible detail. The tutor relies on this to care for their pet.
+
+## TOXICITY CHECK
+Always fill toxicity_check. If plants, foods, or household items are visible:
+- Set has_toxic_items: true if any item is dangerous for ${species === 'dog' ? 'a dog' : 'a cat'}.
+- List each toxic item in items: name, toxicity_level (mild/moderate/severe), short description of risk in ${lang}.
+- If nothing toxic is visible, set has_toxic_items: false and items: null.
+
+## CLINICAL CONTENT — FECES/EXCREMENT IDENTIFICATION
+If the photo shows feces, excrement, stool, or droppings (fezes, cocô, excremento, dejetos):
+- This is clinically important data — do NOT classify it generically as "substance" or ignore it.
+- The pet may not be visible in the photo; set identification fields to null when not assessable.
+- In 'description': describe color, consistency, and any abnormal characteristics. Examples:
+  "Fezes de coloração amarelo-esverdeada, consistência pastosa, sugestivo de trânsito intestinal acelerado."
+  "Stool with dark brown color and formed consistency. No visible parasites or blood."
+- Color guide for clinical assessment:
+  • Normal brown: assess consistency only (likely normal)
+  • Yellow/green: possible rapid transit, infection, or dietary issue → add 'attention' alert
+  • Black/tarry: possible internal bleeding → add 'concern' alert, category 'health'
+  • Red/bloody streaks: possible lower GI bleeding → add 'concern' alert, category 'health'
+  • White/gray/pale: possible liver or pancreas issue → add 'attention' alert
+- Consistency: formed, soft, liquid/diarrhea, mucousy
+- Note any: visible parasites (worms, white segments), blood, unusual odor clues, or mucus
+- Add alerts for abnormal color or consistency — do not leave alerts empty if something is wrong.
+
+## DESCRIPTION FIELD — ALWAYS REQUIRED
+The 'description' field MUST NEVER be null or empty.
+- Pet visible: describe health and mood in 1-2 sentences in ${lang}.
+- No pet visible (plant, feces, food, wound, object, environment):
+  describe what is shown and its relevance to pet health/safety.
+  Examples:
+  "Petúnias (Petunia spp.) identificadas — planta moderadamente tóxica. Pode causar irritação gastrointestinal se ingerida."
+  "Fezes de coloração amarelo-esverdeada com consistência pastosa, sugestivo de trânsito intestinal acelerado ou infecção."
+  "Ferida visível na pele — área com vermelhidão e possível inflamação, recomenda-se avaliação veterinária."
+- Always write in ${lang}.
+- Always use 3rd person or impersonal phrasing.`;
 
     const cfg = await getAIConfig();
     const response = await fetch('https://api.anthropic.com/v1/messages', {

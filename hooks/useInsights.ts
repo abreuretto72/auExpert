@@ -54,12 +54,13 @@ export function useInsights(petId: string) {
       }
 
       const rows = (data ?? []) as PetInsight[];
+      console.log('[IA] insights petId:', petId.slice(-8), '| total:', rows.length);
 
       // Client-side sort: high → medium → low
       const urgencyOrder: Record<InsightUrgency, number> = { high: 1, medium: 2, low: 3 };
       return rows.sort((a, b) => urgencyOrder[a.urgency] - urgencyOrder[b.urgency]);
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 1000, // 10s durante debug
     gcTime:    30 * 60 * 1000,
     retry: (count, err: unknown) => {
       // Don't retry if table doesn't exist (migration pending)
