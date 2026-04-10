@@ -1,12 +1,13 @@
 /**
  * generate-embedding — Edge Function
  *
- * Generates an OpenAI text embedding and optionally saves it to pet_embeddings.
+ * Generates a Supabase AI gte-small text embedding (384 dims) and
+ * optionally saves it to pet_embeddings. No external API key required.
  *
  * POST body:
  *   text            string   — text to embed
  *   pet_id          string   — pet UUID
- *   user_id         string   — user UUID
+ *   user_id         string?  — user UUID (required when save=true)
  *   diary_entry_id  string?  — source diary entry UUID
  *   category        string?  — classification type (vaccine, medication, …)
  *   importance      number?  — 0.0–1.0, default 0.5
@@ -19,7 +20,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const OPENAI_API_KEY       = Deno.env.get('OPENAI_API_KEY')!;
 const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -28,38 +28,21 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ── Helper: call OpenAI embeddings API ────────────────────────────────────
+// Singleton — constructing a Session is expensive; reuse across invocations.
+// deno-lint-ignore no-explicit-any
+const embedModel = new (globalThis as any).Supabase.ai.Session('gte-small');
 
-export async function generateEmbedding(text: string): Promise<number[]> {
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text.slice(0, 8191), // API limit
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI embedding error ${res.status}: ${err}`);
-  }
-
-  const json = await res.json();
-  return json.data[0].embedding as number[];
+async function embedText(text: string): Promise<number[]> {
+  const input = (text ?? '').trim().slice(0, 512); // gte-small safe cap
+  if (!input) throw new Error('empty text');
+  const output = await embedModel.run(input, { mean_pool: true, normalize: true });
+  return Array.from(output as Float32Array) as number[];
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────
+// ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   try {
     const {
@@ -79,10 +62,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate embedding
-    const embedding = await generateEmbedding(text);
+    const embedding = await embedText(String(text));
 
-    // Optionally persist to pet_embeddings
     let saved = false;
     if (save && user_id) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -90,14 +71,14 @@ Deno.serve(async (req: Request) => {
         pet_id,
         user_id,
         diary_entry_id: diary_entry_id ?? null,
-        content_text:   text,
+        content_text:   String(text).slice(0, 4000),
         embedding,
-        importance:     Math.max(0, Math.min(1, importance)),
+        importance:     Math.max(0, Math.min(1, Number(importance) || 0.5)),
         category:       category ?? null,
         is_active:      true,
       });
       if (error) {
-        console.error('[generate-embedding] Insert error:', error.message);
+        console.error('[generate-embedding] insert error:', error.message);
       } else {
         saved = true;
       }
@@ -109,7 +90,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (err) {
-    console.error('[generate-embedding] Error:', err);
+    console.error('[generate-embedding] error:', err);
     return new Response(
       JSON.stringify({ error: String(err) }),
       { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } },

@@ -1,38 +1,57 @@
+/**
+ * search-rag — Edge Function
+ *
+ * Semantic search over a pet's RAG memory using Supabase AI gte-small (384d).
+ * No external API key required.
+ *
+ * POST body:
+ *   pet_id          string  — pet UUID (required)
+ *   query           string  — natural language query (required)
+ *   match_threshold number? — cosine similarity floor, default 0.5
+ *   match_count     number? — max results, default 5
+ *
+ * Returns:
+ *   { results: Array<{ content, similarity, content_type, importance }> }
+ */
+
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { validateAuth } from '../_shared/validate-auth.ts';
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Singleton Session — gte-small, 384 dimensions
+// deno-lint-ignore no-explicit-any
+const embedModel = new (globalThis as any).Supabase.ai.Session('gte-small');
+
+async function embedText(text: string): Promise<number[]> {
+  const input = (text ?? '').trim().slice(0, 512);
+  if (!input) throw new Error('empty query');
+  const output = await embedModel.run(input, { mean_pool: true, normalize: true });
+  return Array.from(output as Float32Array) as number[];
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
+
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS });
 
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
 
-    if (!OPENAI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
-        { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-      );
-    }
-
     const {
       pet_id,
       query,
       match_threshold = 0.5,
-      match_count = 5,
+      match_count     = 5,
     } = await req.json();
 
     if (!pet_id || !query) {
@@ -42,45 +61,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Generate embedding for the query
-    const embedResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: query,
-      }),
-    });
+    // Embed the query
+    const queryEmbedding = await embedText(String(query));
 
-    if (!embedResponse.ok) {
-      const errBody = await embedResponse.text();
-      console.error('[search-rag] OpenAI embedding error:', embedResponse.status, errBody);
-      return new Response(
-        JSON.stringify({ error: 'Embedding generation failed' }),
-        { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const embedData = await embedResponse.json();
-    const queryEmbedding: number[] = embedData.data?.[0]?.embedding;
-
-    if (!queryEmbedding?.length) {
-      return new Response(
-        JSON.stringify({ error: 'Empty embedding returned' }),
-        { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // Search pet_embeddings via RPC
+    // Search pet_embeddings via RPC (isolated to p_pet_id)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: matches, error: rpcError } = await supabase.rpc('match_pet_embeddings', {
-      p_pet_id: pet_id,
+      p_pet_id:          pet_id,
       p_query_embedding: queryEmbedding,
       p_match_threshold: match_threshold,
-      p_match_count: match_count,
+      p_match_count:     match_count,
     });
 
     if (rpcError) {
@@ -93,14 +83,14 @@ Deno.serve(async (req: Request) => {
 
     const results = (matches ?? []).map((m: {
       content_text: string;
-      similarity: number;
-      category: string;
-      importance: number;
+      similarity:   number;
+      category:     string;
+      importance:   number;
     }) => ({
-      content: m.content_text,
-      similarity: m.similarity,
+      content:      m.content_text,
+      similarity:   m.similarity,
       content_type: m.category,
-      importance: m.importance,
+      importance:   m.importance,
     }));
 
     return new Response(

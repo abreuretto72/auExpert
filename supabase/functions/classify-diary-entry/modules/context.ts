@@ -10,18 +10,15 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
-// ── Inlined embedding helper (avoids cross-directory import in deploy bundle) ──
+// ── Inlined embedding helper — Supabase AI gte-small (384d), no API key ──
+// deno-lint-ignore no-explicit-any
+const _embedModel = new (globalThis as any).Supabase.ai.Session('gte-small');
+
 async function generateEmbedding(text: string): Promise<number[]> {
-  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'text-embedding-3-small', input: text.slice(0, 8191) }),
-  });
-  if (!res.ok) { const err = await res.text(); throw new Error(`OpenAI embedding error ${res.status}: ${err}`); }
-  const json = await res.json();
-  return json.data[0].embedding as number[];
+  const input = (text ?? '').trim().slice(0, 512);
+  if (!input) throw new Error('empty text');
+  const output = await _embedModel.run(input, { mean_pool: true, normalize: true });
+  return Array.from(output as Float32Array) as number[];
 }
 
 const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')!;
@@ -134,21 +131,21 @@ export async function fetchPetContext(
       const queryEmbedding = await generateEmbedding(inputText);
 
       const { data: vecResults } = await client.rpc('match_pet_embeddings', {
-        query_embedding:  queryEmbedding,
-        match_pet_id:     petId,
-        match_threshold:  0.65,
-        match_count:      5,
+        p_pet_id:          petId,
+        p_query_embedding: queryEmbedding,
+        p_match_threshold: 0.65,
+        p_match_count:     5,
       });
 
       if (vecResults && vecResults.length > 0) {
         // Avoid duplicating entries already in criticalMems
-        const criticalIds = new Set((criticalMems ?? []).map((m: MemoryRow) => m.content_text));
-        relevantMems = (vecResults as Array<{ content: string; importance: number; category: string | null }>)
-          .filter(r => !criticalIds.has(r.content))
-          .map(r => ({ content_text: r.content, importance: r.importance, category: r.category }));
+        const criticalTexts = new Set((criticalMems ?? []).map((m: MemoryRow) => m.content_text));
+        relevantMems = (vecResults as Array<{ content_text: string; importance: number; category: string | null }>)
+          .filter((r) => !criticalTexts.has(r.content_text))
+          .map((r) => ({ content_text: r.content_text, importance: r.importance, category: r.category }));
       }
     } catch (embErr) {
-      // Embedding failed (e.g. no OpenAI key in dev) — continue without vector search
+      // Embedding failed — continue without vector search, fallback to recent entries
       console.warn('[context] Vector search skipped:', String(embErr));
 
       // Fallback: last 5 diary entries

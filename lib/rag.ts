@@ -37,16 +37,32 @@ export async function searchRAG(petId: string, query: string, limit = 5) {
 // ── Generate + save a single embedding ────────────────────────────────────
 
 export async function generateEmbedding(
-  petId:       string,
-  category:    string,
+  petId:        string,
+  category:     string,
   diaryEntryId: string,
-  text:        string,
-  importance:  number,
-  userId?:     string,
-) {
-  // Embeddings via OpenAI desativado — OPENAI_API_KEY não configurada.
-  // Chamadas existentes usam .catch(() => {}) e são silenciadas aqui.
-  return null;
+  text:         string,
+  importance:   number,
+  userId?:      string,
+): Promise<void> {
+  const trimmed = (text ?? '').trim();
+  if (!trimmed || !userId) return;
+
+  try {
+    const { error } = await supabase.functions.invoke('generate-embedding', {
+      body: {
+        text:           trimmed,
+        pet_id:         petId,
+        user_id:        userId,
+        diary_entry_id: diaryEntryId || null,
+        category,
+        importance,
+        save:           true,
+      },
+    });
+    if (error) console.warn('[rag] generateEmbedding error:', error.message);
+  } catch (err) {
+    console.warn('[rag] generateEmbedding failed:', String(err));
+  }
 }
 
 // ── Build structured text for each classification type ─────────────────────
@@ -265,12 +281,22 @@ export async function indexPetHealthData(
 // ── Update RAG after saving a diary entry ─────────────────────────────────
 
 export async function updatePetRAG(
-  petId:       string,
-  userId:      string,
-  diaryEntryId: string,
+  petId:           string,
+  userId:          string,
+  diaryEntryId:    string,
   classifications: Array<{ type: string; confidence: number; extracted_data?: Record<string, unknown> }>,
-) {
-  // RAG via embeddings desativado — dependência OpenAI removida.
-  // Contexto do pet é fornecido diretamente pelo perfil no classify-diary.
-  return;
+): Promise<void> {
+  if (!classifications?.length) return;
+
+  // Fire-and-forget per classification. Best-effort — never throws.
+  await Promise.allSettled(
+    classifications
+      .map((cls) => {
+        const content = buildEmbeddingContent(cls);
+        if (!content) return null;
+        const importance = IMPORTANCE[cls.type] ?? 0.5;
+        return generateEmbedding(petId, cls.type, diaryEntryId, content, importance, userId);
+      })
+      .filter((p): p is Promise<void> => p !== null),
+  );
 }
