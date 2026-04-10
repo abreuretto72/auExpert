@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { moods } from '../../constants/moods';
-import { previewPdf } from '../../lib/pdf';
+import { generatePdfUri } from '../../lib/pdf';
+import PdfPreviewModal from './PdfPreviewModal';
 import { getPublicUrl } from '../../lib/storage';
 import { useToast } from '../Toast';
 import type { TimelineEvent } from './timelineTypes';
@@ -43,6 +44,9 @@ export default function PdfExportModal({ visible, onClose, events, petName, getM
   const [moodFilter, setMoodFilter] = useState<string | null>(null);
   const [onlySpecial, setOnlySpecial] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewFileName, setPreviewFileName] = useState('');
 
   const formatDateInput = useCallback((text: string, setter: (v: string) => void) => {
     const clean = text.replace(/\D/g, '');
@@ -110,14 +114,17 @@ export default function PdfExportModal({ visible, onClose, events, petName, getM
         ? `<p style="text-align:center;color:#888;font-size:10px;margin-top:16px;">${t('diary.pdfTruncated', { shown: String(MAX_PDF_ENTRIES), total: String(totalFound) })}</p>`
         : '';
 
-      onClose();
-
-      await previewPdf({
+      const fname = `auExpert_${petName}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const uri = await generatePdfUri({
         title: t('diary.pdfTitle', { name: petName }),
         subtitle: t('diary.pdfSubtitle', { count: String(filtered.length) }),
         bodyHtml: entriesHtml + truncNote,
         language: i18n.language,
-      });
+      }, fname);
+      setPreviewFileName(fname);
+      setPreviewUri(uri);
+      onClose();
+      setPreviewVisible(true);
     } catch {
       toast(t('errors.generic'), 'error');
     } finally {
@@ -126,6 +133,12 @@ export default function PdfExportModal({ visible, onClose, events, petName, getM
   }, [events, dateFrom, dateTo, moodFilter, onlySpecial, petName, t, i18n.language, getMoodData, toast, onClose]);
 
   return (
+    <PdfPreviewModal
+      visible={previewVisible}
+      pdfUri={previewUri}
+      fileName={previewFileName}
+      onClose={() => setPreviewVisible(false)}
+    />
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>

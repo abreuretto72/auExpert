@@ -245,3 +245,15 @@ export async function sharePdf(options: PdfOptions, fileName: string): Promise<v
   await FileSystem.moveAsync({ from: uri, to: dest });
   await shareAsync(dest, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' });
 }
+
+/**
+ * Generate PDF and return local URI — used for in-app preview.
+ */
+export async function generatePdfUri(options: PdfOptions, fileName: string): Promise<string> {
+  const logoB64 = await getLogoBase64();
+  const html = buildHtml(logoB64, options);
+  const { uri } = await Print.printToFileAsync({ html });
+  const dest = `${FileSystem.cacheDirectory}${fileName}`;
+  await FileSystem.moveAsync({ from: uri, to: dest });
+  return dest;
+}
