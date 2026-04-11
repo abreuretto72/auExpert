@@ -1,7 +1,7 @@
 # auExpert Architecture Codemap
 
-**Last Updated:** 2026-04-10
-**Status:** MVP Phase — Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Model Separation + Video Thumbnails
+**Last Updated:** 2026-04-11
+**Status:** MVP Phase — Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Model Separation + Video Thumbnails + JWT ES256 Fix
 
 ---
 
@@ -885,6 +885,135 @@ function useDeletedRecords(petId: string) {
 
 ---
 
+## JWT Authentication Architecture (2026-04-11)
+
+### Problem: ES256 vs HS256 Mismatch
+
+**Root Cause:** Supabase uses ES256 (asymmetric) for JWT signing, but the gateway's `verify_jwt` option uses the legacy HS256 secret. This causes valid ES256 tokens to be rejected with `"Invalid JWT"` errors.
+
+**Symptom:** Edge Functions receive `401 Unauthorized` from background invocations (e.g., classification in background session).
+
+**Solution:** Disable gateway JWT validation via `supabase/config.toml` and enforce auth inside each function.
+
+### Configuration: `supabase/config.toml`
+
+```toml
+# classify-diary-entry: bypass gateway JWT validation
+# Reason: project uses ES256 (asymmetric) JWT signing; the gateway's verify_jwt
+# uses the legacy HS256 secret and rejects valid ES256 tokens with "Invalid JWT".
+# Auth is enforced inside the function via validateAuth() + supabase.auth.getUser()
+# which correctly validates ES256 tokens via the Auth server.
+[functions.classify-diary-entry]
+verify_jwt = false
+
+# analyze-pet-photo: same ES256/HS256 mismatch issue as above
+[functions.analyze-pet-photo]
+verify_jwt = false
+
+# generate-embedding: same ES256/HS256 mismatch — auth enforced via SERVICE_ROLE internally
+[functions.generate-embedding]
+verify_jwt = false
+
+# search-rag: same ES256/HS256 mismatch — auth enforced via validateAuth() internally
+[functions.search-rag]
+verify_jwt = false
+```
+
+### Internal Auth Enforcement: `validateAuth()` Pattern
+
+**File:** `supabase/functions/classify-diary-entry/modules/auth.ts`
+
+```typescript
+/**
+ * Validates JWT by checking Supabase Auth server directly.
+ * Handles both ES256 (asymmetric) tokens correctly.
+ */
+export async function validateAuth(req: Request): Promise<AuthUser | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;  // No token
+  }
+
+  const token = authHeader.substring(7);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // getUser() validates the token against Auth server
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) {
+    console.error('[validateAuth] rejected:', error?.message);
+    return null;
+  }
+
+  return user;
+}
+```
+
+**Usage in Edge Functions:**
+
+```typescript
+// supabase/functions/classify-diary-entry/index.ts
+Deno.serve(async (req: Request) => {
+  // 1. Authenticate — required
+  const user = await validateAuth(req);
+  if (!user) {
+    return errorResponse('Unauthorized', 401);
+  }
+
+  // 2. Process request with user context
+  // ...
+});
+```
+
+### Background Invocation (with ES256 token)
+
+**File:** `lib/ai.ts`
+
+When calling Edge Functions from background sessions (e.g., classification after diary entry save):
+
+```typescript
+// Extract ES256 token from session
+const session = await supabase.auth.getSession();
+const token = session.data.session?.access_token;
+
+if (!token) {
+  throw new Error('No session token available');
+}
+
+// Invoke function with explicit Authorization header
+const { data, error } = await supabase.functions.invoke(
+  'classify-diary-entry',
+  {
+    headers: {
+      'Authorization': `Bearer ${token}`,  // ES256 token passed to function
+    },
+    body: { /* ... */ },
+  }
+);
+
+// Detailed error logging for debugging
+if (error) {
+  const ctx = (error as Record<string, unknown>).context as Response | undefined;
+  console.log('[AI-ERR] status HTTP:', ctx?.status);
+  console.log('[AI-ERR] url:', ctx?.url);
+  try {
+    const errBody = await ctx?.json?.();
+    console.log('[AI-ERR] body:', JSON.stringify(errBody));
+  } catch {
+    console.log('[AI-ERR] body parse failed');
+  }
+}
+```
+
+### Key Takeaway
+
+- **Gateway verification disabled** (`verify_jwt = false`) to avoid HS256 validation
+- **Function-level validation** via `validateAuth()` ensures ES256 tokens are checked correctly
+- **Session tokens passed explicitly** in `Authorization: Bearer {token}` header
+- **Detailed HTTP error logging** helps diagnose future auth issues
+
+---
+
 ## Edge Functions (Supabase)
 
 **Deno serverless functions:**
@@ -927,6 +1056,45 @@ if (input.input_type === 'ocr_scan') {
   - `gallery`: slice(0,2) → up to two photos
 - Maintains backward compatibility for text-only entries
 
+### OCR Document Fallback Pattern (2026-04-11)
+
+**Problem:** When diary entry contains a scanned document + photos/video, the pipeline runs two classify calls:
+1. Main call (photos/video/text)
+2. Secondary OCR call (document only)
+
+When OCR classify returned 502 (timeout), the document was completely skipped from `media_analyses` table.
+
+**Solution:** Save document to database with empty OCR fields as fallback when OCR fails.
+
+**File:** `hooks/useDiaryEntry.ts` (line ~1571)
+
+```typescript
+// BEFORE (❌ would skip document on OCR failure)
+if (docMediaUrl && docOcrSource) {
+  // Save document only if OCR analysis succeeded
+  saveMediaAnalysis({ url: docMediaUrl, ocr: docOcrSource });
+}
+
+// AFTER (✅ save document even if OCR fails)
+if (docMediaUrl) {
+  // Save document regardless of OCR status
+  saveMediaAnalysis({ 
+    url: docMediaUrl, 
+    ocr_text: docOcrSource?.extracted_text ?? null,
+    ocr_json: docOcrSource?.structured_data ?? null,
+    analysis_status: docOcrError ? 'pending' : 'completed',
+  });
+}
+```
+
+**Fallback UI Strategy:**
+
+- If `ocr_text` is null but document exists: show thumbnail with "OCR pending" badge
+- Tutor can manually add OCR text or retry analysis
+- Document is never lost due to timeout
+
+---
+
 **analyze-pet-photo Enhancements (2026-04-06):**
 - **Content-aware:** Detecta se é pet direto, feces, plants, wounds, food, objects, environment
 - **Obrigatório `description`:** Nunca null — resumo clínico apropriado ao conteúdo
@@ -934,8 +1102,8 @@ if (input.input_type === 'ocr_scan') {
 - **Feces identification:** Color/consistency guide (yellow→rapid transit, black→bleeding, etc.)
 - **Species parameter:** Passado do app (`species: 'dog'|'cat'`) para IA usar contexto correto
 - **Language:** Responde sempre no idioma do tutor (`language: i18n.language`)
-- **Removed `--no-verify-jwt`:** Gateway já verifica, function recebe request autenticada
-- **JWT header:** App passa `bgAuthHeader` em background invocations (previne 401)
+- **Gateway JWT bypass:** See JWT Authentication Architecture (2026-04-11) — `verify_jwt = false` in config.toml
+- **Auth enforced internally:** validateAuth() + supabase.auth.getUser() check ES256 tokens correctly
 
 ---
 

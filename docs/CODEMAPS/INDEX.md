@@ -1,7 +1,7 @@
 # auExpert Codemaps Index
 
-**Last Updated:** 2026-04-10
-**Scope:** MVP Phase (Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Model Separation + Video Thumbnails)
+**Last Updated:** 2026-04-11
+**Scope:** MVP Phase (Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Model Separation + Video Thumbnails + JWT ES256 Fix)
 
 ---
 
@@ -82,6 +82,27 @@ This directory contains comprehensive architectural documentation for the auExpe
 
 ---
 
+### 4. [EDGE_FUNCTIONS.md](./EDGE_FUNCTIONS.md) — NEW (2026-04-11)
+**Serverless function architecture and JWT authentication.**
+
+- Core functions: classify-diary-entry, analyze-pet-photo, generate-embedding, search-rag
+- ES256/HS256 JWT authentication pattern
+- validateAuth() internal enforcement via config.toml
+- Error handling, logging conventions, performance tuning
+- Background invocation with Bearer token
+- Detailed logging for debugging auth issues
+
+**When to read:**
+- Calling Edge Functions from mobile app
+- Debugging "Unauthorized 401" errors
+- Understanding AI pipeline (classification, photo analysis)
+- Adding new serverless function
+- Configuring JWT validation
+
+**Key Pattern:** `verify_jwt = false` in config.toml + `validateAuth()` in function code.
+
+---
+
 ## Quick Reference
 
 ### Add a New String (UI)
@@ -140,11 +161,12 @@ This directory contains comprehensive architectural documentation for the auExpe
 
 ```
 docs/CODEMAPS/
-├── INDEX.md              (this file)
-├── ARCHITECTURE.md       (system design + modules)
+├── INDEX.md              (this file — navigation hub)
+├── ARCHITECTURE.md       (system design + modules + JWT auth)
+├── EDGE_FUNCTIONS.md     (serverless functions + auth patterns)
 ├── I18N.md               (translations + tone)
 ├── RESPONSIVENESS.md     (screen scaling)
-└── (future: DATABASE.md, PERFORMANCE.md, TESTING.md)
+└── (future: DATABASE.md, PERFORMANCE.md, TESTING.md, OFFLINE.md, SECURITY.md)
 ```
 
 ---
