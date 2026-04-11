@@ -858,6 +858,8 @@ export interface SubmitEntryParams {
   hasVideo?: boolean;         // true when video URIs are present regardless of inputType
   docBase64?: string;         // inline base64 of a scanned document (uploaded + OCR'd separately from photos)
   skipAI?: boolean;           // when true, skip AI classification/narration — just save text + upload media
+  /** Per-routine AI analysis flags. When absent, defaults to all-enabled (backward compat). */
+  aiFlags?: import('./_diary/types').AIAnalysisFlags;
 }
 
 export interface PDFImportParams {
@@ -890,6 +892,8 @@ async function _backgroundClassifyAndSave(opts: {
   hasVideo?: boolean;
   docBase64?: string;     // inline base64 of a scanned document (upload + OCR in parallel with main classify)
   skipAI?: boolean;       // skip AI pipeline — upload media + save entry with manual defaults
+  /** Per-routine AI analysis flags. When absent, defaults to all-enabled (backward compat). */
+  aiFlags?: import('./_diary/types').AIAnalysisFlags;
 }): Promise<void> {
   const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoDuration, audioDuration, audioOriginalName, additionalContext } = opts;
 
@@ -1239,88 +1243,151 @@ async function _backgroundClassifyAndSave(opts: {
       console.log('[AUDIO-CLASSIFY] textForClassify len:', (textForClassify ?? '').length);
       console.log('[AUDIO-CLASSIFY] photosBase64 para classify:', analysisFramesCapped.length > 0 ? analysisFramesCapped.length : (photosBase64?.length ?? 0));
     }
+    // ── Resolve AI analysis flags ─────────────────────────────────────────────
+    // opts.aiFlags → explicit per-routine control (from AI toggle in the UI)
+    // absent → all enabled (backward compat for PDF import, retry, offline sync)
+    // opts.skipAI handled separately above (fast-path before try block)
+    const { AI_FLAGS_ALL_ON } = await import('./_diary/types');
+    const aiFlags = opts.aiFlags ?? AI_FLAGS_ALL_ON;
+
+    const {
+      runTextClassification,
+      runPhotoAnalyses,
+      runVideoClassification,
+      runAudioClassification,
+      runOCRClassification,
+    } = await import('./_diary/mediaRoutines');
+
     const _classifyStart = Date.now();
-    const [classification, photoAnalysisResults, audioClassification] = await Promise.all([
-      // A: unified classify — text + frames/photos + input type (always runs)
-      classifyDiaryEntry(petId, textForClassify, analysisFramesCapped.length > 0 ? analysisFramesCapped : photosBase64, inputType, i18n.language, undefined, inputType === 'pet_audio' ? (uploadedAudioUrl ?? undefined) : undefined, inputType === 'pet_audio' ? (audioDuration ?? undefined) : undefined, inputType === 'video' ? (uploadedVideoUrls[0] ?? undefined) : undefined, Object.keys(bgAuthHeader).length > 0 ? bgAuthHeader : undefined),
+    console.log('[ORCH] aiFlags:', JSON.stringify(aiFlags));
+    console.log('[ORCH] hasVisualInput:', hasVisualInput, '| audioUrl:', !!uploadedAudioUrl, '| docBase64:', !!opts.docBase64, '| videoUrl:', !!uploadedVideoUrls[0]);
 
-      // B: per-frame/photo deep analysis via analyze-pet-photo (parallel, non-blocking)
-      // Fotos primeiro, depois frames de vídeo se houver espaço (max 3 total)
-      hasVisualInput
-        ? Promise.allSettled(
-            analysisFramesCapped.map((b64, idx) =>
-              supabase.functions
-                .invoke('analyze-pet-photo', {
-                  headers: bgAuthHeader,
-                  body: {
-                    photo_base64: b64,
-                    language: i18n.language,
-                    species: opts.species ?? 'dog',
-                    pet_name: opts.petName ?? null,
-                    pet_breed: opts.petBreed ?? null,
-                    ...((photosBase64?.length ?? 0) === 0 || idx >= (photosBase64?.length ?? 0)
-                      ? { context: 'video_frame' }
-                      : {}),
-                  },
-                })
-                .then(({ data, error }) => {
-                  if (error) {
-                    console.log('[DIAG-ERR] analyze-pet-photo idx=' + idx + ':', JSON.stringify(error).slice(0, 200));
-                    // Tentar ler o body da resposta de erro
-                    const blob = (error as Record<string,unknown>).context as Record<string,unknown> | undefined;
-                    const bodyBlob = blob?._bodyBlob as Blob | undefined;
-                    if (bodyBlob) {
-                      bodyBlob.text().then((txt: string) => {
-                        console.log('[DIAG-BODY] analyze-pet-photo idx=' + idx + ':', txt);
-                      }).catch(() => {});
-                    }
-                  }
-                  return data as Record<string, unknown> | null;
-                }),
-            ),
-          )
-        : Promise.resolve(null),
+    // ── 5 rotinas independentes em paralelo ───────────────────────────────────
+    // Nenhuma lança exceção — cada uma retorna RoutineOutcome<T>.
+    // Promise.all é seguro aqui (não cancela as demais em caso de falha).
+    const authHeader = Object.keys(bgAuthHeader).length > 0 ? bgAuthHeader : {};
 
-      // D: secondary pet_audio classify when audio is present but NOT the primary inputType
-      // (e.g. F+A, V+A, F+V+A, F+A+D — main classify focuses on photos/video)
-      // Sends the same text context so the pet_audio prompt can infer behavioral audio analysis
-      // Result: pet_audio_analysis field saved to diary_entries alongside photo/video analysis
-      (uploadedAudioUrl && inputType !== 'pet_audio')
-        ? (() => {
-            console.log('[AUDIO-CLASSIFY] disparando classify secundário pet_audio | audioUrl:', uploadedAudioUrl?.slice(0, 60));
-            return classifyDiaryEntry(petId, textForClassify, null, 'pet_audio', i18n.language, undefined, uploadedAudioUrl ?? undefined, undefined, undefined, Object.keys(bgAuthHeader).length > 0 ? bgAuthHeader : undefined).catch((e) => {
-              console.warn('[AUDIO-CLASSIFY] ❌ classify secundário falhou:', String(e));
-              return null;
-            });
-          })()
-        : (() => {
-            if (inputType !== 'pet_audio') {
-              console.log('[AUDIO-CLASSIFY] classify secundário pulado — sem audioUrl (uploadedAudioUrl:', uploadedAudioUrl, ')');
-            }
-            return Promise.resolve(null);
-          })(),
+    const [textOutcome, photoOutcome, videoOutcome, audioOutcome, ocrOutcome] = await Promise.all([
+      // A: Text narration + classification (mood, tags, urgency)
+      aiFlags.narrateText && textForClassify?.trim()
+        ? runTextClassification({ petId, text: textForClassify, language: i18n.language, authHeader })
+        : Promise.resolve<import('./_diary/types').TextClassificationOutcome>(
+            { status: 'skipped', reason: aiFlags.narrateText ? 'no_input' : 'toggle_off' }
+          ),
+
+      // B: Per-photo/frame deep analysis via analyze-pet-photo
+      aiFlags.analyzePhotos && hasVisualInput
+        ? runPhotoAnalyses({
+            framesBase64: analysisFramesCapped,
+            tutorPhotoCount: photosBase64?.length ?? 0,
+            species: opts.species ?? 'dog',
+            petName: opts.petName ?? null,
+            petBreed: opts.petBreed ?? null,
+            language: i18n.language,
+            authHeader,
+          })
+        : Promise.resolve<import('./_diary/types').PhotoAnalysesOutcome>(
+            { status: 'skipped', reason: aiFlags.analyzePhotos ? 'no_input' : 'toggle_off' }
+          ),
+
+      // C: Video behavior analysis (locomotion, energy, calm, health observations)
+      aiFlags.analyzeVideo && uploadedVideoUrls[0]
+        ? runVideoClassification({
+            petId,
+            videoUrl: uploadedVideoUrls[0],
+            text: textForClassify ?? null,
+            thumbnailFrameBase64: videoFramesBase64[0] ?? null,
+            language: i18n.language,
+            authHeader,
+          })
+        : Promise.resolve<import('./_diary/types').VideoClassificationOutcome>(
+            { status: 'skipped', reason: aiFlags.analyzeVideo ? 'no_input' : 'toggle_off' }
+          ),
+
+      // D: Pet audio analysis (sound_type, emotional_state, intensity)
+      aiFlags.analyzeAudio && uploadedAudioUrl
+        ? runAudioClassification({
+            petId,
+            audioUrl: uploadedAudioUrl,
+            text: textForClassify ?? null,
+            durationSeconds: audioDuration ?? null,
+            language: i18n.language,
+            authHeader,
+          })
+        : Promise.resolve<import('./_diary/types').AudioClassificationOutcome>(
+            { status: 'skipped', reason: aiFlags.analyzeAudio ? 'no_input' : 'toggle_off' }
+          ),
+
+      // E: OCR document extraction (fields, document_type, items)
+      // NOTE: document ALWAYS gets saved to diary — this outcome only controls
+      //       whether OCR fields are populated. See docMediaUrl guard below.
+      aiFlags.analyzeOCR && opts.docBase64
+        ? runOCRClassification({
+            petId,
+            docBase64: opts.docBase64,
+            language: i18n.language,
+            authHeader,
+          })
+        : Promise.resolve<import('./_diary/types').OCRClassificationOutcome>(
+            { status: 'skipped', reason: aiFlags.analyzeOCR ? 'no_input' : 'toggle_off' }
+          ),
     ]);
 
-    // C: secondary OCR classify for an inline scanned document — runs AFTER main classify
-    // to avoid concurrent heavy Claude API calls that cause timeouts.
-    // Used ONLY for media_analysis OCR display; main classify already extracted structured data.
-    const ocrClassification = opts.docBase64
-      ? await classifyDiaryEntry(petId, null, [opts.docBase64], 'ocr_scan', i18n.language, undefined, undefined, undefined, undefined, Object.keys(bgAuthHeader).length > 0 ? bgAuthHeader : undefined).catch((e) => {
-          console.warn('[DOC-ATTACH] OCR classify falhou:', String(e));
-          return null;
-        })
-      : null;
-
     const _classifyEnd = Date.now();
-    console.log('[AI] classify duration ms:', _classifyEnd - _classifyStart);
-    if (inputType === 'pet_audio' || audioClassification) {
-      console.log('[AUDIO-CLASSIFY] resultado audioClassification:', audioClassification
-        ? JSON.stringify({
-            pet_audio_analysis: (audioClassification as Record<string,unknown>)?.pet_audio_analysis ?? 'ausente',
-            primary_type: (audioClassification as Record<string,unknown>)?.primary_type ?? 'ausente',
-          })
-        : 'null');
+    console.log('[ORCH] duration ms:', _classifyEnd - _classifyStart);
+    console.log('[ORCH] text:', textOutcome.status, '| photo:', photoOutcome.status, '| video:', videoOutcome.status, '| audio:', audioOutcome.status, '| ocr:', ocrOutcome.status);
+
+    // ── Extract classification (primary result for narration, mood, tags, etc.) ─
+    // Uses text routine result when available; falls back to video/audio routine
+    // result for inputType-specific fields; neutral defaults when all skipped/failed.
+    const textValue = textOutcome.status === 'ok' ? textOutcome.value : null;
+    const videoValue = videoOutcome.status === 'ok' ? videoOutcome.value : null;
+    const audioValue = audioOutcome.status === 'ok' ? audioOutcome.value : null;
+
+    // classification: primary object consumed by DB save, saveToModule, RAG, etc.
+    // Merges text classification with video/audio-specific fields from their routines.
+    const classification: import('../lib/ai').ClassifyDiaryResponse = textValue ?? {
+      classifications: [],
+      primary_type:    'moment',
+      narration:       null as unknown as string,
+      mood:            'calm',
+      mood_confidence: 0.5,
+      urgency:         'none',
+      clinical_metrics: [],
+      suggestions:     [],
+      tags_suggested:  [],
+      language:        i18n.language,
+      tokens_used:     0,
+    };
+
+    // Attach video_analysis and pet_audio_analysis from their dedicated routines
+    // (when text routine didn't already produce them from a combined call)
+    if (videoValue?.video_analysis && !classification.video_analysis) {
+      (classification as Record<string, unknown>).video_analysis = videoValue.video_analysis;
     }
+    if (audioValue?.pet_audio_analysis && !classification.pet_audio_analysis) {
+      (classification as Record<string, unknown>).pet_audio_analysis = audioValue.pet_audio_analysis;
+    }
+
+    // Legacy variable aliases for downstream compat (not renamed to minimise diff)
+    // photoAnalysisResults: convert direct array → PromiseSettledResult shape used downstream
+    const photoRawArray = photoOutcome.status === 'ok' ? photoOutcome.value : null;
+    const photoAnalysisResults: PromiseSettledResult<Record<string, unknown> | null>[] | null =
+      photoRawArray
+        ? photoRawArray.map((v) =>
+            v != null
+              ? ({ status: 'fulfilled', value: v } as PromiseFulfilledResult<Record<string, unknown>>)
+              : ({ status: 'rejected', reason: 'analyze-pet-photo returned null' } as PromiseRejectedResult),
+          )
+        : null;
+
+    // audioClassification: kept for backward compat with secondary-audio logic below
+    const audioClassification = audioValue;
+
+    // ocrClassification: used in media_analyses builder below
+    const ocrClassification = ocrOutcome.status === 'ok' ? ocrOutcome.value : null;
+
+    // ── Log outcomes ──────────────────────────────────────────────────────────
     console.log('[S3] classify OK | narration:', !!classification.narration, '| usou fotos:', (photosBase64?.length ?? 0) > 0, '| frames:', videoFramesBase64.length);
     console.log('[S3] primary_type:', classification.primary_type);
     console.log('[S3] mood:', classification.mood, '| urgency:', classification.urgency);
@@ -1355,6 +1422,30 @@ async function _backgroundClassifyAndSave(opts: {
         }))
     ));
     console.log('[S3] photoAnalysisResults count:', Array.isArray(photoAnalysisResults) ? photoAnalysisResults.length : 0);
+
+    // ── Partial-success toast ─────────────────────────────────────────────────
+    // If some routines were attempted but failed, let the tutor know that
+    // the entry was saved but some analyses didn't complete. One toast only.
+    {
+      const { countFailedRoutines, countAttemptedRoutines } = await import('./_diary/types');
+      const bundle: import('./_diary/types').MediaAnalysisBundle = {
+        textClassification: textOutcome,
+        photoAnalyses:      photoOutcome,
+        videoClassification: videoOutcome,
+        audioClassification: audioOutcome,
+        ocrClassification:  ocrOutcome,
+      };
+      const attempted = countAttemptedRoutines(bundle);
+      const failed = countFailedRoutines(bundle);
+      if (attempted > 0 && failed > 0) {
+        const toastFn = (await import('../components/Toast')).toast;
+        if (failed < attempted) {
+          toastFn(i18n.t('diary.aiRoutines.partialSuccess'), 'warning');
+        } else {
+          toastFn(i18n.t('errors.aiRoutineFailed'), 'error');
+        }
+      }
+    }
 
     // DB constraint: voice | text | gallery | video | audio | ocr_scan | pdf | pet_audio
     // NOTE: 'photo' is NOT a valid DB value — map to 'gallery'

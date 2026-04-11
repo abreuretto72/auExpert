@@ -651,7 +651,21 @@
     "deletedBy":           "Deleted by {{name}} · {{date}}",
     "restore":             "Restore",
     "restoreSuccess":      "Record restored successfully!",
-    "noDeleted":           "No deleted records here."
+    "noDeleted":           "No deleted records here.",
+    "aiToggle": {
+      "label": "Smart analysis",
+      "on": "AI enabled",
+      "off": "AI disabled",
+      "hint": "I can narrate, analyze photos, videos and sounds for {{name}}!"
+    },
+    "aiRoutines": {
+      "partialSuccess": "Saved everything! But some analyses didn't finish in time.",
+      "totalFailure": "AI took a break. Entry saved, but without analysis.",
+      "photoTimeout": "Photo analysis took too long. I did my best!",
+      "videoTimeout": "Video analysis took too long. But the video was saved!",
+      "audioTimeout": "Couldn't analyze the audio this time. The sound was saved!",
+      "ocrTimeout": "Scanner took too long. Document saved without extracted fields."
+    }
   },
   "health": {
     "vaccines": "Vaccines",
@@ -1633,6 +1647,8 @@
     "biometric": "Didn't recognize you! Try again or use your password.",
     "storageFull": "No space left! Free up some room on your phone?",
     "generic": "Oops, something went wrong. Try again?",
+    "aiRoutineFailed": "Oops, AI couldn't analyze. But the entry was saved!",
+    "aiRoutineTimeout": "AI took too long this time. But the entry was saved!",
     "editFailed": "Oops, couldn't save. Try again?",
     "unexpectedTitle": "Oops, something broke",
     "unexpectedBody": "Something went wrong. Try again."

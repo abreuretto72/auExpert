@@ -28,6 +28,7 @@ import { MEDIA_LIMITS } from '../../../../../constants/media';
 import { useDiary } from '../../../../../hooks/useDiary';
 import { usePet } from '../../../../../hooks/usePets';
 import { useToast } from '../../../../../components/Toast';
+import { useDiaryAIToggleStore } from '../../../../../stores/diaryAIToggleStore';
 import { getErrorMessage } from '../../../../../utils/errorMessages';
 import { useDiaryEntry } from '../../../../../hooks/useDiaryEntry';
 import { setAudioModeAsync } from 'expo-audio';
@@ -143,7 +144,7 @@ export default function NewDiaryEntryScreen() {
   const [showHelp, setShowHelp] = useState(false);
   const [helpTab, setHelpTab] = useState<'uso' | 'painel'>('uso');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analyzeWithAI, setAnalyzeWithAI] = useState(false);
+  const { enabled: analyzeWithAI, setEnabled: setAnalyzeWithAI } = useDiaryAIToggleStore();
 
   const MAX_PHOTOS    = 4;
   const MAX_VIDEOS    = 1;

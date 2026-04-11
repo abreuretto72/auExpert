@@ -651,7 +651,21 @@
     "deletedBy":           "Excluído por {{name}} · {{date}}",
     "restore":             "Restaurar",
     "restoreSuccess":      "Registro restaurado com sucesso!",
-    "noDeleted":           "Nenhum registro excluído por aqui."
+    "noDeleted":           "Nenhum registro excluído por aqui.",
+    "aiToggle": {
+      "label": "Análise inteligente",
+      "on": "IA ativada",
+      "off": "IA desativada",
+      "hint": "Posso narrar, analisar fotos, vídeos e sons do {{name}}!"
+    },
+    "aiRoutines": {
+      "partialSuccess": "Salvei tudo! Mas algumas análises não terminaram a tempo.",
+      "totalFailure": "A IA foi descansar. A entrada foi salva, mas sem análise.",
+      "photoTimeout": "A análise das fotos demorou demais. Tentei o meu melhor!",
+      "videoTimeout": "A análise do vídeo demorou demais. Mas o vídeo foi salvo!",
+      "audioTimeout": "Não consegui analisar o áudio desta vez. O som foi salvo!",
+      "ocrTimeout": "O scanner demorou demais. O documento foi salvo sem os campos extraídos."
+    }
   },
   "health": {
     "vaccines": "Vacinas",
@@ -1633,6 +1647,8 @@
     "biometric": "Não te reconheci! Tenta de novo ou usa a senha.",
     "storageFull": "Sem espaço aqui! Libera um cantinho no celular?",
     "generic": "Xi, algo deu errado. Tenta de novo?",
+    "aiRoutineFailed": "Xi, a IA não conseguiu analisar. Mas a entrada foi salva!",
+    "aiRoutineTimeout": "A IA demorou demais dessa vez. Mas a entrada foi salva!",
     "editFailed": "Xi, não consegui salvar. Tenta de novo?",
     "unexpectedTitle": "Ops, algo quebrou",
     "unexpectedBody": "Algo deu errado. Tenta de novo."

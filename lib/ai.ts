@@ -163,6 +163,78 @@ export async function classifyDiaryEntry(
   return data as ClassifyDiaryResponse;
 }
 
+// ── Typed wrappers for each media analysis routine ───────────────────────────
+// These wrap classifyDiaryEntry() with explicit, named parameters per media type.
+// The underlying Edge Function is unchanged — they call the same endpoint with
+// the appropriate input_type. Legacy callers that use classifyDiaryEntry()
+// directly (PDF import, retryEntry, offline sync) are unaffected.
+
+/** Classify text only: generates narration, classifications, mood, urgency, tags. */
+export async function classifyTextOnly(
+  petId: string,
+  text: string,
+  language: string,
+  headers?: Record<string, string>,
+): Promise<ClassifyDiaryResponse> {
+  return classifyDiaryEntry(petId, text, null, 'text', language, undefined, undefined, undefined, undefined, headers);
+}
+
+/** Classify video: analyzes video URL + optional thumbnail frame for visual behavior. */
+export async function classifyVideo(
+  petId: string,
+  videoUrl: string,
+  text: string | null,
+  thumbnailFrameBase64: string | null,
+  language: string,
+  headers?: Record<string, string>,
+): Promise<ClassifyDiaryResponse> {
+  return classifyDiaryEntry(
+    petId,
+    text,
+    thumbnailFrameBase64 ? [thumbnailFrameBase64] : null,
+    'video',
+    language,
+    undefined,
+    undefined,
+    undefined,
+    videoUrl,
+    headers,
+  );
+}
+
+/** Classify pet audio: analyzes audio URL for emotional state and sound type. */
+export async function classifyPetAudio(
+  petId: string,
+  audioUrl: string,
+  text: string | null,
+  durationSeconds: number | null,
+  language: string,
+  headers?: Record<string, string>,
+): Promise<ClassifyDiaryResponse> {
+  return classifyDiaryEntry(
+    petId,
+    text,
+    null,
+    'pet_audio',
+    language,
+    undefined,
+    audioUrl,
+    durationSeconds ?? undefined,
+    undefined,
+    headers,
+  );
+}
+
+/** Classify OCR document: runs OCR extraction on a scanned document (base64). */
+export async function classifyOCR(
+  petId: string,
+  docBase64: string,
+  language: string,
+  headers?: Record<string, string>,
+): Promise<ClassifyDiaryResponse> {
+  return classifyDiaryEntry(petId, null, [docBase64], 'ocr_scan', language, undefined, undefined, undefined, undefined, headers);
+}
+
 export async function generateAIInsight(petId: string): Promise<AIInsightResponse> {
   const { data, error } = await supabase.functions.invoke('generate-ai-insight', {
     body: { pet_id: petId },
