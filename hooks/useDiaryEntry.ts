@@ -9,6 +9,7 @@
 import React from 'react';
 import { useMutation, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
+import { useToast } from '../components/Toast';
 import { classifyDiaryEntry } from '../lib/ai';
 import type { ClassifyDiaryResponse } from '../lib/ai';
 import * as api from '../lib/api';
@@ -894,6 +895,8 @@ async function _backgroundClassifyAndSave(opts: {
   skipAI?: boolean;       // skip AI pipeline — upload media + save entry with manual defaults
   /** Per-routine AI analysis flags. When absent, defaults to all-enabled (backward compat). */
   aiFlags?: import('./_diary/types').AIAnalysisFlags;
+  /** Toast function from useToast() — passed from the hook so background fn can show notifications. */
+  toast?: (text: string, type?: string) => void;
 }): Promise<void> {
   const { qc, petId, userId, queryKey, tempId, originalEntry, text, photosBase64, inputType, photos, mediaUris, videoDuration, audioDuration, audioOriginalName, additionalContext } = opts;
 
@@ -912,9 +915,13 @@ async function _backgroundClassifyAndSave(opts: {
   // Photos: first N URIs that are not video or audio
   // AI path: N = photosBase64.length (explicit count)
   // skip-AI path: infer from URI extension (docs excluded — they come via docBase64, not mediaUris)
+  // Android content:// URIs have no extension — treat them as non-photo only when inputType is video/audio
   const nonMediaRe = /\.(mp4|mov|webm|m4v|avi|m4a|aac|mp3|wav|ogg)$/i;
+  const isVideoOrAudioEntry = inputType === 'video' || inputType === 'pet_audio';
   const photoCount = photosBase64?.length
-    ?? (mediaUris ?? []).filter((u) => !nonMediaRe.test(u ?? '')).length;
+    ?? (isVideoOrAudioEntry
+      ? 0  // video/audio-only: no photo URIs in mediaUris (avoid miscounting content:// video as photo)
+      : (mediaUris ?? []).filter((u) => !nonMediaRe.test(u ?? '')).length);
   const photoUris = photoCount > 0 ? (mediaUris ?? []).slice(0, photoCount) : [];
   // Video/audio: the URI right after the photos (if any)
   const mediaUri = (mediaUris ?? []).slice(photoCount)[0] ?? undefined;
@@ -948,7 +955,11 @@ async function _backgroundClassifyAndSave(opts: {
 
     // 2. Videos — upload all video URIs + generate thumbnails (may be multiple)
     (async () => {
-      const videoUris = (mediaUris ?? []).filter((u) => /\.(mp4|mov|webm|m4v|avi)$/i.test(u ?? ''));
+      // Match by extension OR by Android content:// URI when inputType is video
+      const videoUris = (mediaUris ?? []).filter((u) =>
+        /\.(mp4|mov|webm|m4v|avi)$/i.test(u ?? '') ||
+        (isVideoOrAudioEntry && inputType === 'video' && (u?.startsWith('content://') ?? false))
+      );
       if (videoUris.length === 0) return;
       try {
         const VideoThumbnails = await import('expo-video-thumbnails');
@@ -974,11 +985,14 @@ async function _backgroundClassifyAndSave(opts: {
       }
     })(),
 
-    // 3. Audio — primary: mediaUri (after photos); fallback: scan by extension
+    // 3. Audio — primary: mediaUri (after photos); fallback: scan by extension or content:// audio
     (async () => {
+      const isAudioUri = (u: string | undefined) =>
+        /\.(m4a|aac|mp3|wav|ogg)$/i.test(u ?? '') ||
+        (u?.startsWith('content://') && /audio/i.test(u));
       const aUri = inputType === 'pet_audio'
         ? (mediaUri ?? mediaUris?.[0])
-        : mediaUris?.find((u) => /\.(m4a|aac|mp3|wav|ogg)$/i.test(u ?? ''));
+        : mediaUris?.find(isAudioUri);
       console.log('[AUDIO-UP] inputType:', inputType);
       console.log('[AUDIO-UP] mediaUri (slot após fotos):', mediaUri?.slice(-60) ?? 'undefined');
       console.log('[AUDIO-UP] mediaUris completo:', JSON.stringify(mediaUris?.map(u => u?.slice(-50))));
@@ -990,7 +1004,16 @@ async function _backgroundClassifyAndSave(opts: {
       console.log('[AUDIO-UP] scheme:', aUri.split('://')[0], '| isContent:', aUri.startsWith('content://'));
       const t0 = Date.now();
       try {
-        const path = await uploadPetMedia(userId, petId, aUri, 'video', audioOriginalName ?? undefined); // audio stored in video bucket — originalName preserves extension
+        // content:// URIs from Android DocumentPicker must be copied to a temp file first
+        let uploadUri = aUri;
+        if (aUri.startsWith('content://')) {
+          const ext = audioOriginalName?.split('.').pop() ?? 'm4a';
+          const tmpPath = `${FileSystem.cacheDirectory}audio_up_${Date.now()}.${ext}`;
+          await FileSystem.copyAsync({ from: aUri, to: tmpPath });
+          uploadUri = tmpPath;
+          console.log('[AUDIO-UP] content:// copiado para tmp:', tmpPath.slice(-50));
+        }
+        const path = await uploadPetMedia(userId, petId, uploadUri, 'video', audioOriginalName ?? undefined); // audio stored in video bucket — originalName preserves extension
         uploadedAudioUrl = getPublicUrl('pet-photos', path);
         console.log('[AUDIO-UP] ✅ upload OK em', Date.now() - t0, 'ms | path:', path);
         console.log('[AUDIO-UP] publicUrl:', uploadedAudioUrl?.slice(0, 80));
@@ -1269,8 +1292,17 @@ async function _backgroundClassifyAndSave(opts: {
 
     const [textOutcome, photoOutcome, videoOutcome, audioOutcome, ocrOutcome] = await Promise.all([
       // A: Text narration + classification (mood, tags, urgency)
-      aiFlags.narrateText && textForClassify?.trim()
-        ? runTextClassification({ petId, text: textForClassify, language: i18n.language, authHeader })
+      // Runs when: (1) text is present → classifyTextOnly, or
+      //            (2) photos-only entry (no text, no video, no audio) → classifyPhotoGallery.
+      // Video/audio entries without text get narration from their own routines (C/D) used as fallback.
+      aiFlags.narrateText && (textForClassify?.trim() || (hasVisualInput && !uploadedVideoUrls[0] && !uploadedAudioUrl))
+        ? runTextClassification({
+            petId,
+            text: textForClassify ?? null,
+            photosBase64: !textForClassify?.trim() ? analysisFramesCapped : undefined,
+            language: i18n.language,
+            authHeader,
+          })
         : Promise.resolve<import('./_diary/types').TextClassificationOutcome>(
             { status: 'skipped', reason: aiFlags.narrateText ? 'no_input' : 'toggle_off' }
           ),
@@ -1345,8 +1377,11 @@ async function _backgroundClassifyAndSave(opts: {
     const audioValue = audioOutcome.status === 'ok' ? audioOutcome.value : null;
 
     // classification: primary object consumed by DB save, saveToModule, RAG, etc.
-    // Merges text classification with video/audio-specific fields from their routines.
-    const classification: import('../lib/ai').ClassifyDiaryResponse = textValue ?? {
+    // Priority: text result (has narration + full classification) → video result
+    // (has narration from classify-diary-entry with video context) → audio result
+    // (has narration from classify-diary-entry with audio context) → empty defaults.
+    // This ensures video/audio-only entries (no text typed) still get narration.
+    const classification: import('../lib/ai').ClassifyDiaryResponse = textValue ?? videoValue ?? audioValue ?? {
       classifications: [],
       primary_type:    'moment',
       narration:       null as unknown as string,
@@ -1437,12 +1472,11 @@ async function _backgroundClassifyAndSave(opts: {
       };
       const attempted = countAttemptedRoutines(bundle);
       const failed = countFailedRoutines(bundle);
-      if (attempted > 0 && failed > 0) {
-        const toastFn = (await import('../components/Toast')).toast;
+      if (attempted > 0 && failed > 0 && typeof opts.toast === 'function') {
         if (failed < attempted) {
-          toastFn(i18n.t('diary.aiRoutines.partialSuccess'), 'warning');
+          opts.toast(i18n.t('diary.aiRoutines.partialSuccess'), 'warning');
         } else {
-          toastFn(i18n.t('errors.aiRoutineFailed'), 'error');
+          opts.toast(i18n.t('errors.aiRoutineFailed'), 'error');
         }
       }
     }
@@ -1901,6 +1935,7 @@ async function _backgroundClassifyAndSave(opts: {
 export function useDiaryEntry(petId: string) {
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const { toast } = useToast();
   const queryKey = ['pets', petId, 'diary'] as const;
 
   // ── PDF classify (separate from step-based flow) ──
@@ -2264,6 +2299,7 @@ export function useDiaryEntry(petId: string) {
       species: petSpecies,
       petName: cachedPets.find(p => p.id === petId)?.name ?? undefined,
       petBreed: cachedPets.find(p => p.id === petId)?.breed ?? undefined,
+      toast,
     });
   }, [petId, user, qc, queryKey]);
 
@@ -2283,6 +2319,7 @@ export function useDiaryEntry(petId: string) {
       tempId, originalEntry: entry,
       text: entry.content, photosBase64: null,
       inputType: entry.input_method, photos: Array.isArray(entry.photos) ? entry.photos : [],
+      toast,
     });
   }, [petId, user, qc, queryKey]);
 

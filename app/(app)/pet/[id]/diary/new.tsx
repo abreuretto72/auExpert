@@ -1061,7 +1061,7 @@ export default function NewDiaryEntryScreen() {
         const ImageManipulator = require('expo-image-manipulator');
         const results: string[] = [];
         for (const photo of photosForAI) {
-          console.log('[S1] comprimindo foto:', photo.localUri.slice(-30));
+          console.log('[S1] comprimindo foto:', photo.localUri?.slice(-30));
           const compressed = await ImageManipulator.manipulateAsync(
             photo.localUri,
             [{ resize: { width: 800 } }],

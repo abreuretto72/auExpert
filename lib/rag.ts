@@ -59,7 +59,20 @@ export async function generateEmbedding(
         save:           true,
       },
     });
-    if (error) console.warn('[rag] generateEmbedding error:', error.message);
+    if (error) {
+      console.warn('[rag] generateEmbedding error:', error.message);
+      const ctx = (error as Record<string, unknown>).context as Response | undefined;
+      console.warn('[rag] HTTP status:', ctx?.status);
+      try {
+        const errBody = await (ctx as unknown as { json?: () => Promise<unknown> })?.json?.();
+        console.warn('[rag] error body:', JSON.stringify(errBody));
+      } catch {
+        try {
+          const errText = await (ctx as unknown as { text?: () => Promise<string> })?.text?.();
+          console.warn('[rag] error text:', errText?.slice(0, 300));
+        } catch { /* ignore */ }
+      }
+    }
   } catch (err) {
     console.warn('[rag] generateEmbedding failed:', String(err));
   }

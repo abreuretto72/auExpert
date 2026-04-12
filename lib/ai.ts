@@ -179,6 +179,16 @@ export async function classifyTextOnly(
   return classifyDiaryEntry(petId, text, null, 'text', language, undefined, undefined, undefined, undefined, headers);
 }
 
+/** Classify photo gallery: generates narration + classification from photos when no text is present. */
+export async function classifyPhotoGallery(
+  petId: string,
+  photosBase64: string[],
+  language: string,
+  headers?: Record<string, string>,
+): Promise<ClassifyDiaryResponse> {
+  return classifyDiaryEntry(petId, null, photosBase64, 'gallery', language, undefined, undefined, undefined, undefined, headers);
+}
+
 /** Classify video: analyzes video URL + optional thumbnail frame for visual behavior. */
 export async function classifyVideo(
   petId: string,

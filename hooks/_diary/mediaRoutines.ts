@@ -19,7 +19,7 @@
  */
 
 import { supabase } from '../../lib/supabase';
-import { classifyTextOnly, classifyVideo, classifyPetAudio, classifyOCR } from '../../lib/ai';
+import { classifyTextOnly, classifyPhotoGallery, classifyVideo, classifyPetAudio, classifyOCR } from '../../lib/ai';
 import { withTimeout, TimeoutError } from './withTimeout';
 import type {
   TextClassificationOutcome,
@@ -32,7 +32,7 @@ import type {
 // ── Timeouts por tipo (ms) ─────────────────────────────────────────────────────
 
 const TIMEOUT_TEXT_MS  = 30_000;
-const TIMEOUT_PHOTO_MS = 30_000;
+const TIMEOUT_PHOTO_MS = 55_000;  // increased: 3 concurrent analyze-pet-photo calls need more time
 const TIMEOUT_VIDEO_MS = 45_000;
 const TIMEOUT_AUDIO_MS = 30_000;
 const TIMEOUT_OCR_MS   = 55_000;
@@ -40,29 +40,38 @@ const TIMEOUT_OCR_MS   = 55_000;
 // ── runTextClassification ──────────────────────────────────────────────────────
 
 export interface TextClassificationInput {
-  petId:      string;
-  text:       string;
-  language:   string;
-  authHeader: Record<string, string>;
+  petId:       string;
+  text:        string | null;
+  /** Optional photos for photo-only entries (no text, no video, no audio). When present and text is
+   *  null/empty, classifyPhotoGallery is used instead of classifyTextOnly so the Edge Function
+   *  generates narration from visual context (input_type: 'gallery'). */
+  photosBase64?: string[];
+  language:    string;
+  authHeader:  Record<string, string>;
 }
 
 /**
- * Gera narração, classificações, mood, urgência e tags a partir do texto.
- * Retorna 'skipped' com reason 'no_input' quando text está vazio.
+ * Gera narração, classificações, mood, urgência e tags.
+ * Quando text está presente: usa classifyTextOnly (input_type: 'text').
+ * Quando apenas photos estão presentes: usa classifyPhotoGallery (input_type: 'gallery').
+ * Retorna 'skipped' com reason 'no_input' quando nem texto nem fotos estão disponíveis.
  */
 export async function runTextClassification(
   input: TextClassificationInput,
 ): Promise<TextClassificationOutcome> {
-  if (!input.text?.trim()) {
+  const hasText   = !!input.text?.trim();
+  const hasPhotos = (input.photosBase64?.length ?? 0) > 0;
+
+  if (!hasText && !hasPhotos) {
     return { status: 'skipped', reason: 'no_input' };
   }
   try {
-    const value = await withTimeout(
-      classifyTextOnly(input.petId, input.text, input.language, input.authHeader),
-      TIMEOUT_TEXT_MS,
-      'text',
-    );
-    console.log('[ROUTINE-TEXT] OK | primary_type:', value.primary_type, '| narration:', !!value.narration);
+    const classifyFn = hasText
+      ? classifyTextOnly(input.petId, input.text!, input.language, input.authHeader)
+      : classifyPhotoGallery(input.petId, input.photosBase64!, input.language, input.authHeader);
+
+    const value = await withTimeout(classifyFn, TIMEOUT_TEXT_MS, 'text');
+    console.log('[ROUTINE-TEXT] OK | mode:', hasText ? 'text' : 'gallery', '| primary_type:', value.primary_type, '| narration:', !!value.narration);
     return { status: 'ok', value };
   } catch (err) {
     if (err instanceof TimeoutError) {

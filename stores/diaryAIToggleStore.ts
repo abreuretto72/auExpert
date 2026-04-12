@@ -3,7 +3,7 @@
  *
  * Estado de UI persistido em AsyncStorage. Controla se as rotinas de
  * análise IA (narração, fotos, vídeo, áudio, OCR) rodam ao gravar uma
- * entrada. Default: ligado (AI-first, conforme seção 1.1 do CLAUDE.md).
+ * entrada. Default: desligado — tutor ativa explicitamente quando quiser análise.
  *
  * NUNCA colocar lógica de fetch ou dados do servidor aqui — só estado de UI.
  */
@@ -21,7 +21,7 @@ interface DiaryAIToggleState {
 export const useDiaryAIToggleStore = create<DiaryAIToggleState>()(
   persist(
     (set) => ({
-      enabled: true,
+      enabled: false,
       setEnabled: (enabled) => set({ enabled }),
     }),
     {

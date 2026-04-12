@@ -133,7 +133,7 @@ export async function fetchDiaryEntries(
 
   const { data, error } = await supabase
     .from('diary_entries')
-    .select('*, registered_by_user:users!diary_entries_user_id_fkey(full_name,email)')
+    .select('*, registered_by_user:users!user_id(full_name,email)')
     .eq('pet_id', petId)
     .eq('is_active', true)
     .order('entry_date', { ascending: false })
@@ -141,7 +141,7 @@ export async function fetchDiaryEntries(
     .range(from, to);
 
   console.log('[API] fetchDiaryEntries petId:', petId.slice(-8));
-  console.log('[API] total:', data?.length ?? 0, '| erro:', error?.message ?? 'ok');
+  console.log('[API] total:', data?.length ?? 0, '| erro:', error ? `${error.message} (code=${error.code} details=${error.details})` : 'ok');
   if (data && data.length > 0) {
     const e = data[0] as Record<string, unknown>;
     console.log('[API] entry[0]:', (e.id as string).slice(-8),
