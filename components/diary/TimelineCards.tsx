@@ -9,7 +9,7 @@ import { View, Text, Image, TextInput, TouchableOpacity, ActivityIndicator, Styl
 import {
   AlertCircle, AlertTriangle, Camera, Calendar, Check, Divide, EyeOff, FileText, Gift, Heart, LayoutGrid,
   Lightbulb, Lock, Mic, Music2, PawPrint, Pencil, Play, RefreshCw, ShieldCheck, Star,
-  Trash2, Trophy, Video, WifiOff, X,
+  Trash2, Trophy, User, Video, WifiOff, X,
 } from 'lucide-react-native';
 import MediaViewerModal from './MediaViewerModal';
 import { supabase } from '../../lib/supabase';
@@ -390,7 +390,7 @@ function OCRSubcard({
 }) {
   console.log('[OCRSUBCARD] fields:', media.ocrData?.fields?.length ?? 0,
     'docType:', media.ocrData?.document_type ?? 'none',
-    'items:', (media.ocrData as Record<string, unknown>)?.items?.length ?? 0);
+    'items:', media.ocrData?.items?.length ?? 0);
   if (media.ocrData?.fields?.length) {
     console.log('[OCRSUBCARD] first 3 fields:', JSON.stringify(media.ocrData.fields.slice(0, 3)));
   } else {
@@ -713,6 +713,13 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
   const dateStr = dateObj.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' });
 
+  // Tutor attribution — only show when a different tutor created this entry
+  const tutorName = !isCreator
+    ? (event.registeredByUser?.full_name
+        ?? event.registeredByUser?.email?.split('@')[0]
+        ?? null)
+    : null;
+
   // ── Pending state (saved offline, waiting for sync) ───────────────────────
   if (event.processingStatus === 'pending') {
     return (
@@ -797,6 +804,14 @@ export const DiaryCard = React.memo(({ event, petName, t, getMoodData, onEdit, o
         <View style={{ flex: 1 }}>
           <Text style={styles.entryDate}>{dateStr}</Text>
           <Text style={styles.entryTime}>{timeStr}</Text>
+          {!!tutorName && (
+            <View style={styles.tutorAttribution}>
+              <User size={rs(10)} color={colors.petrol} strokeWidth={1.8} />
+              <Text style={styles.tutorAttributionText}>
+                {t('diary.byTutor', { name: tutorName })}
+              </Text>
+            </View>
+          )}
         </View>
         {!event.isRegistrationEntry && (isCreator || (!isCreator && isOwner && onAdminDeactivate)) && (
           <View style={styles.diaryCardActions}>
@@ -987,7 +1002,7 @@ export const HealthCard = React.memo(({ event, t, onDelete, isOwner, onAdminDeac
       <Text style={styles.cardTitle}>{event.title}</Text>
       <Text style={styles.cardDetail}>{event.detail}</Text>
       <View style={styles.sourceBadge}>
-        <Text style={styles.sourceText}>{sourceLabel}</Text>
+        <Text style={styles.healthSourceText}>{sourceLabel}</Text>
       </View>
     </View>
   );
@@ -1450,9 +1465,11 @@ const styles = StyleSheet.create({
   monthStatLabel: { fontFamily: 'Sora_500Medium', fontSize: fs(9), color: colors.textDim, marginTop: rs(2) },
 
   // Diary card
-  entryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: rs(8) },
+  entryHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: rs(8) },
   entryDate: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.text },
   entryTime: { fontFamily: 'JetBrainsMono_400Regular', fontSize: fs(11), color: colors.textDim },
+  tutorAttribution: { flexDirection: 'row', alignItems: 'center', gap: rs(4), marginTop: rs(3) },
+  tutorAttributionText: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim },
   specialHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.gold + '15', paddingHorizontal: rs(10), paddingVertical: rs(6), borderRadius: rs(8), marginBottom: rs(10), alignSelf: 'flex-start' },
   specialText: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.gold, letterSpacing: 0.5 },
   registrationBadge: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.accentGlow, paddingHorizontal: rs(10), paddingVertical: rs(6), borderRadius: rs(8), marginBottom: rs(10), alignSelf: 'flex-start' },
@@ -1483,7 +1500,7 @@ const styles = StyleSheet.create({
   severityBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(8), paddingVertical: rs(3), borderRadius: rs(8) },
   severityText: { fontFamily: 'Sora_700Bold', fontSize: fs(9), letterSpacing: 0.5 },
   sourceBadge: { marginTop: rs(8), backgroundColor: colors.bgCard, borderRadius: rs(8), paddingHorizontal: rs(10), paddingVertical: rs(4), alignSelf: 'flex-start' },
-  sourceText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim },
+  healthSourceText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim },
 
   // Info boxes
   infoBox: { borderRadius: rs(10), padding: rs(10), marginTop: rs(8) },

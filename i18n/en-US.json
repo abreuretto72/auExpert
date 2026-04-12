@@ -648,6 +648,7 @@
     "registeredByYou":     "you",
     "registeredByUnknown": "tutor",
     "anotherTutor":        "another tutor",
+    "byTutor":             "by {{name}}",
     "deletedBy":           "Deleted by {{name}} · {{date}}",
     "restore":             "Restore",
     "restoreSuccess":      "Record restored successfully!",
