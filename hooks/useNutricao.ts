@@ -171,8 +171,8 @@ export function useNutricao(petId: string) {
       return data.cardapio;
     },
     enabled: isAuthenticated && !!petId,
-    staleTime: 72 * 60 * 60 * 1000,  // 3 days — matches server TTL
-    gcTime: 72 * 60 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,        // 1h — pings server periodically; server cache handles 72h TTL
+    gcTime: 24 * 60 * 60 * 1000,      // keeps in memory for 24h to avoid cold first render
     retry: 1,
   });
 
