@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { buildPetSystemContext } from '../_shared/petContext.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -44,7 +45,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { photo_base64, species, language = 'pt-BR', media_type: inputMediaType, pet_name, pet_breed } = await req.json();
+    const { photo_base64, species, language = 'pt-BR', media_type: inputMediaType, pet_name, pet_breed, pet_sex } = await req.json();
 
     if (!photo_base64) {
       return new Response(
@@ -150,10 +151,21 @@ Requirements:
 - alerts: add if any finding warrants attention or concern.`;
 
     const petIdentity = [pet_name, pet_breed].filter(Boolean).join(', ');
-    const petContext = petIdentity ? ` (${petIdentity})` : '';
+    const petContextSuffix = petIdentity ? ` (${petIdentity})` : '';
+    // petSexContext: gender rules prepended to user prompt so the static system prompt
+    // remains fully cacheable (cache_control: ephemeral). Per-request data stays in
+    // the user message, not the system message.
+    const petSexContext = pet_name
+      ? buildPetSystemContext({
+          name: pet_name,
+          sex: pet_sex ?? 'unknown',
+          species: species ?? 'dog',
+          locale: language ?? 'pt-BR',
+        })
+      : '';
     // User prompt agora é só o que varia: espécie, nome/raça do pet, idioma.
     // Tudo o mais (frameworks clínicos + schema + requirements) está cacheado no system.
-    const userPrompt = `Perform a clinical veterinary assessment of this photo for a ${species === 'dog' ? (language === 'pt-BR' ? 'cão' : 'dog') : (language === 'pt-BR' ? 'gato' : 'cat')}${petContext}.
+    const userPrompt = `${petSexContext ? petSexContext + '\n\n' : ''}Perform a clinical veterinary assessment of this photo for a ${species === 'dog' ? (language === 'pt-BR' ? 'cão' : 'dog') : (language === 'pt-BR' ? 'gato' : 'cat')}${petContextSuffix}.
 Write all text fields in ${lang}.`;
 
     const cfg = await getAIConfig();

@@ -127,7 +127,16 @@
     "size": "Size",
     "small": "Small",
     "medium": "Medium",
-    "large": "Large"
+    "large": "Large",
+    "searchPlaceholder": "Search by name, breed...",
+    "compact": "Compact",
+    "cards": "Cards",
+    "noResults": "No pets found for \"{{query}}\"",
+    "recentLabel": "Recent",
+    "searchHintTitle": "Search available",
+    "searchHintBody": "You can now search your pets by name or breed",
+    "densityCard": "Cards",
+    "densityCompact": "Compact"
   },
   "tutor": {
     "profile": "Tutor Profile",
@@ -1155,6 +1164,12 @@
       "raca": "Breed",
       "emergencia": "Emergency"
     },
+    "tabEmpty": {
+      "sinais": "No vital signs or BCS records found.\nThe medical record needs consultation data to generate this tab.",
+      "raca": "Breed predispositions and drug interactions\nhave not been generated yet. Refresh to calculate them.",
+      "emergencia": "No critical information found for the emergency card.\nAdd allergies and active medications to generate this card."
+    },
+    "tabEmptyRegen": "Refresh medical record",
     "bodyConditionScores": {
       "title": "Body condition score (BCS)",
       "hint": "WSAVA 1-9 scale · ideal between 4 and 5",

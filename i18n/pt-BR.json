@@ -127,7 +127,16 @@
     "size": "Porte",
     "small": "Pequeno",
     "medium": "Médio",
-    "large": "Grande"
+    "large": "Grande",
+    "searchPlaceholder": "Buscar por nome, raça...",
+    "compact": "Compacto",
+    "cards": "Cards",
+    "noResults": "Nenhum pet encontrado para \"{{query}}\"",
+    "recentLabel": "Recentes",
+    "searchHintTitle": "Busca disponível",
+    "searchHintBody": "Agora você pode buscar seus pets por nome ou raça",
+    "densityCard": "Cards",
+    "densityCompact": "Compacto"
   },
   "tutor": {
     "profile": "Perfil do Tutor",
@@ -316,8 +325,10 @@
     "matchPercent": "{{pct}}% match",
     "newFriend": "Novo amigo",
     "moodQuestion": "COMO O {{name}} ESTÁ HOJE?",
+    "moodQuestion_female": "COMO A {{name}} ESTÁ HOJE?",
     "contentLabel": "O QUE ACONTECEU HOJE?",
     "contentPlaceholder": "Ex: Hoje o {{name}} foi ao parque, brincou...",
+    "contentPlaceholder_female": "Ex: Hoje a {{name}} foi ao parque, brincou...",
     "photoAttach": "Foto",
     "audioAttach": "Áudio",
     "videoAttach": "Vídeo",
@@ -489,6 +500,7 @@
     "fromPhoto": "GERADO DA FOTO",
     "yourText": "SEU TEXTO",
     "generateFor": "Gerar Narração do {{name}}",
+    "generateFor_female": "Gerar Narração da {{name}}",
     "narrates": "NARRA",
     "selectedMood": "Humor selecionado",
     "aiSuggestedTags": "sugeridas pela IA",
@@ -1169,6 +1181,12 @@
       "raca": "Raça",
       "emergencia": "Emergência"
     },
+    "tabEmpty": {
+      "sinais": "Nenhum registro de sinais vitais ou BCS encontrado.\nO prontuário precisa de dados de consultas para gerar esta aba.",
+      "raca": "A análise de predisposições da raça e interações medicamentosas\nainda não foi gerada. Atualize o prontuário para calculá-las.",
+      "emergencia": "Nenhuma informação crítica identificada para o cartão de emergência.\nAdicione alergias e medicamentos ativos para gerar este cartão."
+    },
+    "tabEmptyRegen": "Atualizar prontuário",
     "bodyConditionScores": {
       "title": "Escore de condição corporal (BCS)",
       "hint": "Escala WSAVA 1-9 · ideal entre 4 e 5",
@@ -1406,6 +1424,7 @@
   },
   "lenses": {
     "title": "LENTES DO {{name}}",
+    "title_female": "LENTES DA {{name}}",
     "health": "Prontuário",
     "prontuario": "Prontuário",
     "nutrition": "Nutrição",
@@ -1441,6 +1460,7 @@
   "insights": {
     "title": "IA",
     "sectionTitle": "IA DO {{name}}",
+    "sectionTitle_female": "IA DA {{name}}",
     "countBadge": "{{count}} insights",
     "emptyTitle": "Nenhum insight ainda",
     "emptyBody": "A IA analisa o diário do {{name}} e gera alertas, tendências e sugestões aqui.",
@@ -1538,8 +1558,11 @@
     "tab":                "Minha IA",
     "title":              "Minha IA",
     "subtitle":           "Especialista no bem-estar da {{name}}",
+    "subtitle_male":      "Especialista no bem-estar do {{name}}",
     "welcome":            "Olá! Sou a IA da {{name}}. Como posso ajudar?",
+    "welcome_male":       "Olá! Sou a IA do {{name}}. Como posso ajudar?",
     "placeholder":        "Pergunte sobre a saúde da {{name}}...",
+    "placeholder_male":   "Pergunte sobre a saúde do {{name}}...",
     "send":               "Enviar",
     "clear":              "Limpar conversa",
     "error":              "Não consegui responder agora. Tente de novo.",
@@ -1556,6 +1579,7 @@
     "pdfConversation":    "Conversa com a IA — {{name}}",
     "pdfYou":             "Você",
     "pdfAI":              "IA da {{name}}",
+    "pdfAI_male":         "IA do {{name}}",
     "pdfEmpty":           "Nenhuma mensagem nesta conversa.",
     "pdfDisclaimer":      "Conversa gerada por IA · auExpert · Conteúdo informativo — não substitui consulta veterinária.",
     "printOrSave":        "Imprimir ou salvar PDF",
@@ -1749,6 +1773,7 @@
   },
   "travels": {
     "screenTitle": "VIAGENS DO {{name}}",
+    "screenTitle_female": "VIAGENS DA {{name}}",
     "screenSubtitle": "Aventuras detectadas pelo diário",
     "statTrips": "viagens",
     "statKm": "km rodados",
@@ -1804,6 +1829,7 @@
   },
   "plans": {
     "screenTitle": "PLANOS DO {{name}}",
+    "screenTitle_female": "PLANOS DA {{name}}",
     "screenSubtitle": "Seguros e planos detectados pelo diário",
     "activePlans": "ativos",
     "monthlyTotal": "por mês",
@@ -1901,6 +1927,7 @@
   },
   "friends": {
     "screenTitle": "AMIGOS DO {{name}}",
+    "screenTitle_female": "AMIGOS DA {{name}}",
     "screenSubtitle": "Encontros detectados automaticamente pelo diário",
     "totalFriends": "amigos",
     "bestFriend": "MELHOR AMIGO",
@@ -1910,6 +1937,7 @@
     "owner": "Dono",
     "emptyTitle": "Nenhum amigo ainda!",
     "emptyHint": "Conta ao diário sobre os encontros do {{name}} e a IA detecta automaticamente os amigos.",
+    "emptyHint_female": "Conta ao diário sobre os encontros da {{name}} e a IA detecta automaticamente os amigos.",
     "typeFriend": "Amigo",
     "typePlaymate": "Coleguinha",
     "typeNeighbor": "Vizinho",

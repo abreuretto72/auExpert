@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
+import { buildPetSystemContext } from '../_shared/petContext.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -115,7 +116,15 @@ Deno.serve(async (req: Request) => {
     const petDesc = `${pet.name}, ${pet.sex ?? 'unknown sex'} ${pet.species} (${pet.breed ?? 'mixed'}, ~${pet.estimated_age_months ?? '?'} months)`;
     const basedOn = (entries ?? []).map(e => e.entry_date).filter(Boolean) as string[];
 
-    const systemPrompt = `You are AuExpert's veterinary AI specialist. You analyze pet behavioral and health patterns from diary data.
+    const petContext = buildPetSystemContext({
+      name: pet.name,
+      sex: pet.sex,
+      species: pet.species ?? 'dog',
+      locale: language ?? 'pt-BR',
+    });
+    const systemPrompt = `${petContext}
+
+You are AuExpert's veterinary AI specialist. You analyze pet behavioral and health patterns from diary data.
 Generate a single, specific, actionable insight for ${pet.name}'s tutor based on recent records.
 Rules:
 - Maximum 60 words

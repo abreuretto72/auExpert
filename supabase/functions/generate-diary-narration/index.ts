@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
+import { buildPetSystemContext } from '../_shared/petContext.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -128,7 +129,15 @@ Return this exact JSON:
   "mood_score": 80
 }`;
 
-      const registrationUserPrompt = `Pet: ${petName}, a ${petSex} ${species} (${breedDesc}).
+      const petCtxReg = buildPetSystemContext({
+        name: petName,
+        sex: petSex,
+        species,
+        locale: language ?? 'pt-BR',
+      });
+      const registrationUserPrompt = `${petCtxReg}
+
+Pet: ${petName}, a ${petSex} ${species} (${breedDesc}).
 Respond in ${lang}.
 
 Pet analysis summary:
@@ -238,7 +247,15 @@ Return this exact JSON:
   "mood_score": number (0-100, matching the mood intensity)
 }`;
 
-    const userPrompt = `Pet: ${petName}, a ${petSex} ${species} (${breedDesc}, ${ageDesc}).
+    const petCtxDiary = buildPetSystemContext({
+      name: petName,
+      sex: petSex,
+      species,
+      locale: language ?? 'pt-BR',
+    });
+    const userPrompt = `${petCtxDiary}
+
+Pet: ${petName}, a ${petSex} ${species} (${breedDesc}, ${ageDesc}).
 ${genderNote}
 Current mood: ${moodDesc} (mood_id: ${mood_id})
 Respond in ${lang}.

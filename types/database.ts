@@ -1,3 +1,5 @@
+export type PetSex = 'male' | 'female' | 'unknown';
+
 export interface User {
   id: string;
   email: string;
@@ -30,7 +32,7 @@ export interface Pet {
   user_id: string;
   name: string;
   species: 'dog' | 'cat';
-  sex: 'male' | 'female' | null;
+  sex: PetSex;
   breed: string | null;
   birth_date: string | null;
   estimated_age_months: number | null;
@@ -54,6 +56,7 @@ export interface Pet {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  last_accessed_at: string | null;
 }
 
 export interface DiaryEntry {
@@ -368,5 +371,152 @@ export interface MediaFile {
   width: number | null;
   height: number | null;
   is_active: boolean;
+  created_at: string;
+}
+
+// ==========================================================================
+// Módulo Profissional (Fase 1 — 2026-04-21)
+// Tabelas: professionals, access_grants, role_permissions,
+//          professional_signatures, access_audit_log
+// ==========================================================================
+
+export type ProfessionalType =
+  | 'veterinarian'
+  | 'vet_tech'
+  | 'groomer'
+  | 'trainer'
+  | 'walker'
+  | 'sitter'
+  | 'boarding'
+  | 'shop_employee'
+  | 'ong_member'
+  | 'breeder';
+
+export type AccessRole =
+  | 'vet_full'
+  | 'vet_read'
+  | 'vet_tech'
+  | 'groomer'
+  | 'trainer'
+  | 'walker'
+  | 'sitter'
+  | 'boarding'
+  | 'shop_employee'
+  | 'ong_member';
+
+export type AccessPermission =
+  | 'read_clinical'
+  | 'write_clinical'
+  | 'sign_clinical'
+  | 'read_diary'
+  | 'write_diary'
+  | 'read_contact'
+  | 'request_access'
+  | 'export_data';
+
+export type SignatureTargetTable =
+  | 'vaccines'
+  | 'allergies'
+  | 'exams'
+  | 'consultations'
+  | 'medications'
+  | 'surgeries'
+  | 'chronic_conditions'
+  | 'parasite_control'
+  | 'clinical_metrics'
+  | 'body_condition_scores'
+  | 'photo_analyses'
+  | 'diary_entries';
+
+export type AccessAuditEventType =
+  | 'grant_created'
+  | 'grant_accepted'
+  | 'grant_rejected'
+  | 'grant_revoked'
+  | 'grant_expired'
+  | 'clinical_read'
+  | 'clinical_write'
+  | 'clinical_sign'
+  | 'diary_read'
+  | 'diary_write'
+  | 'export_pdf';
+
+export interface Professional {
+  id: string;
+  user_id: string;
+  professional_type: ProfessionalType;
+  country_code: string;
+  council_name: string | null;
+  council_number: string | null;
+  fiscal_id_type: string | null;
+  fiscal_id_value: string | null;
+  display_name: string;
+  bio: string | null;
+  languages: string[] | null;
+  specialties: string[] | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  verification_payload: Record<string, unknown> | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AccessGrant {
+  id: string;
+  pet_id: string;
+  professional_id: string;
+  granted_by: string;
+  role: AccessRole;
+  invite_token: string | null;
+  invite_sent_at: string | null;
+  accepted_at: string | null;
+  expires_at: string | null;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+  scope_notes: string | null;
+  can_see_finances: boolean | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RolePermission {
+  id: string;
+  role: AccessRole;
+  permission: AccessPermission;
+  allowed: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProfessionalSignature {
+  id: string;
+  professional_id: string;
+  access_grant_id: string;
+  pet_id: string;
+  target_table: SignatureTargetTable;
+  target_id: string;
+  payload_hash: string;
+  payload_snapshot: Record<string, unknown>;
+  signature_version: string;
+  signed_display_name: string;
+  signed_council_name: string | null;
+  signed_council_number: string | null;
+  signed_as_declared: boolean;
+  created_at: string;
+}
+
+export interface AccessAuditLog {
+  id: string;
+  pet_id: string;
+  actor_user_id: string | null;
+  professional_id: string | null;
+  access_grant_id: string | null;
+  event_type: AccessAuditEventType;
+  target_table: string | null;
+  target_id: string | null;
+  context: Record<string, unknown> | null;
   created_at: string;
 }
