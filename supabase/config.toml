@@ -40,3 +40,19 @@ verify_jwt = false
 # invite-web: public landing page — no JWT needed, token in query param acts as capability
 [functions.invite-web]
 verify_jwt = false
+
+# professional-invite-create: same ES256/HS256 mismatch — auth enforced via validateAuth() internally
+[functions.professional-invite-create]
+verify_jwt = false
+
+# professional-invite-accept: same ES256/HS256 mismatch — auth enforced via validateAuth() internally
+[functions.professional-invite-accept]
+verify_jwt = false
+
+# professional-invite-cancel: same ES256/HS256 mismatch — auth enforced via validateAuth() internally
+[functions.professional-invite-cancel]
+verify_jwt = false
+
+# professional-invite-expire: invoked by pg_cron via net.http_post (no JWT) — idempotent sweep
+[functions.professional-invite-expire]
+verify_jwt = false

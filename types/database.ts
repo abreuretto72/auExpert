@@ -439,7 +439,12 @@ export type AccessAuditEventType =
   | 'clinical_sign'
   | 'diary_read'
   | 'diary_write'
-  | 'export_pdf';
+  | 'export_pdf'
+  | 'invite_created'
+  | 'invite_accepted'
+  | 'invite_declined'
+  | 'invite_cancelled'
+  | 'invite_expired';
 
 export interface Professional {
   id: string;
@@ -519,4 +524,42 @@ export interface AccessAuditLog {
   target_id: string | null;
   context: Record<string, unknown> | null;
   created_at: string;
+}
+
+// ==========================================================================
+// Módulo Profissional — Fase 2 · Bloco B (convites) — 2026-04-23
+// Tabela: access_invites
+// ==========================================================================
+
+export type AccessInviteStatus =
+  | 'pending'
+  | 'accepted'
+  | 'declined'
+  | 'expired'
+  | 'cancelled';
+
+export interface AccessInvite {
+  id: string;
+  pet_id: string;
+  invited_by: string;
+  invite_email: string;
+  role: AccessRole;
+  can_see_finances: boolean;
+  scope_notes: string | null;
+  token: string;
+  expires_at: string;
+  status: AccessInviteStatus;
+  accepted_at: string | null;
+  accepted_by: string | null;
+  created_grant_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Payload de retorno da Edge Function professional-invite-create
+export interface AccessInviteCreateResult {
+  invite_id: string;
+  token: string;
+  invite_link: string;
+  expires_at: string;
 }

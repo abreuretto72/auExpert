@@ -1,0 +1,2 @@
+[functions.generate-prontuario]
+verify_jwt = false
