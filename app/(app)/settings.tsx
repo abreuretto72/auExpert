@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,6 +23,7 @@ import {
   Shield,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { colors } from '../../constants/colors';
 import { radii, spacing } from '../../constants/spacing';
 import { rs, fs } from '../../hooks/useResponsive';
@@ -32,6 +34,8 @@ import { getErrorMessage } from '../../utils/errorMessages';
 import { useConsent } from '../../hooks/useConsent';
 import { supabase } from '../../lib/supabase';
 import { withTimeout } from '../../lib/withTimeout';
+import PdfActionModal from '../../components/pdf/PdfActionModal';
+import { previewPreferencesPdf, sharePreferencesPdf } from '../../lib/preferencesPdf';
 
 type ConfirmOptions = {
   text: string;
@@ -44,6 +48,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { toast, confirm } = useToast();
+  const [pdfModal, setPdfModal] = useState(false);
   const logout = useAuthStore((s) => s.logout);
   const notificationsEnabled = useUIStore((s) => s.notificationsEnabled);
   const biometricEnabled = useUIStore((s) => s.biometricEnabled);
@@ -104,7 +109,13 @@ export default function SettingsScreen() {
           <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.title')}</Text>
-        <View style={styles.backBtn} />
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => setPdfModal(true)}
+          activeOpacity={0.7}
+        >
+          <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -178,7 +189,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => router.push('/(app)/terms')}
+            onPress={() => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/terms.html')}
             activeOpacity={0.7}
           >
             <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
@@ -191,7 +202,7 @@ export default function SettingsScreen() {
           <View style={styles.linkDivider} />
           <TouchableOpacity
             style={styles.linkRow}
-            onPress={() => router.push('/(app)/privacy')}
+            onPress={() => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/privacy.html')}
             activeOpacity={0.7}
           >
             <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />
@@ -229,6 +240,15 @@ export default function SettingsScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <PdfActionModal
+        visible={pdfModal}
+        onClose={() => setPdfModal(false)}
+        title={t('settings.preferencesPdfTitle', { defaultValue: 'Preferências do App' })}
+        subtitle={t('settings.preferencesPdfSubtitle', { defaultValue: 'Configurações do dispositivo' })}
+        onPreview={() => previewPreferencesPdf({ notificationsEnabled, biometricEnabled, aiTrainingGranted: aiTrainingGranted ?? false })}
+        onShare={() => sharePreferencesPdf({ notificationsEnabled, biometricEnabled, aiTrainingGranted: aiTrainingGranted ?? false })}
+      />
     </SafeAreaView>
   );
 }

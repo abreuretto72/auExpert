@@ -2221,11 +2221,53 @@
     "errorOnlyRootCanInviteOwner": "Only the founding tutor can assign co-owners."
   },
   "invite": {
-    "title":       "You were invited!",
-    "description": "{{inviter}} invited you to care for {{pet}}",
-    "accept":      "Accept",
-    "decline":     "Decline",
-    "declined":    "Invite declined"
+    "title":              "You were invited!",
+    "description":        "{{inviter}} invited you to care for {{pet}}",
+    "inviterFallback":    "A pet owner",
+    "unknownPet":         "this pet",
+    "roleLabel":          "Role",
+    "role": {
+      "vet_full":       "Veterinarian — full access",
+      "vet_read":       "Veterinarian — read only",
+      "vet_tech":       "Vet technician",
+      "groomer":        "Groomer",
+      "trainer":        "Trainer",
+      "walker":         "Dog walker",
+      "sitter":         "Pet sitter",
+      "boarding":       "Boarding",
+      "shop_employee":  "Pet shop",
+      "ong_member":     "NGO"
+    },
+    "canSeeFinances":     "Can see expenses and invoices",
+    "cannotSeeFinances":  "No access to expenses",
+    "scopeNotesLabel":    "Owner notes",
+    "expiresLabel":       "Valid until",
+    "expiresToday":       "Expires today",
+    "expiresTomorrow":    "Expires tomorrow",
+    "expiresInDays":      "Expires in {{days}} days",
+    "expiredAlready":     "This invite has already expired",
+    "loading":            "Loading invite...",
+    "offline":            "No connection. Try again when you're online!",
+    "accept":             "Accept invite",
+    "decline":            "Decline",
+    "accepting":          "Accepting...",
+    "declining":          "Declining...",
+    "accepted":           "Invite accepted! Welcome.",
+    "declined":           "Invite declined",
+    "confirmDecline":     "Decline this invite? The owner can resend it later.",
+    "needsOnboarding":    "You need to create your professional profile before accepting.",
+    "needsOnboardingCta": "Create professional profile",
+    "duplicateGrant":     "You already have active access to this pet.",
+    "goToPatients":       "Go to My Patients",
+    "errors": {
+      "invalidToken":     "This invite link isn't valid.",
+      "notFound":         "Invite not found or already used.",
+      "gone":             "This invite has expired or was cancelled.",
+      "wrongRecipient":   "This invite is for another email. Log in with the right account?",
+      "duplicateGrant":   "You already have access to this pet.",
+      "race":             "This invite was processed on another device.",
+      "generic":          "Couldn't load the invite. Try again?"
+    }
   },
   "onboarding": {
     "pro": {
@@ -3167,8 +3209,4 @@
     "trendDown": "Falling",
     "trendStable": "Stable",
     "travelsTitle": "Travels",
-    "travelsNone": "No travels registered yet.",
-    "travelsTrips": "Trips",
-    "travelsKm": "Km",
-    "travelsDays": "Days",
-    "p
+    "travelsNone": "No travels registered 

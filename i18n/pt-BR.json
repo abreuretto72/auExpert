@@ -2252,11 +2252,53 @@
     "errorOnlyRootCanInviteOwner": "Somente o tutor fundador pode designar co-donos."
   },
   "invite": {
-    "title":       "Você foi convidado!",
-    "description": "{{inviter}} te convidou para cuidar de {{pet}}",
-    "accept":      "Aceitar",
-    "decline":     "Recusar",
-    "declined":    "Convite recusado"
+    "title":              "Você foi convidado!",
+    "description":        "{{inviter}} te convidou para cuidar de {{pet}}",
+    "inviterFallback":    "Um tutor",
+    "unknownPet":         "este pet",
+    "roleLabel":          "Função",
+    "role": {
+      "vet_full":       "Veterinário(a) com acesso completo",
+      "vet_read":       "Veterinário(a) — somente leitura",
+      "vet_tech":       "Técnico(a) veterinário(a)",
+      "groomer":        "Banho e tosa",
+      "trainer":        "Adestrador(a)",
+      "walker":         "Passeador(a)",
+      "sitter":         "Pet sitter",
+      "boarding":       "Hospedagem",
+      "shop_employee":  "Pet shop",
+      "ong_member":     "ONG"
+    },
+    "canSeeFinances":     "Pode ver gastos e notas fiscais",
+    "cannotSeeFinances":  "Sem acesso a gastos",
+    "scopeNotesLabel":    "Observações do tutor",
+    "expiresLabel":       "Validade",
+    "expiresToday":       "Expira hoje",
+    "expiresTomorrow":    "Expira amanhã",
+    "expiresInDays":      "Expira em {{days}} dias",
+    "expiredAlready":     "Este convite já expirou",
+    "loading":            "Carregando convite...",
+    "offline":            "Sem conexão. Tenta quando tiver internet!",
+    "accept":             "Aceitar convite",
+    "decline":            "Recusar",
+    "accepting":          "Aceitando...",
+    "declining":          "Recusando...",
+    "accepted":           "Convite aceito! Bem-vindo.",
+    "declined":           "Convite recusado",
+    "confirmDecline":     "Recusar este convite? O tutor pode reenviar depois.",
+    "needsOnboarding":    "Você precisa criar seu perfil profissional antes de aceitar.",
+    "needsOnboardingCta": "Criar perfil profissional",
+    "duplicateGrant":     "Você já tem acesso ativo a este pet.",
+    "goToPatients":       "Ir para Meus Pacientes",
+    "errors": {
+      "invalidToken":     "Este link de convite não é válido.",
+      "notFound":         "Convite não encontrado ou já utilizado.",
+      "gone":             "Este convite expirou ou foi cancelado.",
+      "wrongRecipient":   "Este convite é para outro e-mail. Entra com a conta certa?",
+      "duplicateGrant":   "Você já tem acesso a este pet.",
+      "race":             "Este convite foi processado em outro dispositivo.",
+      "generic":          "Não foi possível carregar o convite. Tenta de novo?"
+    }
   },
   "onboarding": {
     "pro": {
@@ -3184,6 +3226,4 @@
     "expensesMonthTotal": "Total do mês",
     "expensesMonthCount": "Lançamentos",
     "expensesTopCategories": "Principais categorias",
-    "friendsTitle": "Amigos",
-    "friendsNone": "Nenhum amigo registrado ainda.",
-    "friendsTotal": "To
+  

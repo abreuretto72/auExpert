@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   BackHandler,
   Platform,
+  Linking,
 } from 'react-native';
 import {
   Settings,
@@ -142,13 +143,13 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       icon: <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.privacy'),
       sublabel: t('menu.privacyDesc'),
-      route: '/privacy',
+      onPress: () => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/privacy.html'),
     },
     {
       icon: <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
       label: t('menu.terms'),
       sublabel: t('menu.termsDesc'),
-      route: '/terms',
+      onPress: () => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/terms.html'),
     },
     {
       icon: <HelpCircle size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
