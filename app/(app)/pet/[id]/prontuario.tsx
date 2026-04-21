@@ -592,6 +592,62 @@ export default function ProntuarioScreen() {
           </View>
         )}
 
+        {/* Fase 3e — Trusted vets (contacts for emergencies) */}
+        {activeTab === 'emergencia' && prontuario.trusted_vets && prontuario.trusted_vets.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.trustedVets.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.trustedVets.hint')}</Text>
+            {/* Primary pinned first, then others */}
+            {[...prontuario.trusted_vets]
+              .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0))
+              .map((tv: ProntuarioTrustedVet) => (
+                <View
+                  key={tv.id}
+                  style={[
+                    s.listItem,
+                    tv.is_primary && { borderLeftColor: colors.accent, borderLeftWidth: rs(3) },
+                  ]}
+                >
+                  <View style={[s.listIconWrap, { backgroundColor: tv.is_primary ? colors.accentGlow : colors.petrolSoft }]}>
+                    <UserCheck size={rs(16)} color={tv.is_primary ? colors.accent : colors.petrol} strokeWidth={1.8} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View style={s.titleRow}>
+                      <Text style={s.listItemTitle}>{tv.name}</Text>
+                      {tv.is_primary && (
+                        <View style={[s.confirmChip, { backgroundColor: colors.accentGlow }]}>
+                          <Text style={[s.confirmChipText, { color: colors.accent }]}>
+                            {t('prontuario.trustedVets.primary')}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    {tv.specialty && (
+                      <Text style={s.listItemSub}>{tv.specialty}</Text>
+                    )}
+                    {tv.clinic && (
+                      <Text style={s.listItemSub}>{tv.clinic}</Text>
+                    )}
+                    {tv.phone && (
+                      <Text style={[s.listItemDate, { color: colors.petrol }]}>
+                        {t('prontuario.trustedVets.phone')}: {tv.phone}
+                      </Text>
+                    )}
+                    {tv.crmv && (
+                      <Text style={s.listItemDate}>CRMV: {tv.crmv}</Text>
+                    )}
+                    {tv.email && (
+                      <Text style={s.listItemDate}>{tv.email}</Text>
+                    )}
+                    {tv.notes && (
+                      <Text style={s.listItemDate}>{tv.notes}</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+          </View>
+        )}
+
         {/* Alerts */}
         {activeTab === 'geral' && prontuario.alerts.length > 0 && (
           <View style={s.section}>
@@ -688,6 +744,53 @@ export default function ProntuarioScreen() {
                     <Text style={s.preventiveTypeTag}>{t(`prontuario.preventive.type.${pc.type}`)}</Text>
                     {pc.due_date ? `  ·  ${formatDate(pc.due_date)}` : ''}
                   </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Fase 3e — Parasite control (flea/tick, vermifuge, heartworm, combined) */}
+        {activeTab === 'prevencao' && prontuario.parasite_control && prontuario.parasite_control.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.parasiteControl.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.parasiteControl.hint')}</Text>
+            {prontuario.parasite_control.map((pc: ProntuarioParasiteControl) => (
+              <View key={pc.id} style={[s.listItem, { borderLeftColor: parasiteStatusColor(pc.is_overdue), borderLeftWidth: rs(3) }]}>
+                <View style={[s.listIconWrap, { backgroundColor: parasiteStatusBg(pc.is_overdue) }]}>
+                  <Bug size={rs(16)} color={parasiteStatusColor(pc.is_overdue)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.listItemTitle}>{pc.product_name}</Text>
+                    <View style={s.typeChip}>
+                      <Text style={s.typeChipText}>{t(`prontuario.parasiteControl.type.${pc.type}`)}</Text>
+                    </View>
+                    {pc.is_overdue && (
+                      <View style={[s.confirmChip, { backgroundColor: colors.dangerSoft }]}>
+                        <Text style={[s.confirmChipText, { color: colors.danger }]}>
+                          {t('prontuario.parasiteControl.overdue')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={s.listItemSub}>
+                    {t('prontuario.parasiteControl.applied')}: {formatDate(pc.administered_at)}
+                    {pc.dose ? `  ·  ${pc.dose}` : ''}
+                  </Text>
+                  {pc.next_due_date && (
+                    <Text style={[s.listItemDate, { color: parasiteStatusColor(pc.is_overdue) }]}>
+                      {t('prontuario.parasiteControl.nextDue')}: {formatDate(pc.next_due_date)}
+                    </Text>
+                  )}
+                  {pc.administered_by && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.parasiteControl.appliedBy')}: {pc.administered_by}
+                    </Text>
+                  )}
+                  {pc.notes && (
+                    <Text style={s.listItemDate}>{pc.notes}</Text>
+                  )}
                 </View>
               </View>
             ))}
@@ -823,6 +926,89 @@ export default function ProntuarioScreen() {
           </View>
         )}
 
+        {/* Fase 3e — Chronic conditions records (detailed with severity/status/ICD-10) */}
+        {activeTab === 'saude' && prontuario.chronic_conditions_records && prontuario.chronic_conditions_records.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.chronicConditionsRecords.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.chronicConditionsRecords.hint')}</Text>
+            {prontuario.chronic_conditions_records.map((cc: ProntuarioChronicConditionRecord) => (
+              <View key={cc.id} style={[s.listItem, { borderLeftColor: chronicStatusColor(cc.status), borderLeftWidth: rs(3) }]}>
+                <View style={[s.listIconWrap, { backgroundColor: chronicStatusBg(cc.status) }]}>
+                  <FileHeart size={rs(16)} color={chronicStatusColor(cc.status)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.listItemTitle}>{cc.name}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: chronicStatusBg(cc.status) }]}>
+                      <Text style={[s.confirmChipText, { color: chronicStatusColor(cc.status) }]}>
+                        {t(`prontuario.chronicConditionsRecords.status.${cc.status}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  {cc.code && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.chronicConditionsRecords.code')}: {cc.code}
+                    </Text>
+                  )}
+                  {cc.severity && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.chronicConditionsRecords.severity')}: {t(`prontuario.chronicConditionsRecords.severityValue.${cc.severity}`)}
+                    </Text>
+                  )}
+                  {cc.diagnosed_date && (
+                    <Text style={s.listItemDate}>
+                      {t('prontuario.chronicConditionsRecords.diagnosedDate')}: {formatDate(cc.diagnosed_date)}
+                      {cc.diagnosed_by ? `  ·  ${cc.diagnosed_by}` : ''}
+                    </Text>
+                  )}
+                  {cc.treatment_summary && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.chronicConditionsRecords.treatment')}: {cc.treatment_summary}
+                    </Text>
+                  )}
+                  {cc.notes && (
+                    <Text style={s.listItemDate}>{cc.notes}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Fase 3e — Body condition scores (WSAVA 1-9 scale) */}
+        {activeTab === 'sinais' && prontuario.body_condition_scores && prontuario.body_condition_scores.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.bodyConditionScores.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.bodyConditionScores.hint')}</Text>
+            {prontuario.body_condition_scores.map((bcs: ProntuarioBodyConditionScore) => (
+              <View key={bcs.id} style={[s.listItem, { borderLeftColor: bcsStatusColor(bcs.score), borderLeftWidth: rs(3) }]}>
+                <View style={[s.listIconWrap, { backgroundColor: bcsStatusBg(bcs.score) }]}>
+                  <Scale size={rs(16)} color={bcsStatusColor(bcs.score)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={[s.listItemTitle, { color: bcsStatusColor(bcs.score) }]}>
+                      {t('prontuario.bodyConditionScores.score', { score: bcs.score })}
+                    </Text>
+                    <View style={[s.confirmChip, { backgroundColor: bcsStatusBg(bcs.score) }]}>
+                      <Text style={[s.confirmChipText, { color: bcsStatusColor(bcs.score) }]}>
+                        {t(`prontuario.bodyConditionScores.measuredBy.${bcs.measured_by}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.listItemSub}>
+                    {formatDate(bcs.measured_at)}
+                    {bcs.weight_kg !== null ? `  ·  ${formatWeight(bcs.weight_kg)}` : ''}
+                  </Text>
+                  {bcs.notes && (
+                    <Text style={s.listItemDate}>{bcs.notes}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Fase 2 — Body systems review (AI-derived clinical overview) */}
         {activeTab === 'sinais' && prontuario.body_systems_review && prontuario.body_systems_review.length > 0 && (
           <View style={s.section}>
@@ -929,6 +1115,63 @@ export default function ProntuarioScreen() {
                     {t('prontuario.consultationFollowUp')}: {formatDate(prontuario.last_consultation.follow_up_at)}
                   </Text>
                 )}
+                {/* Fase 3e — Vital signs nested inside consultation card */}
+                {hasVitalSignsContent(prontuario.last_consultation.vital_signs) && (
+                  <View style={s.vitalSignsBox}>
+                    <View style={s.vitalSignsHeader}>
+                      <Activity size={rs(12)} color={colors.petrol} strokeWidth={2} />
+                      <Text style={s.vitalSignsLabel}>{t('prontuario.vitalSigns.title')}</Text>
+                    </View>
+                    <View style={s.vitalSignsGrid}>
+                      {prontuario.last_consultation.vital_signs!.temperature_celsius !== null && (
+                        <View style={s.vitalSignsItem}>
+                          <Thermometer size={rs(11)} color={colors.textDim} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.temperature')}:</Text>
+                          <Text style={s.vitalSignsItemValue}>{prontuario.last_consultation.vital_signs!.temperature_celsius}°C</Text>
+                        </View>
+                      )}
+                      {prontuario.last_consultation.vital_signs!.heart_rate_bpm !== null && (
+                        <View style={s.vitalSignsItem}>
+                          <Heart size={rs(11)} color={colors.textDim} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.heartRate')}:</Text>
+                          <Text style={s.vitalSignsItemValue}>{prontuario.last_consultation.vital_signs!.heart_rate_bpm} bpm</Text>
+                        </View>
+                      )}
+                      {prontuario.last_consultation.vital_signs!.respiratory_rate_rpm !== null && (
+                        <View style={s.vitalSignsItem}>
+                          <Wind size={rs(11)} color={colors.textDim} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.respiratoryRate')}:</Text>
+                          <Text style={s.vitalSignsItemValue}>{prontuario.last_consultation.vital_signs!.respiratory_rate_rpm} rpm</Text>
+                        </View>
+                      )}
+                      {prontuario.last_consultation.vital_signs!.capillary_refill_sec !== null && (
+                        <View style={s.vitalSignsItem}>
+                          <Activity size={rs(11)} color={colors.textDim} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.capillaryRefill')}:</Text>
+                          <Text style={s.vitalSignsItemValue}>{prontuario.last_consultation.vital_signs!.capillary_refill_sec}s</Text>
+                        </View>
+                      )}
+                      {prontuario.last_consultation.vital_signs!.mucous_color && prontuario.last_consultation.vital_signs!.mucous_color !== 'unknown' && (
+                        <View style={s.vitalSignsItem}>
+                          <Droplet size={rs(11)} color={mucousColor(prontuario.last_consultation.vital_signs!.mucous_color)} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.mucous')}:</Text>
+                          <Text style={[s.vitalSignsItemValue, { color: mucousColor(prontuario.last_consultation.vital_signs!.mucous_color) }]}>
+                            {t(`prontuario.vitalSigns.mucousColor.${prontuario.last_consultation.vital_signs!.mucous_color}`)}
+                          </Text>
+                        </View>
+                      )}
+                      {prontuario.last_consultation.vital_signs!.hydration_status && prontuario.last_consultation.vital_signs!.hydration_status !== 'unknown' && (
+                        <View style={s.vitalSignsItem}>
+                          <Droplet size={rs(11)} color={hydrationColor(prontuario.last_consultation.vital_signs!.hydration_status)} strokeWidth={2} />
+                          <Text style={s.vitalSignsItemLabel}>{t('prontuario.vitalSigns.hydration')}:</Text>
+                          <Text style={[s.vitalSignsItemValue, { color: hydrationColor(prontuario.last_consultation.vital_signs!.hydration_status) }]}>
+                            {t(`prontuario.vitalSigns.hydrationStatus.${prontuario.last_consultation.vital_signs!.hydration_status}`)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -972,7 +1215,7 @@ export default function ProntuarioScreen() {
               </Text>
             </View>
           )
-        )}
+        ))}
 
         {/* Generated at */}
         <Text style={s.generatedAt}>
@@ -1336,6 +1579,48 @@ const s = StyleSheet.create({
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8) },
   conditionChip: { backgroundColor: colors.dangerSoft, borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(6) },
   conditionChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.danger },
+
+  // Fase 3e — Vital signs nested inside last_consultation card
+  vitalSignsBox: {
+    marginTop: rs(10),
+    paddingTop: rs(10),
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  vitalSignsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    marginBottom: rs(8),
+  },
+  vitalSignsLabel: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(10),
+    color: colors.petrol,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  vitalSignsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: rs(10),
+  },
+  vitalSignsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(4),
+    minWidth: rs(110),
+  },
+  vitalSignsItemLabel: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(10),
+    color: colors.textDim,
+  },
+  vitalSignsItemValue: {
+    fontFamily: 'JetBrainsMono_600SemiBold',
+    fontSize: fs(11),
+    color: colors.text,
+  },
 
   generatedAt: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, textAlign: 'center', marginTop: rs(8), marginBottom: rs(20) },
 

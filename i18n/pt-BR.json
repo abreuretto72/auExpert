@@ -1160,6 +1160,87 @@
         "high": "Alto",
         "abnormal": "Anormal"
       }
+    },
+    "tabs": {
+      "geral": "Geral",
+      "saude": "Saúde",
+      "prevencao": "Prevenção",
+      "sinais": "Sinais",
+      "raca": "Raça",
+      "emergencia": "Emergência"
+    },
+    "bodyConditionScores": {
+      "title": "Escore de condição corporal (BCS)",
+      "hint": "Escala WSAVA 1-9 · ideal entre 4 e 5",
+      "score": "Escore {{score}}/9",
+      "measuredBy": {
+        "tutor": "Medido pelo tutor",
+        "vet": "Medido pelo veterinário",
+        "ai_photo": "Estimado por IA via foto"
+      }
+    },
+    "parasiteControl": {
+      "title": "Controle de parasitas",
+      "hint": "Antipulgas, vermífugos, dirofilariose e combinados",
+      "type": {
+        "flea_tick": "Antipulgas",
+        "vermifuge": "Vermífugo",
+        "heartworm": "Dirofilariose",
+        "combined": "Combinado"
+      },
+      "overdue": "Atrasado",
+      "applied": "Aplicado",
+      "nextDue": "Próxima dose",
+      "appliedBy": "Aplicado por"
+    },
+    "chronicConditionsRecords": {
+      "title": "Condições crônicas (registro detalhado)",
+      "hint": "Diagnósticos com gravidade, status e tratamento",
+      "status": {
+        "active": "Ativa",
+        "controlled": "Controlada",
+        "remission": "Em remissão",
+        "resolved": "Resolvida"
+      },
+      "severity": "Gravidade",
+      "severityValue": {
+        "mild": "Leve",
+        "moderate": "Moderada",
+        "severe": "Grave"
+      },
+      "code": "Código",
+      "diagnosedDate": "Diagnosticada em",
+      "treatment": "Tratamento"
+    },
+    "trustedVets": {
+      "title": "Veterinários de confiança",
+      "hint": "Contatos para emergências e acompanhamento",
+      "primary": "Principal",
+      "phone": "Telefone"
+    },
+    "vitalSigns": {
+      "title": "Sinais vitais",
+      "temperature": "Temperatura",
+      "heartRate": "Frequência cardíaca",
+      "respiratoryRate": "Frequência respiratória",
+      "capillaryRefill": "TPC",
+      "mucous": "Mucosa",
+      "hydration": "Hidratação",
+      "mucousColor": {
+        "pink": "Rósea",
+        "pale": "Pálida",
+        "cyanotic": "Cianótica",
+        "icteric": "Ictérica",
+        "brick_red": "Vermelho-tijolo",
+        "unknown": "Sem dados"
+      },
+      "hydrationStatus": {
+        "normal": "Normal",
+        "mild_dehydration": "Desidratação leve",
+        "moderate_dehydration": "Desidratação moderada",
+        "severe_dehydration": "Desidratação grave",
+        "unknown": "Sem dados"
+      }
     }
   },
   "pdf": {

@@ -1146,6 +1146,87 @@
         "high": "High",
         "abnormal": "Abnormal"
       }
+    },
+    "tabs": {
+      "geral": "Overview",
+      "saude": "Health",
+      "prevencao": "Prevention",
+      "sinais": "Signs",
+      "raca": "Breed",
+      "emergencia": "Emergency"
+    },
+    "bodyConditionScores": {
+      "title": "Body condition score (BCS)",
+      "hint": "WSAVA 1-9 scale · ideal between 4 and 5",
+      "score": "Score {{score}}/9",
+      "measuredBy": {
+        "tutor": "Measured by tutor",
+        "vet": "Measured by vet",
+        "ai_photo": "AI-estimated from photo"
+      }
+    },
+    "parasiteControl": {
+      "title": "Parasite control",
+      "hint": "Flea/tick, dewormers, heartworm and combined protocols",
+      "type": {
+        "flea_tick": "Flea & tick",
+        "vermifuge": "Dewormer",
+        "heartworm": "Heartworm",
+        "combined": "Combined"
+      },
+      "overdue": "Overdue",
+      "applied": "Applied",
+      "nextDue": "Next dose",
+      "appliedBy": "Applied by"
+    },
+    "chronicConditionsRecords": {
+      "title": "Chronic conditions (detailed record)",
+      "hint": "Diagnoses with severity, status and treatment",
+      "status": {
+        "active": "Active",
+        "controlled": "Controlled",
+        "remission": "In remission",
+        "resolved": "Resolved"
+      },
+      "severity": "Severity",
+      "severityValue": {
+        "mild": "Mild",
+        "moderate": "Moderate",
+        "severe": "Severe"
+      },
+      "code": "Code",
+      "diagnosedDate": "Diagnosed on",
+      "treatment": "Treatment"
+    },
+    "trustedVets": {
+      "title": "Trusted vets",
+      "hint": "Emergency and follow-up contacts",
+      "primary": "Primary",
+      "phone": "Phone"
+    },
+    "vitalSigns": {
+      "title": "Vital signs",
+      "temperature": "Temperature",
+      "heartRate": "Heart rate",
+      "respiratoryRate": "Respiratory rate",
+      "capillaryRefill": "CRT",
+      "mucous": "Mucous",
+      "hydration": "Hydration",
+      "mucousColor": {
+        "pink": "Pink",
+        "pale": "Pale",
+        "cyanotic": "Cyanotic",
+        "icteric": "Icteric",
+        "brick_red": "Brick red",
+        "unknown": "No data"
+      },
+      "hydrationStatus": {
+        "normal": "Normal",
+        "mild_dehydration": "Mild dehydration",
+        "moderate_dehydration": "Moderate dehydration",
+        "severe_dehydration": "Severe dehydration",
+        "unknown": "No data"
+      }
     }
   },
   "pdf": {
