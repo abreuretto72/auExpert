@@ -2311,7 +2311,37 @@
       "validationError": "Check the required fields before continuing.",
       "created": "Professional profile created.",
       "offline": "You need to be online to create a professional profile.",
-      "disclaimer": "By creating your profile, you declare the information is accurate. Formal verification (council, documents) happens at a later stage."
+      "disclaimer": "By creating your profile, you declare the information is accurate. Formal verification (council, documents) happens at a later stage.",
+      "patients": {
+        "title": "My Patients",
+        "greeting": "Hi, {{name}}",
+        "count_one": "{{count}} active patient",
+        "count_other": "{{count}} active patients",
+        "emptyTitle": "No patients yet",
+        "emptyText": "Patients show up here when an owner accepts your profile and adds you as a responsible professional.",
+        "offline": "Offline — showing cached data.",
+        "errorGeneric": "Couldn't load your patients. Try again?",
+        "unknownTutor": "Owner",
+        "scopeNotesLabel": "OWNER'S BRIEF",
+        "canSeeFinances": "Sees finances",
+        "expired": "Access expired",
+        "expiresToday": "Expires today",
+        "expiresTomorrow": "Expires tomorrow",
+        "expiresInDays_one": "Expires in {{count}} day",
+        "expiresInDays_other": "Expires in {{count}} days",
+        "roles": {
+          "vet_full": "Vet full",
+          "vet_read": "Vet read",
+          "vet_tech": "Vet tech",
+          "groomer": "Groomer",
+          "trainer": "Trainer",
+          "walker": "Walker",
+          "sitter": "Pet sitter",
+          "boarding": "Boarding",
+          "shop_employee": "Pet shop",
+          "ong_member": "NGO"
+        }
+      }
     }
   },
   "errors": {
@@ -3209,4 +3239,43 @@
     "trendDown": "Falling",
     "trendStable": "Stable",
     "travelsTitle": "Travels",
-    "travelsNone": "No travels registered 
+    "travelsNone": "No travels registered yet.",
+    "travelsTrips": "Trips",
+    "travelsKm": "Km",
+    "travelsDays": "Days",
+    "plansTitle": "Plans",
+    "plansNone": "No plans registered yet.",
+    "plansActive": "Active",
+    "plansMonthly": "Monthly",
+    "plansNextRenewal": "Next renewal"
+  },
+  "nutritionPdf": {
+    "icon": "Nutrition report",
+    "title": "{{name}}'s Nutrition",
+    "subtitle": "Diet, restrictions and AI evaluation",
+    "ready": "Nutrition report ready!",
+    "readySubtitle": "A complete summary of {{name}}'s diet.",
+    "sectionOverview": "Overview",
+    "sectionAlerts": "Alerts",
+    "sectionCurrentFood": "Current diet",
+    "sectionRestrictions": "Restrictions and intolerances",
+    "sectionSupplements": "Supplements",
+    "sectionHistory": "Food history",
+    "sectionAI": "AI evaluation",
+    "modalidade": "Approach",
+    "natural": "natural",
+    "lifeStage": "Life stage",
+    "weight": "Weight",
+    "startedAt": "Started",
+    "ongoing": "ongoing",
+    "noCurrentFood": "No active food registered.",
+    "aiScore": "Nutritional score",
+    "aiPros": "Positive points",
+    "aiCons": "Watch-outs",
+    "aiRecommendation": "Recommendation",
+    "aiUpdatedAt": "Updated on"
+  },
+  "hubPdf": {
+    "icon": "Export my profile"
+  }
+}
