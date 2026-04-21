@@ -46,6 +46,13 @@ export interface TutorProfileData {
   created_at: string | null;
 }
 
+export interface PreferencesData {
+  notificationsEnabled: boolean;
+  biometricEnabled: boolean;
+  aiTrainingGranted: boolean;
+  language: string;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function escHtml(str: string | null | undefined): string {
@@ -107,6 +114,7 @@ const PROOF_DISCOUNTS: Record<string, number> = {
 export function buildProfileBodyHtml(
   tutor: TutorProfileData,
   pets: Pet[],
+  prefs?: PreferencesData,
 ): string {
   const t = i18n.t.bind(i18n);
   const sections: string[] = [];
@@ -230,6 +238,29 @@ export function buildProfileBodyHtml(
     </div>
   `);
 
+  // ── Preferences ─────────────────────────────────────────────────────────
+  if (prefs) {
+    const yesLabel = t('common.yes', { defaultValue: 'Sim' });
+    const noLabel  = t('common.no',  { defaultValue: 'Não' });
+    const prefVal  = (v: boolean) => (v ? yesLabel : noLabel);
+    const langMap: Record<string, string> = {
+      'pt-BR': 'Português (Brasil)',
+      'en-US': 'English (US)',
+      'es-MX': 'Español (México)',
+      'es-AR': 'Español (Argentina)',
+      'pt-PT': 'Português (Portugal)',
+    };
+    sections.push(sectionHeader(t('profilePdf.sectionPreferences')));
+    sections.push(`
+      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;">
+        ${kv(t('settings.notifications'),  prefVal(prefs.notificationsEnabled))}
+        ${kv(t('settings.biometric'),      prefVal(prefs.biometricEnabled))}
+        ${kv(t('settings.aiTraining'),     prefVal(prefs.aiTrainingGranted))}
+        ${kv(t('settings.language'),       langMap[prefs.language] ?? prefs.language)}
+      </div>
+    `);
+  }
+
   // ── Footer note ──────────────────────────────────────────────────────────
   sections.push(`
     <div style="margin-top:24px;padding:12px 14px;background:#1B8EAD08;border-left:3px solid #1B8EAD;border-radius:6px;font-size:10px;color:#1A2B3D;line-height:1.6;text-align:center;">
@@ -245,9 +276,10 @@ export function buildProfileBodyHtml(
 export async function previewProfilePdf(
   tutor: TutorProfileData,
   pets: Pet[],
+  prefs?: PreferencesData,
 ): Promise<void> {
   const t = i18n.t.bind(i18n);
-  const bodyHtml = buildProfileBodyHtml(tutor, pets);
+  const bodyHtml = buildProfileBodyHtml(tutor, pets, prefs);
   await previewPdf({
     title: t('profilePdf.pdfTitle', { name: tutor.full_name ?? tutor.email ?? '' }),
     subtitle: t('profilePdf.pdfSubtitle'),
@@ -259,9 +291,10 @@ export async function previewProfilePdf(
 export async function shareProfilePdf(
   tutor: TutorProfileData,
   pets: Pet[],
+  prefs?: PreferencesData,
 ): Promise<void> {
   const t = i18n.t.bind(i18n);
-  const bodyHtml = buildProfileBodyHtml(tutor, pets);
+  const bodyHtml = buildProfileBodyHtml(tutor, pets, prefs);
   const baseName = (tutor.full_name ?? tutor.email ?? 'tutor')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')

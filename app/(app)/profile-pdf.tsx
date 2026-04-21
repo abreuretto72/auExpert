@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import {
   ChevronLeft,
   Download,
@@ -27,6 +28,8 @@ import { rs, fs } from '../../hooks/useResponsive';
 import { colors } from '../../constants/colors';
 import { usePets } from '../../hooks/usePets';
 import { useAuthStore } from '../../stores/authStore';
+import { useUIStore } from '../../stores/uiStore';
+import { useConsent } from '../../hooks/useConsent';
 import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
 import { supabase } from '../../lib/supabase';
@@ -34,6 +37,7 @@ import {
   previewProfilePdf,
   shareProfilePdf,
   type TutorProfileData,
+  type PreferencesData,
 } from '../../lib/profilePdf';
 
 const EMPTY_TUTOR: TutorProfileData = {
@@ -69,6 +73,15 @@ export default function ProfilePdfScreen() {
 
   const user = useAuthStore((s) => s.user);
   const { pets } = usePets();
+  const notificationsEnabled = useUIStore((s) => s.notificationsEnabled);
+  const biometricEnabled = useUIStore((s) => s.biometricEnabled);
+  const { granted: aiTrainingGranted } = useConsent('ai_training_anonymous');
+  const prefs = React.useMemo<PreferencesData>(() => ({
+    notificationsEnabled,
+    biometricEnabled,
+    aiTrainingGranted,
+    language: i18n.language,
+  }), [notificationsEnabled, biometricEnabled, aiTrainingGranted]);
 
   const [tutor, setTutor] = useState<TutorProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,14 +122,14 @@ export default function ProfilePdfScreen() {
     (async () => {
       setIsGenerating(true);
       try {
-        await previewProfilePdf(tutor, pets);
+        await previewProfilePdf(tutor, pets, prefs);
         if (!cancelled) setIsGenerating(false);
       } catch {
         if (!cancelled) setIsGenerating(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [tutor, pets, loading]);
+  }, [tutor, pets, prefs, loading]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -124,25 +137,27 @@ export default function ProfilePdfScreen() {
     if (!tutor) return;
     setIsGenerating(true);
     try {
-      await previewProfilePdf(tutor, pets);
+      await previewProfilePdf(tutor, pets, prefs);
     } catch (err) {
       toast(getErrorMessage(err), 'error');
     } finally {
       setIsGenerating(false);
     }
-  }, [tutor, pets, toast]);
+  }, [tutor, pets, prefs, toast]);
+
+
 
   const handleShare = useCallback(async () => {
     if (!tutor) return;
     setIsGenerating(true);
     try {
-      await shareProfilePdf(tutor, pets);
+      await shareProfilePdf(tutor, pets, prefs);
     } catch (err) {
       toast(getErrorMessage(err), 'error');
     } finally {
       setIsGenerating(false);
     }
-  }, [tutor, pets, toast]);
+  }, [tutor, pets, prefs, toast]);
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
