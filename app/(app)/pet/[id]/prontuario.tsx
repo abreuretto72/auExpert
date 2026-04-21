@@ -593,7 +593,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Alerts */}
-        {prontuario.alerts.length > 0 && (
+        {activeTab === 'geral' && prontuario.alerts.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.alerts').toUpperCase()}</Text>
             {prontuario.alerts.map((alert, i) => (
@@ -616,7 +616,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* AI Summary */}
-        {prontuario.ai_summary && (
+        {activeTab === 'geral' && prontuario.ai_summary && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.summary').toUpperCase()}</Text>
             <View style={s.aiSummaryCard}>
@@ -630,7 +630,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Fase 2 — Breed predispositions (AI-derived) */}
-        {prontuario.breed_predispositions && prontuario.breed_predispositions.length > 0 && (
+        {activeTab === 'raca' && prontuario.breed_predispositions && prontuario.breed_predispositions.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.predispositions.title').toUpperCase()}</Text>
             <Text style={s.subSectionHint}>{t('prontuario.predispositions.hint')}</Text>
@@ -656,7 +656,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Vaccines */}
-        {prontuario.vaccines.length > 0 && (
+        {activeTab === 'saude' && prontuario.vaccines.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('health.vaccines').toUpperCase()}</Text>
             {prontuario.vaccines.map((v) => (
@@ -666,7 +666,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Fase 2 — Preventive calendar (AI-derived schedule of upcoming care) */}
-        {prontuario.preventive_calendar && prontuario.preventive_calendar.length > 0 && (
+        {activeTab === 'prevencao' && prontuario.preventive_calendar && prontuario.preventive_calendar.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.preventive.title').toUpperCase()}</Text>
             <Text style={s.subSectionHint}>{t('prontuario.preventive.hint')}</Text>
@@ -695,7 +695,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Active medications */}
-        {prontuario.active_medications.length > 0 && (
+        {activeTab === 'saude' && prontuario.active_medications.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('health.medications').toUpperCase()}</Text>
             {prontuario.active_medications.map((m) => (
@@ -743,7 +743,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Fase 2 — Drug interactions (AI-derived, only when ≥2 active meds) */}
-        {prontuario.drug_interactions && prontuario.drug_interactions.length > 0 && (
+        {activeTab === 'raca' && prontuario.drug_interactions && prontuario.drug_interactions.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.drugInteractions.title').toUpperCase()}</Text>
             <Text style={s.subSectionHint}>{t('prontuario.drugInteractions.hint')}</Text>
@@ -775,7 +775,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Allergies */}
-        {prontuario.allergies.length > 0 && (
+        {activeTab === 'saude' && prontuario.allergies.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('health.allergies').toUpperCase()}</Text>
             {prontuario.allergies.map((a) => (
@@ -809,8 +809,8 @@ export default function ProntuarioScreen() {
           </View>
         )}
 
-        {/* Chronic conditions */}
-        {prontuario.chronic_conditions.length > 0 && (
+        {/* Chronic conditions (strings) */}
+        {activeTab === 'saude' && prontuario.chronic_conditions.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.chronicConditions').toUpperCase()}</Text>
             <View style={s.chipsRow}>
@@ -824,7 +824,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Fase 2 — Body systems review (AI-derived clinical overview) */}
-        {prontuario.body_systems_review && prontuario.body_systems_review.length > 0 && (
+        {activeTab === 'sinais' && prontuario.body_systems_review && prontuario.body_systems_review.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.bodySystems.title').toUpperCase()}</Text>
             <Text style={s.subSectionHint}>{t('prontuario.bodySystems.hint')}</Text>
@@ -852,7 +852,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Surgeries — Fase 1: nova seção */}
-        {prontuario.surgeries && prontuario.surgeries.length > 0 && (
+        {activeTab === 'saude' && prontuario.surgeries && prontuario.surgeries.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.surgeriesTitle').toUpperCase()}</Text>
             {prontuario.surgeries.map((surg: ProntuarioSurgery) => (
@@ -894,7 +894,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Last consultation */}
-        {prontuario.last_consultation && (
+        {activeTab === 'saude' && prontuario.last_consultation && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.lastConsultation').toUpperCase()}</Text>
             <View style={s.listItem}>
@@ -935,7 +935,7 @@ export default function ProntuarioScreen() {
         )}
 
         {/* Fase 2 — Exam abnormal flags (AI-surfaced out-of-range lab values) */}
-        {prontuario.exam_abnormal_flags && prontuario.exam_abnormal_flags.length > 0 ? (
+        {activeTab === 'raca' && (prontuario.exam_abnormal_flags && prontuario.exam_abnormal_flags.length > 0 ? (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.examFlags.title').toUpperCase()}</Text>
             <Text style={s.subSectionHint}>{t('prontuario.examFlags.hint')}</Text>
