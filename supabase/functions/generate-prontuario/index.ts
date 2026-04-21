@@ -225,59 +225,93 @@ Deno.serve(async (req: Request) => {
 
     // ── Fetch pet data ───────────────────────────────────────────────────────
     // Fase 1: +surgeries (tabela existia em 011_health_tables.sql mas estava ignorada).
-    const [petRes, vaccinesRes, medsRes, examsRes, allergiesRes, consRes, surgRes, diaryRes] =
-      await Promise.all([
-        sb.from("pets").select("*").eq("id", pet_id).single(),
-        sb
-          .from("vaccines")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("next_due_date", { ascending: true }),
-        sb
-          .from("medications")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("start_date", { ascending: false }),
-        sb
-          .from("exams")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("date", { ascending: false })
-          .limit(10),
-        sb
-          .from("allergies")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true),
-        sb
-          .from("consultations")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("date", { ascending: false })
-          .limit(5),
-        sb
-          .from("surgeries")
-          .select("*")
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("date", { ascending: false })
-          .limit(10),
-        sb
-          .from("diary_entries")
-          .select(
-            "id, content, entry_date, classifications, mood_id, is_special",
-          )
-          .eq("pet_id", pet_id)
-          .eq("is_active", true)
-          .order("entry_date", { ascending: false })
-          .limit(30),
-      ]);
+    // Fase 3e: +body_condition_scores, +parasite_control, +chronic_conditions, +trusted_vets
+    //         (tabelas criadas em 20260420_prontuario_vet_grade.sql, agora surfaceadas).
+    const [
+      petRes, vaccinesRes, medsRes, examsRes, allergiesRes, consRes, surgRes, diaryRes,
+      bcsRes, parasiteRes, chronicRes, vetsRes,
+    ] = await Promise.all([
+      sb.from("pets").select("*").eq("id", pet_id).single(),
+      sb
+        .from("vaccines")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("next_due_date", { ascending: true }),
+      sb
+        .from("medications")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("start_date", { ascending: false }),
+      sb
+        .from("exams")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("date", { ascending: false })
+        .limit(10),
+      sb
+        .from("allergies")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true),
+      sb
+        .from("consultations")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("date", { ascending: false })
+        .limit(5),
+      sb
+        .from("surgeries")
+        .select("*")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("date", { ascending: false })
+        .limit(10),
+      sb
+        .from("diary_entries")
+        .select(
+          "id, content, entry_date, classifications, mood_id, is_special",
+        )
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("entry_date", { ascending: false })
+        .limit(30),
+      // Fase 3e — BCS timeline (limite 24 pontos = ~2 anos de medições mensais)
+      sb
+        .from("body_condition_scores")
+        .select("id, score, measured_at, measured_by, weight_kg, notes, source")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("measured_at", { ascending: false })
+        .limit(24),
+      // Fase 3e — parasitário ativo (mais vencidos/próximos primeiro)
+      sb
+        .from("parasite_control")
+        .select("id, type, product_name, dose, administered_at, next_due_date, administered_by, notes, source")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("next_due_date", { ascending: true, nullsFirst: false }),
+      // Fase 3e — condições crônicas estruturadas (substitui a string solta da IA)
+      sb
+        .from("chronic_conditions")
+        .select("id, name, code, diagnosed_date, diagnosed_by, severity, status, treatment_summary, notes, source")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("diagnosed_date", { ascending: false, nullsFirst: false }),
+      // Fase 3e — vets de confiança (primary primeiro, alimenta o cartão de emergência)
+      sb
+        .from("trusted_vets")
+        .select("id, name, specialty, phone, clinic, address, crmv, email, is_primary, notes")
+        .eq("pet_id", pet_id)
+        .eq("is_active", true)
+        .order("is_primary", { ascending: false })
+        .order("created_at", { ascending: true }),
+    ]);
 
-    console.log("[generate-prontuario] DB queries done | petErr:", petRes.error?.message ?? "none", "| vaccinesErr:", vaccinesRes.error?.message ?? "none", "| medsErr:", medsRes.error?.message ?? "none", "| examsErr:", examsRes.error?.message ?? "none", "| allergiesErr:", allergiesRes.error?.message ?? "none", "| consErr:", consRes.error?.message ?? "none", "| surgErr:", surgRes.error?.message ?? "none", "| diaryErr:", diaryRes.error?.message ?? "none");
+    console.log("[generate-prontuario] DB queries done | petErr:", petRes.error?.message ?? "none", "| vaccinesErr:", vaccinesRes.error?.message ?? "none", "| medsErr:", medsRes.error?.message ?? "none", "| examsErr:", examsRes.error?.message ?? "none", "| allergiesErr:", allergiesRes.error?.message ?? "none", "| consErr:", consRes.error?.message ?? "none", "| surgErr:", surgRes.error?.message ?? "none", "| diaryErr:", diaryRes.error?.message ?? "none", "| bcsErr:", bcsRes.error?.message ?? "none", "| parasiteErr:", parasiteRes.error?.message ?? "none", "| chronicErr:", chronicRes.error?.message ?? "none", "| vetsErr:", vetsRes.error?.message ?? "none");
 
     if (petRes.error || !petRes.data) {
       console.error("[generate-prontuario] pet not found:", petRes.error?.message);
@@ -292,13 +326,18 @@ Deno.serve(async (req: Request) => {
     const consultations = consRes.data ?? [];
     const surgeries = surgRes.data ?? [];
     const diaryEntries = diaryRes.data ?? [];
+    // Fase 3e — novas tabelas
+    const bcsRows = bcsRes.data ?? [];
+    const parasiteRows = parasiteRes.data ?? [];
+    const chronicRows = chronicRes.data ?? [];
+    const trustedVets = vetsRes.data ?? [];
 
     // Fase 1: conta exames com status anormal para surface no cartão de emergência
     const examAbnormalCount = exams.filter((e) =>
       ["attention", "abnormal", "critical"].includes(e.status),
     ).length;
 
-    console.log("[generate-prontuario] data counts | vaccines:", vaccines.length, "meds:", medications.length, "exams:", exams.length, "allergies:", allergies.length, "consultations:", consultations.length, "surgeries:", surgeries.length, "diary:", diaryEntries.length, "examAbnormal:", examAbnormalCount);
+    console.log("[generate-prontuario] data counts | vaccines:", vaccines.length, "meds:", medications.length, "exams:", exams.length, "allergies:", allergies.length, "consultations:", consultations.length, "surgeries:", surgeries.length, "diary:", diaryEntries.length, "examAbnormal:", examAbnormalCount, "bcs:", bcsRows.length, "parasite:", parasiteRows.length, "chronic:", chronicRows.length, "vets:", trustedVets.length);
 
     // ── Fase 3d — DB lookup de breed_predispositions (antes de chamar a IA) ──
     // Se a raça é conhecida e existe no seed (ou foi cacheada via source='ai'),
@@ -914,7 +953,11 @@ Rules:
         diagnosed_by: a.diagnosed_by ?? null,
         confirmed: a.confirmed ?? false,
       })),
-      chronic_conditions: (aiData.chronic_conditions as string[]) ?? [],
+      // Fase 3e — se há registros estruturados na tabela chronic_conditions,
+      // eles mandam; senão mantém a inferência da IA a partir dos textos do diário.
+      chronic_conditions: chronicRows.length > 0
+        ? chronicRows.map((c) => c.name)
+        : ((aiData.chronic_conditions as string[]) ?? []),
       consultations: consultations.map((c) => ({
         id: c.id,
         date: c.date,
@@ -929,6 +972,24 @@ Rules:
         prescriptions: c.prescriptions ?? null,
         follow_up_at: c.follow_up_at ?? null,
         cost: c.cost ?? null,
+        // Fase 3e — sinais vitais do exame físico (6 colunas adicionadas em 3b)
+        vital_signs: (
+          c.temperature_celsius != null ||
+          c.heart_rate_bpm != null ||
+          c.respiratory_rate_rpm != null ||
+          c.capillary_refill_sec != null ||
+          c.mucous_color != null ||
+          c.hydration_status != null
+        )
+          ? {
+              temperature_celsius: c.temperature_celsius ?? null,
+              heart_rate_bpm: c.heart_rate_bpm ?? null,
+              respiratory_rate_rpm: c.respiratory_rate_rpm ?? null,
+              capillary_refill_sec: c.capillary_refill_sec ?? null,
+              mucous_color: c.mucous_color ?? null,
+              hydration_status: c.hydration_status ?? null,
+            }
+          : null,
       })),
       last_consultation: consultations[0] ?? null,
       last_exam_date: (aiData.last_exam_date as string) ?? null,
@@ -959,6 +1020,52 @@ Rules:
       body_systems_review,
       exam_abnormal_flags,
       emergency_card,
+      // Fase 3e — tabelas novas (BCS timeline, parasitário, condições crônicas, vets)
+      body_condition_scores: bcsRows.map((b) => ({
+        id: b.id,
+        score: b.score,
+        measured_at: b.measured_at,
+        measured_by: b.measured_by,
+        weight_kg: b.weight_kg != null ? Number(b.weight_kg) : null,
+        notes: b.notes ?? null,
+        source: b.source,
+      })),
+      parasite_control: parasiteRows.map((p) => ({
+        id: p.id,
+        type: p.type,
+        product_name: p.product_name,
+        dose: p.dose ?? null,
+        administered_at: p.administered_at,
+        next_due_date: p.next_due_date ?? null,
+        administered_by: p.administered_by ?? null,
+        notes: p.notes ?? null,
+        source: p.source,
+        is_overdue: p.next_due_date ? new Date(p.next_due_date) < new Date() : false,
+      })),
+      chronic_conditions_records: chronicRows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code ?? null,
+        diagnosed_date: c.diagnosed_date ?? null,
+        diagnosed_by: c.diagnosed_by ?? null,
+        severity: c.severity ?? null,
+        status: c.status,
+        treatment_summary: c.treatment_summary ?? null,
+        notes: c.notes ?? null,
+        source: c.source,
+      })),
+      trusted_vets: trustedVets.map((v) => ({
+        id: v.id,
+        name: v.name,
+        specialty: v.specialty ?? null,
+        phone: v.phone ?? null,
+        clinic: v.clinic ?? null,
+        address: v.address ?? null,
+        crmv: v.crmv ?? null,
+        email: v.email ?? null,
+        is_primary: v.is_primary,
+        notes: v.notes ?? null,
+      })),
       generated_at: new Date().toISOString(),
       is_stale: false,
     };

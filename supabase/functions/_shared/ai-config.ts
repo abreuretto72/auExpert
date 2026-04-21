@@ -83,8 +83,12 @@ export async function getAIConfig(sb?: SupabaseClient): Promise<AIConfig> {
     cacheExpiry  = now + CACHE_TTL_MS; // cache 5 min — evita SELECT em app_config a cada invocação
     return config;
 
-  } catch {
-    // Graceful fallback — never crash a function because config is unavailable
+  } catch (e) {
+    // Graceful fallback — if app_config fetch fails for any reason (network,
+    // RLS, missing keys) we still want the Edge Function to work with defaults.
+    console.warn('[ai-config] falling back to DEFAULTS:', (e as Error)?.message ?? e);
+    cachedConfig = DEFAULTS;
+    cacheExpiry  = Date.now() + 60_000; // short TTL so we retry the DB soon
     return DEFAULTS;
   }
 }

@@ -5,7 +5,7 @@
  * allergies, chronic conditions, last consultation.
  * Actions: Share PDF, view QR emergency card, regenerate.
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -43,6 +43,13 @@ import {
   Activity,
   FlaskConical,
   Phone,
+  Bug,
+  Scale,
+  Thermometer,
+  Heart,
+  Wind,
+  UserCheck,
+  FileHeart,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
@@ -59,6 +66,11 @@ import {
   type ProntuarioBodySystemReview,
   type ProntuarioExamAbnormalFlag,
   type ProntuarioEmergencyCard,
+  type ProntuarioBodyConditionScore,
+  type ProntuarioParasiteControl,
+  type ProntuarioChronicConditionRecord,
+  type ProntuarioTrustedVet,
+  type ProntuarioVitalSigns,
 } from '../../../../hooks/useProntuario';
 import { useToast } from '../../../../components/Toast';
 import { getErrorMessage } from '../../../../utils/errorMessages';
@@ -170,6 +182,83 @@ function hasEmergencyContent(ec: ProntuarioEmergencyCard): boolean {
   );
 }
 
+// ── Fase 4 — Tab navigation types + helpers ──────────────────────────────────
+
+type TabId = 'geral' | 'saude' | 'prevencao' | 'sinais' | 'raca' | 'emergencia';
+
+const TAB_IDS: TabId[] = ['geral', 'saude', 'prevencao', 'sinais', 'raca', 'emergencia'];
+
+function tabIcon(id: TabId, color: string, size: number) {
+  if (id === 'geral') return <FileHeart size={size} color={color} strokeWidth={1.8} />;
+  if (id === 'saude') return <Stethoscope size={size} color={color} strokeWidth={1.8} />;
+  if (id === 'prevencao') return <CalendarClock size={size} color={color} strokeWidth={1.8} />;
+  if (id === 'sinais') return <Activity size={size} color={color} strokeWidth={1.8} />;
+  if (id === 'raca') return <ShieldAlert size={size} color={color} strokeWidth={1.8} />;
+  return <Phone size={size} color={color} strokeWidth={1.8} />; // emergencia
+}
+
+// Fase 3e — helpers for new sections
+
+function bcsStatusColor(score: number): string {
+  // WSAVA 1-9: 1-3 underweight (danger), 4-5 ideal (success), 6-7 overweight (warning), 8-9 obese (danger)
+  if (score <= 3 || score >= 8) return colors.danger;
+  if (score === 6 || score === 7) return colors.warning;
+  return colors.success;
+}
+
+function bcsStatusBg(score: number): string {
+  if (score <= 3 || score >= 8) return colors.dangerSoft;
+  if (score === 6 || score === 7) return colors.warningSoft;
+  return colors.successSoft;
+}
+
+function chronicStatusColor(status: ProntuarioChronicConditionRecord['status']): string {
+  if (status === 'active') return colors.danger;
+  if (status === 'controlled') return colors.warning;
+  if (status === 'remission') return colors.petrol;
+  return colors.success; // resolved
+}
+
+function chronicStatusBg(status: ProntuarioChronicConditionRecord['status']): string {
+  if (status === 'active') return colors.dangerSoft;
+  if (status === 'controlled') return colors.warningSoft;
+  if (status === 'remission') return colors.petrolSoft;
+  return colors.successSoft; // resolved
+}
+
+function parasiteStatusColor(isOverdue: boolean): string {
+  return isOverdue ? colors.danger : colors.success;
+}
+
+function parasiteStatusBg(isOverdue: boolean): string {
+  return isOverdue ? colors.dangerSoft : colors.successSoft;
+}
+
+function mucousColor(m: NonNullable<ProntuarioVitalSigns['mucous_color']>): string {
+  if (m === 'pink') return colors.success;
+  if (m === 'pale' || m === 'cyanotic' || m === 'icteric' || m === 'brick_red') return colors.danger;
+  return colors.textDim; // unknown
+}
+
+function hydrationColor(h: NonNullable<ProntuarioVitalSigns['hydration_status']>): string {
+  if (h === 'normal') return colors.success;
+  if (h === 'mild_dehydration') return colors.warning;
+  if (h === 'moderate_dehydration' || h === 'severe_dehydration') return colors.danger;
+  return colors.textDim; // unknown
+}
+
+function hasVitalSignsContent(vs: ProntuarioVitalSigns | null | undefined): boolean {
+  if (!vs) return false;
+  return !!(
+    vs.temperature_celsius !== null ||
+    vs.heart_rate_bpm !== null ||
+    vs.respiratory_rate_rpm !== null ||
+    vs.capillary_refill_sec !== null ||
+    (vs.mucous_color && vs.mucous_color !== 'unknown') ||
+    (vs.hydration_status && vs.hydration_status !== 'unknown')
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProntuarioScreen() {
@@ -182,6 +271,9 @@ export default function ProntuarioScreen() {
 
   const { data: pet } = usePet(id!);
   const { prontuario, isLoading, isError, error, regenerate, isRegenerating, refetch } = useProntuario(id!);
+
+  // Fase 4 — Tab navigation state (default: Geral)
+  const [activeTab, setActiveTab] = useState<TabId>('geral');
 
   const handleRefresh = useCallback(async () => {
     await refetch();
@@ -299,6 +391,30 @@ export default function ProntuarioScreen() {
         </View>
       </View>
 
+      {/* Fase 4 — Tab bar (6 tabs) */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={s.tabsScroll}
+        contentContainerStyle={s.tabsContent}
+      >
+        {TAB_IDS.map((id) => {
+          const isActive = activeTab === id;
+          const color = isActive ? colors.accent : colors.textDim;
+          return (
+            <TouchableOpacity
+              key={id}
+              style={[s.tabBtn, isActive && s.tabBtnActive]}
+              onPress={() => setActiveTab(id)}
+              activeOpacity={0.7}
+            >
+              {tabIcon(id, color, rs(14))}
+              <Text style={[s.tabLabel, { color }]}>{t(`prontuario.tabs.${id}`)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       <ScrollView
         style={s.scroll}
         contentContainerStyle={s.scrollContent}
@@ -403,7 +519,7 @@ export default function ProntuarioScreen() {
         </View>
 
         {/* Emergency Card — Fase 2: critical info for first responders */}
-        {prontuario.emergency_card && hasEmergencyContent(prontuario.emergency_card) && (
+        {activeTab === 'emergencia' && prontuario.emergency_card && hasEmergencyContent(prontuario.emergency_card) && (
           <View style={s.emergencyCard}>
             <View style={s.emergencyHeader}>
               <ShieldAlert size={rs(18)} color={colors.danger} strokeWidth={2} />
@@ -954,6 +1070,39 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text, textAlign: 'center' },
+
+  // Fase 4 — Tab bar
+  tabsScroll: {
+    flexGrow: 0,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tabsContent: {
+    paddingHorizontal: rs(12),
+    paddingVertical: rs(10),
+    gap: rs(8),
+  },
+  tabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(6),
+    paddingHorizontal: rs(14),
+    paddingVertical: rs(8),
+    borderRadius: rs(12),
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabBtnActive: {
+    backgroundColor: colors.accentGlow,
+    borderColor: colors.accent + '40',
+  },
+  tabLabel: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: fs(12),
+    letterSpacing: 0.3,
+  },
 
   scroll: { flex: 1 },
   scrollContent: { padding: rs(16), paddingBottom: rs(32) },

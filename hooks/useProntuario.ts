@@ -58,6 +58,29 @@ export interface ProntuarioAllergy {
   confirmed: boolean;
 }
 
+// Fase 3e — sinais vitais do exame físico (colunas adicionadas a consultations em 3b)
+export interface ProntuarioVitalSigns {
+  temperature_celsius: number | null;
+  heart_rate_bpm: number | null;
+  respiratory_rate_rpm: number | null;
+  capillary_refill_sec: number | null;
+  mucous_color:
+    | 'pink'
+    | 'pale'
+    | 'cyanotic'
+    | 'icteric'
+    | 'brick_red'
+    | 'unknown'
+    | null;
+  hydration_status:
+    | 'normal'
+    | 'mild_dehydration'
+    | 'moderate_dehydration'
+    | 'severe_dehydration'
+    | 'unknown'
+    | null;
+}
+
 export interface ProntuarioConsultation {
   id: string;
   date: string | null;
@@ -72,6 +95,61 @@ export interface ProntuarioConsultation {
   prescriptions: string | null;
   follow_up_at: string | null;
   cost: number | null;
+  // Fase 3e — sinais vitais (null quando nenhuma das 6 colunas está preenchida)
+  vital_signs: ProntuarioVitalSigns | null;
+}
+
+// ── Fase 3e — novas tabelas vet-grade (body_condition_scores, parasite_control,
+//              chronic_conditions, trusted_vets) — surfaceadas direto do banco
+//              pela Edge Function generate-prontuario.
+
+export interface ProntuarioBodyConditionScore {
+  id: string;
+  score: number; // 1-9 WSAVA
+  measured_at: string; // ISO date
+  measured_by: 'tutor' | 'vet' | 'ai_photo';
+  weight_kg: number | null;
+  notes: string | null;
+  source: 'manual' | 'ai';
+}
+
+export interface ProntuarioParasiteControl {
+  id: string;
+  type: 'flea_tick' | 'vermifuge' | 'heartworm' | 'combined';
+  product_name: string;
+  dose: string | null;
+  administered_at: string; // ISO date
+  next_due_date: string | null;
+  administered_by: string | null;
+  notes: string | null;
+  source: 'manual' | 'ai';
+  is_overdue: boolean;
+}
+
+export interface ProntuarioChronicConditionRecord {
+  id: string;
+  name: string;
+  code: string | null; // ICD-10-Vet opcional
+  diagnosed_date: string | null;
+  diagnosed_by: string | null;
+  severity: 'mild' | 'moderate' | 'severe' | null;
+  status: 'active' | 'controlled' | 'remission' | 'resolved';
+  treatment_summary: string | null;
+  notes: string | null;
+  source: 'manual' | 'ai';
+}
+
+export interface ProntuarioTrustedVet {
+  id: string;
+  name: string;
+  specialty: string | null;
+  phone: string | null;
+  clinic: string | null;
+  address: string | null;
+  crmv: string | null;
+  email: string | null;
+  is_primary: boolean;
+  notes: string | null;
 }
 
 // Fase 1 — tabela `surgeries` existia em 011_health_tables.sql mas estava ignorada
@@ -210,6 +288,12 @@ export interface Prontuario {
   body_systems_review?: ProntuarioBodySystemReview[];
   exam_abnormal_flags?: ProntuarioExamAbnormalFlag[];
   emergency_card?: ProntuarioEmergencyCard | null;
+  // Fase 3e — dados surfaceados direto das tabelas novas (podem ser [] se o tutor
+  // ainda não registrou nada). Arrays vazios, não undefined.
+  body_condition_scores?: ProntuarioBodyConditionScore[];
+  parasite_control?: ProntuarioParasiteControl[];
+  chronic_conditions_records?: ProntuarioChronicConditionRecord[];
+  trusted_vets?: ProntuarioTrustedVet[];
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────

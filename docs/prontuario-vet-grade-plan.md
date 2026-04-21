@@ -417,6 +417,45 @@ Cada fase: abrir Task na lista, marcar in_progress, commitar, marcar completed.
 - **Consulta pela Edge Function (Fase 3d):** deve normalizar raça via `LOWER(breed)` + tabela de aliases (ex.: `"french bulldog"` → `"Buldogue Francês"`). Se não houver match, cai no fallback Claude e grava a nova linha com `source='ai'` para cachear.
 - **Próximos passos:** Fase 3d — rewire do prompt em `generate-prontuario` para consultar esta tabela em vez de delegar 100% à IA.
 
+### 6.4 Execução Fase 3d — DB-first + AI fallback em `generate-prontuario` (aplicada em 2026-04-20)
+
+- **Edge Function:** `supabase/functions/generate-prontuario/index.ts` — versão **13 ACTIVE** (`deploy_edge_function` OK).
+- **Bundle:** o deploy precisou incluir os três arquivos no array `files` com `name` batendo com o path relativo exato — `index.ts`, `../_shared/ai-config.ts`, `../_shared/validate-auth.ts`. Sem isso, o bundler retorna `Module not found`.
+- **Fluxo novo:**
+  1. Antes de chamar a IA, `fetchBreedPredispositionsFromDB(supabase, species, breed, language)` normaliza a raça via `BREED_ALIASES` (ex.: `french bulldog` → `Buldogue Francês`, `border collie` → `Border Collie`) e busca por `.ilike('breed', canonical)`.
+  2. Quando há hit: os cards `breed_predispositions` são servidos direto do banco (log `[generate-prontuario] breed_predispositions DB hit (X rows)`) e o prompt enviado ao Claude ganha a instrução `Return [] for breed_predispositions — DB already has authoritative data.` (economia ~100 tokens de saída por chamada).
+  3. Quando não há hit: Claude gera as predisposições normalmente, e o resolver persiste as linhas no banco com `source='ai'` via `.upsert(..., { onConflict: "species,breed,condition_key", ignoreDuplicates: true })` — próxima consulta pra mesma raça cai no path DB.
+- **Observação de schema:** `breed_predispositions` **não** tem coluna `is_active` (exceção ao soft-delete do projeto). O controle de procedência usa a coluna enum `source` (`seed` vs `ai`). Qualquer filtro `.eq("is_active", true)` quebra a query silenciosamente.
+- **Cobertura dos pets de teste (verificada por SQL):**
+  - **Chihuahua (Mana)** — 4 condições (Hipoglicemia em filhotes, Hidrocefalia, Colapso traqueal, Luxação de patela).
+  - **Border Collie (Pico)** — 4 condições (Sensibilidade medicamentosa MDR1, Epilepsia idiopática, Anomalia do olho do Collie, Displasia coxofemoral).
+- **Logs históricos:** versão 12 registrou happy path `200 OK` em ~9.8s (chamada ao Claude domina). Os `401` antigos nos logs são chamadas não autenticadas, não bugs.
+- **Próximos passos:** Fase 3e — atualizar `hooks/useProntuario.ts` para consumir os novos campos e preparar a UI tabbed da Fase 4.
+
+### 6.5 Execução Fase 3e — Surface das novas tabelas + vital_signs (aplicada em 2026-04-20)
+
+- **Edge Function:** `supabase/functions/generate-prontuario/index.ts` — versão **14 ACTIVE** (`ezbr_sha256: e22d2eca2d463c86a11475b4fb8dd5885a34c1a46dd87ebab59dbb29ed7487f5`, `updated_at: 1776733941660`).
+- **Bundle do deploy:** o array `files` incluiu os três arquivos com os paths relativos exatos — `index.ts`, `../_shared/ai-config.ts`, `../_shared/validate-auth.ts`. Sem isso o bundler retorna `Module not found` (mesma regra usada na Fase 3d).
+- **Queries paralelas (Promise.all):** passou de 8 para **12 tabelas** — acrescentaram `body_condition_scores`, `parasite_control`, `chronic_conditions` (nova tabela vet-grade, não confundir com a coluna legada `pets.chronic_conditions TEXT[]`) e `trusted_vets`. Cada uma filtra `is_active = true`, ordena por `measured_at`/`administered_at`/`diagnosed_date`/`is_primary` e mapeia para as interfaces expostas pelo hook.
+- **Campos novos no payload:**
+  - `body_condition_scores: ProntuarioBodyConditionScore[]` — BCS 1-9 WSAVA (`measured_by`, `source`, `weight_kg` snapshot).
+  - `parasite_control: ProntuarioParasiteControl[]` — pulga/carrapato, vermífugo, heartworm, combinado (`is_overdue` calculado com base em `next_due_date`).
+  - `chronic_conditions_records: ProntuarioChronicConditionRecord[]` — nome + `code` ICD-10-Vet opcional + `severity` + `status` (`active` | `controlled` | `remission` | `resolved`) + `source`.
+  - `trusted_vets: ProntuarioTrustedVet[]` — ordenados por `is_primary DESC`, primeiro da lista vira contato da emergency card.
+  - `consultations[].vital_signs: ProntuarioVitalSigns | null` — **nested dentro de cada consulta**. `null` quando todas as 6 colunas (`temperature_celsius`, `heart_rate_bpm`, `respiratory_rate_rpm`, `capillary_refill_sec`, `mucous_color`, `hydration_status`) estão vazias; `object` quando ao menos uma está preenchida.
+- **Chronic conditions — saída híbrida:** o campo `chronic_conditions: string[]` legado continua preenchido (lista de nomes para UI simples já existente), mas o campo novo `chronic_conditions_records` traz o objeto completo. Isso evita regressão em telas que dependem apenas do array de strings e libera a Fase 4 para consumir a versão estruturada.
+- **Log de smoke test (v14):** a linha adicionada na Edge Function é `[generate-prontuario] bcs: {N} parasite: {M} chronic: {P} vets: {Q}` — confirma em runtime quantas linhas de cada uma das 4 tabelas novas entraram no payload. Ainda não apareceu nos logs porque os clientes ativos estavam na v12 até o deploy (última invocação antes do deploy: v12, 200 OK em ~9.9s). A primeira abertura do prontuário pela app vai gerar a primeira linha v14.
+- **Cobertura dos pets de teste (cold start):**
+  - **Mana** (`dd3adaa6...` / `414e1300...`, Chihuahua) — `bcs: 0 · parasite: 0 · chronic: 0 · vets: 0` · 4 breed_predispositions no DB (path seed).
+  - **Pico** (`ce14ea07...`, breed = `"Border Collie ou Pastor Australiano"`) — `bcs: 0 · parasite: 0 · chronic: 0 · vets: 0` · 0 breed_predispositions no DB (o valor literal não casa com `"Border Collie"` nem com BREED_ALIASES atuais) → **fallback para Claude + upsert `source='ai'`**. Path esperado e funcionando.
+- **Observação operacional:** o BREED_ALIASES da Fase 3d precisa ser estendido com strings compostas do tipo `"Border Collie ou Pastor Australiano"` → `"Border Collie"` pra evitar gasto de tokens no Claude toda vez que um tutor cadastra a raça com essa descrição dupla. Baixa prioridade — fica registrado como dívida menor.
+- **tsc:** `tsc --noEmit --skipLibCheck -p tsconfig.json` roda clean no código de produção (os únicos erros são em `docs/prototypes/**/*.jsx`, que são referências não-produtivas e já estavam flagadas antes da Fase 3e).
+- **Recuperação de arquivos corrompidos no disco Windows:**
+  - `hooks/useProntuario.ts` estava truncado em 349 linhas (faltava `});`, `return {...}` e `}` de fechamento da função). Reconstruído a partir do transcript do Claude Code; resultado final 361 linhas, tsc OK.
+  - `generate-prontuario/index.ts` estava truncado em 1107 linhas durante a sessão anterior (já tinha sido restaurado antes do deploy, 1139 linhas finais).
+  - Notei `'}' expected`/`Unterminated string literal` em alguns arquivos do `docs/prototypes/` e resíduos `0x00` em `.git/index` (relato menor: `fatal: unknown index entry format 0x00730000` ao rodar git nativo). Nenhum desses é bloqueador de produção — flag pra investigação do lado Windows depois da Fase 5.
+- **Próximos passos (autorizados pelo usuário):** Fase 4 — UI tabbed do prontuário com 6 abas (Geral, Saúde, Prevenção, Sinais, Raça, Emergência). Depois, Fase 5 — PDF vet-grade 7 páginas (capa colorida + corpo P&B).
+
 ---
 
 ## 7. Entregas finais (quando todas as fases concluírem)
@@ -426,12 +465,15 @@ Cada fase: abrir Task na lista, marcar in_progress, commitar, marcar completed.
 - Gráfico de peso + BCS chart + ilustrações anatômicas
 - Calendário preventivo (vacinas + parasitário + dental + anual)
 - PDF vet-grade 7 páginas, imprimível, pronto pra levar na consulta
-- 4 tabelas novas: `body_condition_scores`, `parasite_control`, `chronic_conditions` + colunas em `consultations`
-- ~3 hooks novos (`useBCS`, `useParasiteControl`, `useChronicConditions`)
-- ~9 componentes em `components/prontuario/`
-- ~100 chaves i18n novas sob `prontuario.*` (PT-BR + EN-US)
-- Prompt IA que gera: breed predispositions, drug interactions, preventive calendar, body systems review, exam flags, emergency card
+- 4 tabelas novas: `body_condition_scores`, `parasite_control`, `chronic_conditions`, `trusted_vets`
+- Sinais vitais capturáveis direto no formulário de consulta (6 colunas em `consultations`)
+- Hybrid path para predisposições: DB first → AI fallback com auto-cache via `source='ai'`
 
 ---
 
-**Aguardando aprovação para começar pela Fase 1.**
+## 8. Histórico de versões do plano
+
+- **v1 — 2026-04-17:** esboço inicial (5 fases).
+- **v2 — 2026-04-18:** adicionadas Fases 1 (campos já existentes) e 2 (IA vet-grade).
+- **v3 — 2026-04-19:** adicionada Fase 3 subdividida em 3a-3e; seção 6 (execução) passou a registrar checksums e contagens reais.
+- **v4 — 2026-04-20:** adicionada Seção 6.5 com resultado do deploy v14 e cobertura dos pets de teste.
