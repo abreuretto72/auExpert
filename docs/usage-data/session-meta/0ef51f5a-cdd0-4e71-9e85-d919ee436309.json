@@ -1,0 +1,55 @@
+{
+  "session_id": "0ef51f5a-cdd0-4e71-9e85-d919ee436309",
+  "project_path": "e:\\aa_projetos_claude\\auExpert",
+  "start_time": "2026-04-04T10:23:14.460Z",
+  "duration_minutes": 171,
+  "user_message_count": 5,
+  "assistant_message_count": 30,
+  "tool_counts": {
+    "Grep": 5,
+    "Read": 5,
+    "Edit": 5,
+    "Glob": 1,
+    "Bash": 1
+  },
+  "languages": {
+    "TypeScript": 10
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 50,
+  "output_tokens": 5860,
+  "first_prompt": "leia o arquivo claude.md",
+  "user_interruptions": 0,
+  "user_response_times": [
+    2640.077,
+    2064.317,
+    2036.009,
+    3341.96
+  ],
+  "tool_errors": 1,
+  "tool_error_categories": {
+    "Other": 1
+  },
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 9,
+  "lines_removed": 9,
+  "files_modified": 3,
+  "message_hours": [
+    7,
+    8,
+    8,
+    9,
+    10
+  ],
+  "user_message_timestamps": [
+    "2026-04-04T10:23:14.460Z",
+    "2026-04-04T11:07:41.064Z",
+    "2026-04-04T11:42:50.207Z",
+    "2026-04-04T12:17:07.962Z",
+    "2026-04-04T13:13:44.016Z"
+  ]
+}

@@ -1,4 +1,9 @@
 import { supabase } from './supabase';
+import { withTimeout } from './withTimeout';
+
+// RAG search / embedding são chamadas de IA leves (1 round-trip ao Claude
+// embeddings endpoint) — 15s é suficiente e alinhado com DEFAULT_TIMEOUT_MS.
+const RAG_TIMEOUT_MS = 15_000;
 
 // ── Importance per classification type ────────────────────────────────────
 
@@ -27,14 +32,104 @@ const IMPORTANCE: Record<string, number> = {
 // ── Search RAG ─────────────────────────────────────────────────────────────
 
 export async function searchRAG(petId: string, query: string, limit = 5) {
-  const { data, error } = await supabase.functions.invoke('search-rag', {
-    body: { pet_id: petId, query, limit },
-  });
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('search-rag', {
+      body: { pet_id: petId, query, limit },
+    }),
+    RAG_TIMEOUT_MS,
+    'searchRAG',
+  );
   if (error) throw error;
   return data as { results: Array<{ content: string; similarity: number; content_type: string }> };
 }
 
 // ── Generate + save a single embedding ────────────────────────────────────
+//
+// Resilient against transient edge-function failures:
+//   1. Up to 3 attempts with exponential backoff (~0s, 0.8s, 2.4s)
+//   2. If all retries fail, persist a `failed_embeddings` row so a later
+//      retry worker (or client reopen) can drain the queue
+//   3. Never throws — callers rely on fire-and-forget semantics
+//
+// See migration 20260420_failed_embeddings_queue.sql for the fallback table.
+
+const EMBEDDING_MAX_ATTEMPTS = 3;
+const EMBEDDING_BACKOFF_BASE_MS = 800;
+
+async function tryInvokeEmbedding(
+  petId: string,
+  category: string,
+  diaryEntryId: string,
+  text: string,
+  importance: number,
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
+  try {
+    const { error } = await withTimeout(
+      supabase.functions.invoke('generate-embedding', {
+        body: {
+          text,
+          pet_id:         petId,
+          user_id:        userId,
+          diary_entry_id: diaryEntryId || null,
+          category,
+          importance,
+          save:           true,
+        },
+      }),
+      RAG_TIMEOUT_MS,
+      `generateEmbedding:${category}`,
+    );
+    if (error) {
+      const ctx = (error as Record<string, unknown>).context as Response | undefined;
+      const status = ctx?.status;
+      let bodyPreview: string | undefined;
+      try {
+        const errBody = await (ctx as unknown as { json?: () => Promise<unknown> })?.json?.();
+        bodyPreview = JSON.stringify(errBody)?.slice(0, 300);
+      } catch {
+        try {
+          bodyPreview = (await (ctx as unknown as { text?: () => Promise<string> })?.text?.())?.slice(0, 300);
+        } catch { /* ignore */ }
+      }
+      return { ok: false, error: `${error.message}${bodyPreview ? ` | body: ${bodyPreview}` : ''}`, status };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+async function persistFailedEmbedding(
+  petId: string,
+  userId: string,
+  diaryEntryId: string,
+  category: string,
+  content: string,
+  importance: number,
+  attemptCount: number,
+  lastError: string,
+): Promise<void> {
+  try {
+    await supabase.from('failed_embeddings').insert({
+      pet_id:          petId,
+      user_id:         userId,
+      diary_entry_id:  diaryEntryId || null,
+      category,
+      content_text:    content,
+      importance,
+      attempt_count:   attemptCount,
+      last_error:      lastError.slice(0, 2000),
+      status:          'pending',
+      last_attempt_at: new Date().toISOString(),
+    });
+    console.warn('[rag] embedding queued for retry | pet:', petId.slice(-8), '| category:', category, '| attempts:', attemptCount);
+  } catch (err) {
+    // Don't throw — fallback write is best-effort. If even the DB is down,
+    // we've logged the failure, which is the best we can do.
+    console.warn('[rag] failed to persist failed_embedding row:', String(err));
+  }
+}
 
 export async function generateEmbedding(
   petId:        string,
@@ -47,34 +142,86 @@ export async function generateEmbedding(
   const trimmed = (text ?? '').trim();
   if (!trimmed || !userId) return;
 
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= EMBEDDING_MAX_ATTEMPTS; attempt++) {
+    const result = await tryInvokeEmbedding(petId, category, diaryEntryId, trimmed, importance, userId);
+    if (result.ok) {
+      if (attempt > 1) {
+        console.log('[rag] generateEmbedding ✓ after', attempt, 'attempts | category:', category);
+      }
+      return;
+    }
+    lastError = result.error;
+    console.warn('[rag] generateEmbedding attempt', attempt, 'of', EMBEDDING_MAX_ATTEMPTS, 'failed:', result.error, result.status ? `| HTTP ${result.status}` : '');
+
+    // Only retry on transient signals (timeout, 5xx, network). Client errors (4xx
+    // other than 429) won't fix themselves — fall through to queue.
+    const status = result.status;
+    const isRetriable = status === undefined || status === 429 || (status >= 500 && status < 600);
+    if (!isRetriable || attempt === EMBEDDING_MAX_ATTEMPTS) break;
+
+    // Exponential backoff: 0.8s, 2.4s, 7.2s (capped at max 3 attempts so ≤ 3.2s total)
+    const delayMs = EMBEDDING_BACKOFF_BASE_MS * Math.pow(3, attempt - 1);
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+
+  // All retries exhausted — persist to failed_embeddings so a later retry
+  // pass can drain the queue (see fix #4 in CLAUDE.md RAG audit notes).
+  await persistFailedEmbedding(petId, userId, diaryEntryId, category, trimmed, importance, EMBEDDING_MAX_ATTEMPTS, lastError);
+}
+
+// Drain up to `limit` pending rows from failed_embeddings for this pet.
+// Called opportunistically on app open / pet screen focus to heal missed
+// embeddings without blocking the UI. Never throws.
+export async function retryFailedEmbeddings(petId: string, limit = 5): Promise<{ retried: number; succeeded: number }> {
   try {
-    const { error } = await supabase.functions.invoke('generate-embedding', {
-      body: {
-        text:           trimmed,
-        pet_id:         petId,
-        user_id:        userId,
-        diary_entry_id: diaryEntryId || null,
-        category,
-        importance,
-        save:           true,
-      },
-    });
-    if (error) {
-      console.warn('[rag] generateEmbedding error:', error.message);
-      const ctx = (error as Record<string, unknown>).context as Response | undefined;
-      console.warn('[rag] HTTP status:', ctx?.status);
-      try {
-        const errBody = await (ctx as unknown as { json?: () => Promise<unknown> })?.json?.();
-        console.warn('[rag] error body:', JSON.stringify(errBody));
-      } catch {
-        try {
-          const errText = await (ctx as unknown as { text?: () => Promise<string> })?.text?.();
-          console.warn('[rag] error text:', errText?.slice(0, 300));
-        } catch { /* ignore */ }
+    const { data: pending } = await supabase
+      .from('failed_embeddings')
+      .select('id, user_id, diary_entry_id, category, content_text, importance, attempt_count')
+      .eq('pet_id', petId)
+      .eq('status', 'pending')
+      .order('last_attempt_at', { ascending: true })
+      .limit(limit);
+
+    if (!pending?.length) return { retried: 0, succeeded: 0 };
+
+    let succeeded = 0;
+    for (const row of pending) {
+      if (!row.user_id) continue;
+      const result = await tryInvokeEmbedding(
+        petId,
+        row.category,
+        row.diary_entry_id ?? '',
+        row.content_text,
+        row.importance ?? 0.5,
+        row.user_id,
+      );
+      const nextAttemptCount = (row.attempt_count ?? 1) + 1;
+      if (result.ok) {
+        succeeded++;
+        await supabase
+          .from('failed_embeddings')
+          .update({ status: 'resolved', resolved_at: new Date().toISOString(), attempt_count: nextAttemptCount })
+          .eq('id', row.id);
+      } else {
+        // Mark as 'dead' after ~10 total attempts to stop retrying forever.
+        const nextStatus = nextAttemptCount >= 10 ? 'dead' : 'pending';
+        await supabase
+          .from('failed_embeddings')
+          .update({
+            status:          nextStatus,
+            attempt_count:   nextAttemptCount,
+            last_error:      result.error.slice(0, 2000),
+            last_attempt_at: new Date().toISOString(),
+          })
+          .eq('id', row.id);
       }
     }
+    console.log('[rag] retryFailedEmbeddings | pet:', petId.slice(-8), '| retried:', pending.length, '| succeeded:', succeeded);
+    return { retried: pending.length, succeeded };
   } catch (err) {
-    console.warn('[rag] generateEmbedding failed:', String(err));
+    console.warn('[rag] retryFailedEmbeddings failed:', String(err));
+    return { retried: 0, succeeded: 0 };
   }
 }
 
@@ -181,6 +328,55 @@ function buildEmbeddingContent(cls: {
         str('body_part') ? `Região: ${str('body_part')}` : '',
         str('urgency_level') ? `Urgência: ${str('urgency_level')}` : '',
       ].filter(Boolean).join('. ');
+
+    case 'exam': {
+      const examName = str('exam_name');
+      if (!examName) return null;
+      const results = (d.results as Array<{ item?: string; value?: unknown; unit?: string; status?: string }>) ?? [];
+      const resultsSummary = results
+        .filter((r) => r?.value != null)
+        .slice(0, 6)
+        .map((r) => {
+          const item = (r.item ?? '').trim();
+          const val = r.value;
+          const unit = (r.unit ?? '').trim();
+          const status = (r.status ?? '').trim();
+          const statusMark = status && status !== 'normal' ? ` (${status})` : '';
+          return item ? `${item}: ${val}${unit ? ' ' + unit : ''}${statusMark}` : '';
+        })
+        .filter(Boolean)
+        .join('; ');
+      return [
+        `Exame: ${examName}`,
+        str('date') ? `em ${str('date')}` : '',
+        str('laboratory') || str('lab_name') ? `laboratório ${str('laboratory') || str('lab_name')}` : '',
+        str('veterinarian') || str('vet_name') ? `solicitado por ${str('veterinarian') || str('vet_name')}` : '',
+        resultsSummary ? `Resultados: ${resultsSummary}` : '',
+      ].filter(Boolean).join('. ');
+    }
+
+    case 'expense': {
+      const items = (d.items as Array<{ name?: string; qty?: number; unit_price?: number }>) ?? [];
+      const totalRaw = (d.amount as number) ?? (d.total as number);
+      const total = totalRaw ?? items.reduce((sum, i) => sum + ((i?.qty ?? 1) * (i?.unit_price ?? 0)), 0);
+      const currency = str('currency') || 'BRL';
+      const vendor = str('merchant_name') || str('vendor');
+      const category = str('category') || str('merchant_type');
+      const itemsSummary = items
+        .slice(0, 5)
+        .map((i) => (i?.name ?? '').trim())
+        .filter(Boolean)
+        .join(', ');
+      const hasInfo = total || vendor || category || itemsSummary;
+      if (!hasInfo) return null;
+      return [
+        `Gasto registrado${category ? ` (${category})` : ''}`,
+        total ? `valor ${currency} ${total}` : '',
+        vendor ? `em ${vendor}` : '',
+        str('date') ? `em ${str('date')}` : '',
+        itemsSummary ? `Itens: ${itemsSummary}` : '',
+      ].filter(Boolean).join('. ');
+    }
 
     case 'plan':
       return str('provider') || str('provider_name')

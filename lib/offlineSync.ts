@@ -54,6 +54,8 @@ export async function processQueue(): Promise<SyncResult> {
   // Invalidate all affected caches
   if (synced > 0) {
     await queryClient.invalidateQueries({ queryKey: ['pets'] });
+    // Global consent cache (user-scoped, not pet-scoped)
+    await queryClient.invalidateQueries({ queryKey: ['consent'] });
 
     for (const petId of affectedPetIds) {
       await queryClient.invalidateQueries({ queryKey: ['pet', petId] });
@@ -65,6 +67,12 @@ export async function processQueue(): Promise<SyncResult> {
       await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'surgeries'] });
       await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'allergies'] });
       await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'moods'] });
+      await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'scheduled_events'] });
+      await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'insights'] });
+      await queryClient.invalidateQueries({ queryKey: ['pets', petId, 'deleted', 'diary'] });
+      await queryClient.invalidateQueries({ queryKey: ['nutricao', petId] });
+      await queryClient.invalidateQueries({ queryKey: ['cardapio', petId] });
+      await queryClient.invalidateQueries({ queryKey: ['cardapio-history', petId] });
     }
   }
 
@@ -106,6 +114,10 @@ async function executeMutation(mutation: QueuedMutation): Promise<void> {
       await api.deleteDiaryEntry(payload.id as string);
       break;
 
+    case 'restoreDiaryEntry':
+      await api.restoreDiaryEntry(payload.id as string);
+      break;
+
     // ── Mood ──
     case 'createMoodLog':
       await api.createMoodLog(payload as Parameters<typeof api.createMoodLog>[0]);
@@ -134,6 +146,50 @@ async function executeMutation(mutation: QueuedMutation): Promise<void> {
 
     case 'createAllergy':
       await api.createAllergy(payload as Parameters<typeof api.createAllergy>[0]);
+      break;
+
+    // ── Scheduled Events ──
+    case 'createScheduledEvent':
+      await api.createScheduledEvent(payload);
+      break;
+
+    case 'updateScheduledEvent': {
+      const { id: evId, ...updates } = payload as { id: string } & Record<string, unknown>;
+      await api.updateScheduledEvent(evId, updates);
+      break;
+    }
+
+    // ── Nutrition ──
+    case 'upsertNutritionProfile':
+      await api.upsertNutritionProfile(
+        payload as Parameters<typeof api.upsertNutritionProfile>[0],
+      );
+      break;
+
+    case 'createNutritionRecord':
+      await api.createNutritionRecord(payload);
+      break;
+
+    case 'deleteNutritionRecord': {
+      const { id: recId, petId: recPetId } = payload as { id: string; petId: string };
+      await api.deleteNutritionRecord(recId, recPetId);
+      break;
+    }
+
+    // ── Consent (user-scoped) ──
+    case 'upsertUserConsent':
+      await api.upsertUserConsent(
+        payload as Parameters<typeof api.upsertUserConsent>[0],
+      );
+      break;
+
+    // ── Insights ──
+    case 'markInsightRead':
+      await api.markInsightRead(payload.id as string);
+      break;
+
+    case 'dismissInsight':
+      await api.dismissInsight(payload.id as string);
       break;
 
     default:

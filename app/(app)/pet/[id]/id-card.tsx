@@ -3,10 +3,10 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, RefreshControl,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
-  Dog, Cat, QrCode, Share2, Download, Printer, Wifi,
+  Dog, Cat, QrCode, Share2, FileText, Printer, Wifi,
   Scan, ShieldCheck, CreditCard,
 } from 'lucide-react-native';
 
@@ -33,7 +33,7 @@ interface QrType {
 
 const QUICK_ACTIONS: QuickAction[] = [
   { id: 'share', labelKey: 'idCard.share', icon: Share2, color: colors.accent },
-  { id: 'pdf', labelKey: 'idCard.downloadPdf', icon: Download, color: colors.gold },
+  { id: 'pdf', labelKey: 'idCard.downloadPdf', icon: FileText, color: colors.gold },
   { id: 'print', labelKey: 'idCard.print', icon: Printer, color: colors.purple },
   { id: 'nfc', labelKey: 'idCard.nfc', icon: Wifi, color: colors.petrol },
 ];
@@ -83,10 +83,18 @@ function QrPlaceholderGrid() {
 
 export default function IdCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { t } = useTranslation();
   const { data: pet, isLoading, refetch } = usePet(id!);
   const user = useAuthStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
+
+  const handleQuickAction = useCallback((actionId: string) => {
+    if (actionId === 'pdf') {
+      router.push(`/pet/${id}/id-card-pdf` as never);
+    }
+    // 'share', 'print', 'nfc' — not yet implemented (Task #31 scope is PDF only)
+  }, [router, id]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -163,6 +171,7 @@ export default function IdCardScreen() {
               key={action.id}
               style={[s.actionCard, { borderColor: action.color + '25' }]}
               activeOpacity={0.7}
+              onPress={() => handleQuickAction(action.id)}
             >
               <View style={[s.actionIconWrap, { backgroundColor: action.color + '15' }]}>
                 <Icon size={rs(22)} color={action.color} strokeWidth={1.8} />

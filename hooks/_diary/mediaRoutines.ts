@@ -10,11 +10,11 @@
  * O orquestrador em useDiaryEntry.ts usa Promise.all() sobre essas rotinas.
  * Como nenhuma lança, o Promise.all não cancela as demais em caso de falha.
  *
- * Timeouts por tipo:
+ * Timeouts por tipo (outer — aqui):
  *   - Texto (classify):  30s
- *   - Fotos (per-frame): 30s total (análise em paralelo por foto)
- *   - Vídeo (classify):  45s (análise mais pesada, Gemini nativo)
- *   - Áudio (classify):  30s
+ *   - Fotos (gallery):   55s total (análise em paralelo por frame)
+ *   - Vídeo (classify):  75s (Gemini nativo — inner 60s < middle 70s < outer 75s)
+ *   - Áudio (classify):  75s (Gemini nativo — mesmo encadeamento)
  *   - OCR   (classify):  55s (pode ter muitos campos para extrair)
  */
 
@@ -33,8 +33,12 @@ import type {
 
 const TIMEOUT_TEXT_MS  = 30_000;
 const TIMEOUT_PHOTO_MS = 55_000;  // increased: 3 concurrent analyze-pet-photo calls need more time
-const TIMEOUT_VIDEO_MS = 45_000;
-const TIMEOUT_AUDIO_MS = 30_000;
+// Video + pet_audio rodam em Gemini (callGemini.ts usa AbortSignal.timeout(60_000)
+// como innermost). Para o OUTER (aqui) não abortar antes do Gemini responder e
+// descartar video_analysis/pet_audio_analysis, ele precisa ficar ACIMA de 60s.
+// Chain: Gemini 60s (innermost) < lib/ai.ts 70s (middle) < mediaRoutines 75s (outermost).
+const TIMEOUT_VIDEO_MS = 75_000;
+const TIMEOUT_AUDIO_MS = 75_000;
 const TIMEOUT_OCR_MS   = 55_000;
 
 // ── runTextClassification ──────────────────────────────────────────────────────
@@ -95,6 +99,15 @@ export interface PhotoAnalysesInput {
   petBreed:        string | null;
   language:        string;
   authHeader:      Record<string, string>;
+  /**
+   * Callback opcional disparado quando cada frame individual termina (sucesso ou erro).
+   * Recebe o índice do frame (0-based dentro de framesBase64) — frames de 0..tutorPhotoCount-1
+   * são fotos do tutor, os demais são frames extraídos de vídeo.
+   * Usado pelo backgroundClassify.ts para fazer bump do contador de fotos no progressStore
+   * APENAS para frames que são fotos do tutor (o que aparece na barra "Analisando imagem X/Y").
+   * Chamado UMA vez por frame, via `.finally()` em cada Promise individual — não no Promise.all.
+   */
+  onFrameComplete?: (idx: number) => void;
 }
 
 /**
@@ -144,6 +157,12 @@ export async function runPhotoAnalyses(
         .catch((err: unknown) => {
           console.warn('[ROUTINE-PHOTO] invoke error idx=' + idx + ':', String(err));
           return null;
+        })
+        .finally(() => {
+          // Avisa o orquestrador que ESTE frame específico terminou (ok ou erro).
+          // O orquestrador decide se deve contar (apenas idx < tutorPhotoCount conta
+          // como foto do tutor na barra "Analisando imagem X/Y").
+          input.onFrameComplete?.(idx);
         }),
     );
 

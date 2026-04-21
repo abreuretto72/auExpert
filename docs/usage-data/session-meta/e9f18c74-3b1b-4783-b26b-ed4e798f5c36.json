@@ -1,0 +1,60 @@
+{
+  "session_id": "e9f18c74-3b1b-4783-b26b-ed4e798f5c36",
+  "project_path": "e:\\aa_projetos_claude\\auExpert",
+  "start_time": "2026-03-31T09:02:40.537Z",
+  "duration_minutes": 22,
+  "user_message_count": 5,
+  "assistant_message_count": 62,
+  "tool_counts": {
+    "Read": 27,
+    "Agent": 3,
+    "Bash": 2,
+    "ToolSearch": 1,
+    "TodoWrite": 2,
+    "Edit": 5,
+    "Grep": 3
+  },
+  "languages": {
+    "Markdown": 9,
+    "TypeScript": 16,
+    "JSON": 7
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 90,
+  "output_tokens": 11697,
+  "first_prompt": "ler o arquivo claude.md",
+  "user_interruptions": 1,
+  "user_response_times": [
+    6.731,
+    32.546,
+    58.498,
+    188.493
+  ],
+  "tool_errors": 4,
+  "tool_error_categories": {
+    "File Too Large": 3,
+    "Other": 1
+  },
+  "uses_task_agent": true,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 134,
+  "lines_removed": 3,
+  "files_modified": 3,
+  "message_hours": [
+    6,
+    6,
+    6,
+    6,
+    6
+  ],
+  "user_message_timestamps": [
+    "2026-03-31T09:02:40.537Z",
+    "2026-03-31T09:03:44.843Z",
+    "2026-03-31T09:04:35.838Z",
+    "2026-03-31T09:16:34.761Z",
+    "2026-03-31T09:24:55.564Z"
+  ]
+}

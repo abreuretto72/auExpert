@@ -6,7 +6,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, Check, Leaf, FlameKindling, Salad } from 'lucide-react-native';
+import { ChevronLeft, Check, Leaf, FlameKindling, Salad, FileText } from 'lucide-react-native';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { colors } from '../../../../../constants/colors';
 import { useNutricao } from '../../../../../hooks/useNutricao';
@@ -83,7 +83,13 @@ export default function ModalidadeScreen() {
           <ChevronLeft size={rs(22)} color={colors.accent} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.modalidadeTitle')}</Text>
-        <View style={s.backBtn} />
+        <TouchableOpacity
+          onPress={() => router.push(`/pet/${petId}/nutrition-pdf` as never)}
+          style={s.backBtn}
+          accessibilityLabel={t('nutritionPdf.icon')}
+        >
+          <FileText size={rs(20)} color={colors.accent} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>

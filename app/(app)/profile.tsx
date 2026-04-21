@@ -11,7 +11,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import {
   ChevronLeft, User, Mail, MapPin, Calendar,
   Camera, Heart, BookOpen, ScanEye, ShieldCheck, Trophy,
-  ChevronRight, Phone, Navigation, Dog, Cat,
+  ChevronRight, Phone, Navigation, Dog, Cat, FileText,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
@@ -22,6 +22,7 @@ import { useToast } from '../../components/Toast';
 import { useAuthStore } from '../../stores/authStore';
 import { usePets } from '../../hooks/usePets';
 import { supabase } from '../../lib/supabase';
+import { withTimeout } from '../../lib/withTimeout';
 import { getErrorMessage } from '../../utils/errorMessages';
 
 const SOCIAL_TYPES = ['whatsapp', 'telegram', 'messenger', 'wechat', 'line', 'signal', 'kakaotalk', 'viber', 'discord', 'other'] as const;
@@ -173,7 +174,11 @@ export default function ProfileScreen() {
       }
 
       const fileName = `${user?.id}/${Date.now()}_avatar.jpg`;
-      const { data: upData, error } = await supabase.storage.from('tutores').upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
+      const { data: upData, error } = await withTimeout(
+        supabase.storage.from('tutores').upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true }),
+        30_000,
+        'storage.upload:tutor-avatar',
+      );
       if (error) {
         console.error('[Profile] Upload error:', error.message);
         throw error;
@@ -203,7 +208,13 @@ export default function ProfileScreen() {
           <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('tutor.profile')}</Text>
-        <View style={s.headerBtn} />
+        <TouchableOpacity
+          onPress={() => router.push('/profile-pdf' as never)}
+          style={s.headerBtn}
+          activeOpacity={0.7}
+        >
+          <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>

@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
     fontSize: fs(15),
     color: colors.textSec,
     lineHeight: rs(27),
-    fontStyle: 'italic',
   },
 });
 

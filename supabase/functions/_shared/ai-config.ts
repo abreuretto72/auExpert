@@ -80,7 +80,7 @@ export async function getAIConfig(sb?: SupabaseClient): Promise<AIConfig> {
     };
 
     cachedConfig = config;
-    cacheExpiry  = now + 1; // cache desativado temporariamente
+    cacheExpiry  = now + CACHE_TTL_MS; // cache 5 min — evita SELECT em app_config a cada invocação
     return config;
 
   } catch {

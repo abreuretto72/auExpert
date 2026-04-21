@@ -9,10 +9,14 @@ export interface QueuedMutation {
   type:
     | 'createPet' | 'updatePet' | 'deletePet'
     | 'createDiaryEntry' | 'updateDiaryEntry' | 'deleteDiaryEntry'
+    | 'restoreDiaryEntry'
     | 'createMoodLog'
     | 'createVaccine' | 'createExam' | 'createMedication'
     | 'createConsultation' | 'createSurgery' | 'createAllergy'
-    | 'createScheduledEvent' | 'updateScheduledEvent';
+    | 'createScheduledEvent' | 'updateScheduledEvent'
+    | 'upsertNutritionProfile' | 'createNutritionRecord' | 'deleteNutritionRecord'
+    | 'upsertUserConsent'
+    | 'markInsightRead' | 'dismissInsight';
   payload: Record<string, unknown>;
   createdAt: string;
   retries: number;

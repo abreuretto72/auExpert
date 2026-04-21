@@ -33,7 +33,6 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useTranslation } from 'react-i18next';
 import { rs, fs } from '../hooks/useResponsive';
 import { colors } from '../constants/colors';
@@ -43,6 +42,8 @@ import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
 import { formatDateInput, parseDateInput, getDatePlaceholder, calcAgeMonths } from '../utils/format';
 import { supabase } from '../lib/supabase';
+import { withTimeout } from '../lib/withTimeout';
+import { compressImageForAI } from '../lib/imageCompression';
 import type { PhotoAnalysisResponse } from '../types/ai';
 
 type Species = 'dog' | 'cat';
@@ -230,17 +231,23 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
     (async () => {
       setAnalyzing(true);
       try {
-        const base64 = await FileSystem.readAsStringAsync(photoUri, {
-          encoding: 'base64',
-        });
+        // Comprime e redimensiona antes do base64 (1568px max, quality 0.75 —
+        // recomendação oficial Anthropic). Sem isso, uma foto 3000x3000 @ 0.4
+        // vira ~1.2MB base64 no JSON body → 3-6s só de upload em 4G. Com o
+        // helper, cai para ~200-300KB e upload fica em ~1s.
+        const compressed = await compressImageForAI(photoUri);
 
-        const { data, error } = await supabase.functions.invoke('analyze-pet-photo', {
-          body: {
-            photo_base64: base64,
-            species,
-            language: i18n.language,
-          },
-        });
+        const { data, error } = await withTimeout(
+          supabase.functions.invoke('analyze-pet-photo', {
+            body: {
+              photo_base64: compressed.base64,
+              species,
+              language: i18n.language,
+            },
+          }),
+          30_000,
+          'analyze-pet-photo:addPet',
+        );
 
         if (cancelled) return;
 

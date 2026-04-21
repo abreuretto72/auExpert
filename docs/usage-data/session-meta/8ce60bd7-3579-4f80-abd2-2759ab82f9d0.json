@@ -1,0 +1,54 @@
+{
+  "session_id": "8ce60bd7-3579-4f80-abd2-2759ab82f9d0",
+  "project_path": "e:\\aa_projetos_claude\\auExpert",
+  "start_time": "2026-04-03T20:41:38.020Z",
+  "duration_minutes": 49,
+  "user_message_count": 5,
+  "assistant_message_count": 111,
+  "tool_counts": {
+    "Read": 20,
+    "Grep": 8,
+    "Edit": 26,
+    "Bash": 18,
+    "Glob": 1
+  },
+  "languages": {
+    "TypeScript": 23,
+    "JSON": 12,
+    "Markdown": 11
+  },
+  "git_commits": 2,
+  "git_pushes": 2,
+  "input_tokens": 168,
+  "output_tokens": 38019,
+  "first_prompt": "CONTEXTO: A página de convite está em: https://multiversodigital.com.br/auexpert/invite/TOKEN  O app precisa gerar o link com os dados corretos e incluir os parâmetros na URL. Leia CLAUDE.md antes de…",
+  "user_interruptions": 0,
+  "user_response_times": [
+    76.672,
+    277.911,
+    1777.407,
+    17.144
+  ],
+  "tool_errors": 2,
+  "tool_error_categories": {
+    "Other": 1,
+    "Edit Failed": 1
+  },
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 403,
+  "lines_removed": 116,
+  "files_modified": 9,
+  "message_hours": [
+    17,
+    17,
+    17,
+    18,
+    18
+  ],
+  "user_message_timestamps": [
+    "2026-04-03T20:41:38.021Z",
+    "2026-04-03T20:46:48.848Z",
+    "2026-04-03T20:56:48.3

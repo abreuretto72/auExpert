@@ -15,6 +15,7 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: CORS_HEADERS });
   }
 
+  const t0 = Date.now();
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
@@ -91,18 +92,23 @@ Deno.serve(async (req: Request) => {
 
     const schema = schemas[document_type] ?? schemas.general;
 
+    // System prompt — 100% estático (sem interpolação). Fica cacheado pela Anthropic
+    // por 5 min via cache_control. Idioma saiu daqui e foi pro user prompt, pra não
+    // invalidar o cache entre tutores com locales diferentes.
     const systemPrompt = `You are a veterinary document OCR specialist for AuExpert.
 Extract ALL text and data from the document photo with maximum accuracy.
 Return ONLY valid JSON matching the schema. No markdown, no explanation.
 Dates must be in YYYY-MM-DD format. Convert any date format to this.
-If a field is not visible/readable, set it to null.
-Respond in ${lang}.`;
+If a field is not visible/readable, set it to null.`;
 
     const userPrompt = `Extract data from this ${document_type ?? 'veterinary'} document photo.
 Return JSON with this exact structure:
-${schema}`;
+${schema}
+
+Respond in ${lang}.`;
 
     const cfg = await getAIConfig();
+    const t1 = Date.now();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -112,8 +118,15 @@ ${schema}`;
       },
       body: JSON.stringify({
         model: cfg.model_vision,
-        max_tokens: 4096,
-        system: systemPrompt,
+        // OCR devolve JSON estruturado (vacina/exame/receita) — em prática
+        // fica em 400-1200 tokens. 1500 dá folga sem reservar budget desnecessário.
+        max_tokens: 1500,
+        temperature: 0,
+        // Prompt caching: system é estático → cache hit em scans subsequentes
+        // corta input tokens em ~90% e reduz TTFT.
+        system: [
+          { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+        ],
         messages: [{
           role: 'user',
           content: [
@@ -134,6 +147,7 @@ ${schema}`;
     }
 
     const aiResponse = await response.json();
+    const t2 = Date.now();
     const textContent = aiResponse.content?.find((c: { type: string }) => c.type === 'text');
 
     if (!textContent?.text) {
@@ -149,6 +163,19 @@ ${schema}`;
     }
 
     const result = JSON.parse(jsonText);
+    const t3 = Date.now();
+
+    console.log('[ocr-document] timing', JSON.stringify({
+      boot_ms: t1 - t0,
+      ai_ms: t2 - t1,
+      post_ms: t3 - t2,
+      total_ms: t3 - t0,
+      cache_read: aiResponse.usage?.cache_read_input_tokens ?? 0,
+      cache_write: aiResponse.usage?.cache_creation_input_tokens ?? 0,
+      input_tokens: aiResponse.usage?.input_tokens ?? 0,
+      output_tokens: aiResponse.usage?.output_tokens ?? 0,
+      doc_type: document_type ?? 'general',
+    }));
 
     return new Response(
       JSON.stringify(result),

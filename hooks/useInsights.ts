@@ -7,8 +7,9 @@
  * Inserted by CRONs (check-scheduled-events, refresh-health-views)
  * when they detect alerts or trends — never by the tutor directly.
  */
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToQueue } from '../lib/offlineQueue';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,14 @@ export function useInsights(petId: string) {
   // Mark insight as read
   const markReadMutation = useMutation({
     mutationFn: async (insightId: string) => {
+      if (!onlineManager.isOnline()) {
+        await addToQueue({
+          type: 'markInsightRead',
+          payload: { id: insightId, pet_id: petId },
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('pet_insights')
         .update({ read_at: new Date().toISOString() })
@@ -92,6 +101,14 @@ export function useInsights(petId: string) {
   // Dismiss insight (soft delete)
   const dismissMutation = useMutation({
     mutationFn: async (insightId: string) => {
+      if (!onlineManager.isOnline()) {
+        await addToQueue({
+          type: 'dismissInsight',
+          payload: { id: insightId, pet_id: petId },
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('pet_insights')
         .update({ is_active: false })

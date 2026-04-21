@@ -4,6 +4,7 @@ import * as api from '../lib/api';
 import { generateEmbedding } from '../lib/rag';
 import { addToQueue } from '../lib/offlineQueue';
 import { supabase } from '../lib/supabase';
+import { withTimeout } from '../lib/withTimeout';
 import i18n from '../i18n';
 import type { Vaccine, Allergy } from '../types/database';
 
@@ -56,9 +57,13 @@ export function useVaccines(petId: string) {
 
         // Bridge: create emotional diary entry from health event
         const summary = `${newVaccine.name}${newVaccine.veterinarian ? `, ${newVaccine.veterinarian}` : ''}${newVaccine.clinic ? `, ${newVaccine.clinic}` : ''}`;
-        supabase.functions.invoke('bridge-health-to-diary', {
-          body: { pet_id: petId, user_id: newVaccine.user_id, event_type: 'vaccine', event_summary: summary, language: i18n.language },
-        }).then(() => {
+        withTimeout(
+          supabase.functions.invoke('bridge-health-to-diary', {
+            body: { pet_id: petId, user_id: newVaccine.user_id, event_type: 'vaccine', event_summary: summary, language: i18n.language },
+          }),
+          15_000,
+          'bridge-health-to-diary:vaccine',
+        ).then(() => {
           qc.invalidateQueries({ queryKey: ['pets', petId, 'diary'] });
         }).catch((err) => console.warn('[useHealth] bridge diary failed:', err));
       }
@@ -249,9 +254,13 @@ export function useAllergies(petId: string) {
         generateEmbedding(petId, 'allergy', newAllergy.id, text, 0.9).catch(() => {});
 
         const summary = `${newAllergy.allergen}${newAllergy.reaction ? ` — ${newAllergy.reaction}` : ''}${newAllergy.severity ? ` (${newAllergy.severity})` : ''}`;
-        supabase.functions.invoke('bridge-health-to-diary', {
-          body: { pet_id: petId, user_id: newAllergy.user_id, event_type: 'allergy', event_summary: summary, language: i18n.language },
-        }).then(() => {
+        withTimeout(
+          supabase.functions.invoke('bridge-health-to-diary', {
+            body: { pet_id: petId, user_id: newAllergy.user_id, event_type: 'allergy', event_summary: summary, language: i18n.language },
+          }),
+          15_000,
+          'bridge-health-to-diary:allergy',
+        ).then(() => {
           qc.invalidateQueries({ queryKey: ['pets', petId, 'diary'] });
         }).catch((err) => console.warn('[useHealth] bridge diary failed:', err));
       }

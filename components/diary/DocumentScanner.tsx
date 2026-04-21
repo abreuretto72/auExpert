@@ -29,19 +29,44 @@ export default function DocumentScanner({ onCapture, onClose }: DocumentScannerP
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
+  // Garante que o documento não passe de 2400px de largura @ 0.92 JPEG.
+  // Valores altos preservam nitidez do texto — OCR de documento exige qualidade.
+  // O ganho aqui NÃO está em comprimir forte, mas em evitar o base64 duplo do
+  // takePictureAsync({ base64: true }) que criava ~8MB em memória antes do resize.
+  const prepareDocument = async (uri: string): Promise<string | null> => {
+    try {
+      const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
+      const ImageManipulator = require('expo-image-manipulator');
+      const t0 = Date.now();
+      const prepared = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 2400 } }],
+        { compress: 0.92, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      const b64 = await readAsStringAsync(prepared.uri, { encoding: EncodingType.Base64 });
+      console.log('[SCANNER] prepared base64 KB:', Math.round(b64.length * 0.75 / 1024), '| ms:', Date.now() - t0);
+      return b64;
+    } catch (err) {
+      console.warn('[SCANNER] prepare failed:', String(err));
+      return null;
+    }
+  };
+
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current || isCapturing) return;
     setIsCapturing(true);
     try {
-      // Capture at full quality — compression happens only at Storage upload, not before AI analysis
+      // Captura em qualidade máxima e apenas URI (sem base64 inline) — evita
+      // o custo de materializar ~8MB de base64 em memória antes do resize.
+      // O prepareDocument aplica resize leve (2400px) só se a imagem for maior.
       const photo = await cameraRef.current.takePictureAsync({
-        base64: true,
+        base64: false,
         quality: 1,
         exif: false,
       });
-      if (photo?.base64) {
-        console.log('[SCANNER] original base64 KB:', Math.round((photo.base64.length) * 0.75 / 1024));
-        onCapture(photo.base64);
+      if (photo?.uri) {
+        const b64 = await prepareDocument(photo.uri);
+        if (b64) onCapture(b64);
       }
     } finally {
       setIsCapturing(false);
@@ -52,16 +77,16 @@ export default function DocumentScanner({ onCapture, onClose }: DocumentScannerP
     if (isCapturing) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') return;
-    // Request base64 directly — no compression before AI analysis
+    // Sem base64 no picker — prepareDocument comprime depois (qualidade alta p/ OCR)
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 1,
       allowsEditing: false,
-      base64: true,
+      base64: false,
     });
-    if (result.canceled || !result.assets[0]?.base64) return;
-    console.log('[SCANNER] gallery original base64 KB:', Math.round(result.assets[0].base64.length * 0.75 / 1024));
-    onCapture(result.assets[0].base64);
+    if (result.canceled || !result.assets[0]?.uri) return;
+    const b64 = await prepareDocument(result.assets[0].uri);
+    if (b64) onCapture(b64);
   }, [isCapturing, onCapture]);
 
   // ── Permission gate ──

@@ -1,0 +1,51 @@
+{
+  "session_id": "d974fd0c-a2b1-4d1f-a249-436e21eb4a11",
+  "project_path": "e:\\@projetos_claude\\PetsauLife+",
+  "start_time": "2026-03-27T03:44:52.567Z",
+  "duration_minutes": 2,
+  "user_message_count": 3,
+  "assistant_message_count": 16,
+  "tool_counts": {
+    "Read": 3,
+    "Glob": 1,
+    "Bash": 2,
+    "Grep": 3,
+    "Agent": 1
+  },
+  "languages": {
+    "JSON": 1,
+    "JavaScript": 1,
+    "Markdown": 1
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 30,
+  "output_tokens": 1678,
+  "first_prompt": "verificar quais bibliotecas de icones existe por aqui",
+  "user_interruptions": 0,
+  "user_response_times": [
+    23.686,
+    12.696
+  ],
+  "tool_errors": 1,
+  "tool_error_categories": {
+    "File Not Found": 1
+  },
+  "uses_task_agent": true,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    0,
+    0,
+    0
+  ],
+  "user_message_timestamps": [
+    "2026-03-27T03:44:52.567Z",
+    "2026-03-27T03:45:58.655Z",
+    "2026-03-27T03:46:22.109Z"
+  ]
+}

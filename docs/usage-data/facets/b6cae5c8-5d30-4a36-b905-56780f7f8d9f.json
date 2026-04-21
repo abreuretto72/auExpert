@@ -1,0 +1,17 @@
+{
+  "underlying_goal": "Generate an Android APK from an Expo React Native project to install and test on device without PC connection",
+  "goal_categories": {
+    "build_and_deploy": 1
+  },
+  "outcome": "unclear_from_transcript",
+  "user_satisfaction_counts": {
+    "likely_satisfied": 1
+  },
+  "claude_helpfulness": "moderately_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "proactive_help",
+  "brief_summary": "User needed to generate an APK for their Expo app; Claude investigated the build configuration but the session ended before the build was completed.",
+  "session_id": "b6cae5c8-5d30-4a36-b905-56780f7f8d9f"
+}

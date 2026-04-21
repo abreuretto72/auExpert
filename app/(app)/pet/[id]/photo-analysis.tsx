@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ChevronLeft, Camera, ScanEye, Clock, Scale, Ruler,
   Palette, SmilePlus, ShieldCheck, AlertTriangle, Sparkles,
-  Dog, Cat, ImageIcon,
+  Dog, Cat, ImageIcon, FileText,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -17,10 +17,13 @@ import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
 import { radii, spacing } from '../../../../constants/spacing';
 import { supabase } from '../../../../lib/supabase';
+import { withTimeout } from '../../../../lib/withTimeout';
 import { useAuthStore } from '../../../../stores/authStore';
 import { useToast } from '../../../../components/Toast';
+import { SectionErrorBoundary } from '../../../../components/SectionErrorBoundary';
 import { getErrorMessage } from '../../../../utils/errorMessages';
 import { usePet } from '../../../../hooks/usePets';
+import { Skeleton } from '../../../../components/Skeleton';
 import type { PhotoAnalysisResponse } from '../../../../types/ai';
 
 interface AnalysisRecord {
@@ -72,13 +75,17 @@ export default function PhotoAnalysisScreen() {
       const FileSystem = require('expo-file-system/legacy');
       const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
 
-      const { data, error } = await supabase.functions.invoke('analyze-pet-photo', {
-        body: {
-          photo_base64: base64,
-          species: pet?.species ?? 'dog',
-          language: i18n.language,
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('analyze-pet-photo', {
+          body: {
+            photo_base64: base64,
+            species: pet?.species ?? 'dog',
+            language: i18n.language,
+          },
+        }),
+        30_000,
+        'analyze-pet-photo:analysis',
+      );
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -91,7 +98,11 @@ export default function PhotoAnalysisScreen() {
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
       const fileName = `${user.id}/${id}/${Date.now()}_analysis.jpg`;
-      const { data: upData } = await supabase.storage.from('pets').upload(fileName, bytes, { contentType: 'image/jpeg' });
+      const { data: upData } = await withTimeout(
+        supabase.storage.from('pets').upload(fileName, bytes, { contentType: 'image/jpeg' }),
+        30_000,
+        'storage.upload:photo-analysis',
+      );
       const photoUrl = upData?.path
         ? supabase.storage.from('pets').getPublicUrl(upData.path).data.publicUrl
         : '';
@@ -135,16 +146,31 @@ export default function PhotoAnalysisScreen() {
     return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
+  // Skeleton espelha a estrutura real: linha de ações + cards de análise.
+  // CLAUDE.md §12.2: skeleton obrigatório, nunca spinner isolado em tela vazia.
   if (loading) {
     return (
       <View style={s.safe}>
-        <View style={s.center}><ActivityIndicator size="large" color={colors.purple} /></View>
+        <View style={s.content}>
+          {/* Action row (camera + gallery) */}
+          <View style={{ flexDirection: 'row', gap: rs(spacing.sm) }}>
+            <Skeleton width="48%" height={rs(72)} radius={radii.lg} />
+            <Skeleton width="48%" height={rs(72)} radius={radii.lg} />
+          </View>
+          <View style={{ height: spacing.lg }} />
+          {/* Analysis card 1 */}
+          <Skeleton width="100%" height={rs(200)} radius={radii.card} />
+          <View style={{ height: spacing.md }} />
+          {/* Analysis card 2 */}
+          <Skeleton width="100%" height={rs(200)} radius={radii.card} />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={s.safe}>
+      <SectionErrorBoundary sectionName="photo-analysis" resetKeys={[id]} onReset={onRefresh}>
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
@@ -161,6 +187,18 @@ export default function PhotoAnalysisScreen() {
             <Text style={[s.actionText, { color: colors.accent }]}>{t('addPet.pickFromGallery')}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Export PDF — só quando há análises */}
+        {analyses.length > 0 && !analyzing && (
+          <TouchableOpacity
+            style={s.exportBtn}
+            onPress={() => router.push(`/pet/${id}/photo-analysis-pdf` as never)}
+            activeOpacity={0.7}
+          >
+            <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <Text style={s.exportBtnText}>{t('photoAnalysis.exportPdf')}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Analisando */}
         {analyzing && (
@@ -294,14 +332,16 @@ export default function PhotoAnalysisScreen() {
                 </View>
               )}
 
-              {/* Disclaimer */}
-              <Text style={s.disclaimer}>{f?.disclaimer ?? t('addPet.aiDisclaimer')}</Text>
+              {/* Fontes da pesquisa — título + disclaimer em itálico */}
+              <Text style={s.sourcesTitle}>{t('photoAnalysis.sourcesTitle')}</Text>
+              <Text style={s.disclaimer}>{f?.disclaimer ?? t('common.aiVetDisclaimer')}</Text>
             </View>
           );
         })}
 
         <View style={{ height: rs(40) }} />
       </ScrollView>
+      </SectionErrorBoundary>
     </View>
   );
 }
@@ -318,6 +358,10 @@ const s = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: rs(10), marginBottom: spacing.md },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.card, borderWidth: 1, borderRadius: radii.xl, paddingVertical: rs(14) },
   actionText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12) },
+
+  // Export PDF
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.accent + '10', borderWidth: 1, borderColor: colors.accent + '30', borderRadius: radii.xl, paddingVertical: rs(12), marginBottom: spacing.md },
+  exportBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.accent },
 
   // Analyzing
   analyzingCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(10), backgroundColor: colors.purpleSoft, borderRadius: radii.xl, paddingVertical: rs(14), marginBottom: spacing.md },
@@ -357,6 +401,7 @@ const s = StyleSheet.create({
   alertItem: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(8), marginBottom: rs(6) },
   alertText: { fontFamily: 'Sora_500Medium', fontSize: fs(12), flex: 1, lineHeight: fs(18) },
 
-  // Disclaimer
-  disclaimer: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, textAlign: 'center', marginTop: spacing.md, fontStyle: 'italic' },
+  // Fontes da pesquisa
+  sourcesTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textSec, textAlign: 'center', letterSpacing: 0.5, marginTop: spacing.md, textTransform: 'uppercase' },
+  disclaimer: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, textAlign: 'center', marginTop: rs(4), fontStyle: 'italic' },
 });

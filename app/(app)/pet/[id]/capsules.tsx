@@ -217,11 +217,11 @@ const s = StyleSheet.create({
   conditionDays: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(12), color: colors.gold },
   progressTrack: { height: rs(4), backgroundColor: colors.border, borderRadius: rs(2), marginTop: rs(10), overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: rs(2) },
-  previewText: { fontFamily: 'Caveat_400Regular', fontSize: fs(14), color: colors.textSec, fontStyle: 'italic', lineHeight: fs(22), marginTop: rs(12) },
+  previewText: { fontFamily: 'Sora_400Regular', fontSize: fs(14), color: colors.textSec, lineHeight: fs(22), marginTop: rs(12) },
 
   aiCard: { backgroundColor: colors.rose + '08', borderRadius: rs(18), padding: rs(16), marginTop: rs(6), borderWidth: 1, borderColor: colors.rose + '12' },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(10) },
   aiLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.rose, letterSpacing: 0.5 },
-  aiText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, fontStyle: 'italic', lineHeight: fs(24) },
+  aiText: { fontFamily: 'Sora_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: fs(24) },
   aiSignature: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, textAlign: 'right', marginTop: rs(8) },
 });

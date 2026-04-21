@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
 
   // Footer
   footerContainer: { alignItems: 'center', paddingVertical: rs(24), gap: rs(10) },
-  footerText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textDim, fontStyle: 'italic' },
+  footerText: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim },
 
   // PDF export button (header)
   pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), alignSelf: 'flex-end', marginRight: rs(16), marginTop: rs(8), marginBottom: rs(4), backgroundColor: colors.accentGlow, borderRadius: rs(10), paddingHorizontal: rs(10), paddingVertical: rs(6), borderWidth: 1, borderColor: colors.accent + '30' },

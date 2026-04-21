@@ -1,0 +1,43 @@
+{
+  "session_id": "9e09e3f9-ced7-407a-99a0-6b5625421c9a",
+  "project_path": "e:\\aa_projetos_claude\\auExpert",
+  "start_time": "2026-04-11T22:45:38.631Z",
+  "duration_minutes": 658,
+  "user_message_count": 5,
+  "assistant_message_count": 3,
+  "tool_counts": {
+    "Bash": 1,
+    "Glob": 1
+  },
+  "languages": {},
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 9,
+  "output_tokens": 756,
+  "first_prompt": "preciso gerar um apk para instalar e testar sem o pc.",
+  "user_interruptions": 0,
+  "user_response_times": [],
+  "tool_errors": 0,
+  "tool_error_categories": {},
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    19,
+    19,
+    19,
+    19,
+    6
+  ],
+  "user_message_timestamps": [
+    "2026-04-11T22:45:38.631Z",
+    "2026-04-11T22:44:35.954Z",
+    "2026-04-11T22:44:35.954Z",
+    "2026-04-11T22:45:38.736Z",
+    "2026-04-12T09:43:23.575Z"
+  ]
+}

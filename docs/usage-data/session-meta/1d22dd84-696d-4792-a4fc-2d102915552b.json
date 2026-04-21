@@ -1,0 +1,45 @@
+{
+  "session_id": "1d22dd84-696d-4792-a4fc-2d102915552b",
+  "project_path": "e:\\aa_projetos_claude\\PetsauLife",
+  "start_time": "2026-03-28T11:59:48.996Z",
+  "duration_minutes": 2,
+  "user_message_count": 2,
+  "assistant_message_count": 16,
+  "tool_counts": {
+    "Read": 4,
+    "Agent": 2,
+    "Grep": 2
+  },
+  "languages": {
+    "TypeScript": 1,
+    "JavaScript": 3
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 1988,
+  "output_tokens": 1881,
+  "first_prompt": "leia o arquivo claude.md",
+  "user_interruptions": 0,
+  "user_response_times": [
+    4.785
+  ],
+  "tool_errors": 1,
+  "tool_error_categories": {
+    "File Too Large": 1
+  },
+  "uses_task_agent": true,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    8,
+    9
+  ],
+  "user_message_timestamps": [
+    "2026-03-28T11:59:48.996Z",
+    "2026-03-28T12:00:12.761Z"
+  ]
+}

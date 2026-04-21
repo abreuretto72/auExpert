@@ -409,5 +409,5 @@ const s = StyleSheet.create({
   aiCard: { backgroundColor: colors.card, borderRadius: radii.card, padding: spacing.md, borderWidth: 1, borderColor: `${colors.petrol}25`, marginTop: spacing.lg },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: spacing.sm },
   aiLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.petrol, letterSpacing: 1.5, textTransform: 'uppercase' },
-  aiText: { fontFamily: 'Caveat_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: fs(15) * 1.9, fontStyle: 'italic' },
+  aiText: { fontFamily: 'Sora_400Regular', fontSize: fs(15), color: colors.textSec, lineHeight: fs(15) * 1.9 },
 });

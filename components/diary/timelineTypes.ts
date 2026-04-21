@@ -86,6 +86,8 @@ export interface TimelineEvent {
   monthStats?: { walks: number; photos: number; vet: number; mood: string };
   // Video-specific
   videoUrl?: string | null;
+  /** Local thumbnail for optimistic temp entries (M4) — not persisted to DB. */
+  videoThumbUrl?: string | null;
   videoDuration?: number | null;
   videoAnalysis?: {
     locomotion_score: number;
@@ -249,6 +251,7 @@ export function diaryEntryToEvent(entry: DiaryEntry & {
     detail: entry.entry_type !== 'manual' ? entry.narration ?? undefined : undefined,
     score: entry.mood_score ?? undefined,
     videoUrl: entry.video_url ?? null,
+    videoThumbUrl: (entry as unknown as { video_thumb_url?: string | null }).video_thumb_url ?? null,
     videoDuration: entry.video_duration ?? null,
     videoAnalysis: entry.video_analysis ?? null,
     audioUrl: entry.audio_url ?? null,

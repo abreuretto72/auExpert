@@ -95,7 +95,7 @@ export default function RacaoScreen() {
                 <StatBox label={t('nutrition.dailyPortions')} value={t('nutrition.racaoDailyPortions', { n: food.daily_portions })} />
               )}
               {food.calories_kcal != null && (
-                <StatBox label="kcal/dia" value={String(food.calories_kcal)} />
+                <StatBox label={t('nutrition.caloriesPerDayLabel')} value={String(food.calories_kcal)} />
               )}
               {food.started_at && (
                 <StatBox label={t('nutrition.since')} value={new Date(food.started_at).toLocaleDateString()} />
@@ -118,7 +118,7 @@ export default function RacaoScreen() {
                 onChangeText={setCalcWeight}
                 keyboardType="decimal-pad"
                 placeholderTextColor={colors.placeholder}
-                placeholder="4.5"
+                placeholder={t('nutrition.racaoCalcWeightPlaceholder')}
               />
               {suggestedPortion != null && !isNaN(suggestedPortion) && (
                 <View style={s.calcResult}>

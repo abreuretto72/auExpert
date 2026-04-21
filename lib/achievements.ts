@@ -23,10 +23,8 @@ export function xpForNextLevel(level: number): number {
 
 export interface AchievementDef {
   key: string;
-  titleKey: string;   // i18n key, falls back to title
-  title: string;      // PT-BR fallback stored in DB
-  descKey: string;
-  desc: string;
+  titleKey: string;   // i18n key — resolved via t() at display time
+  descKey: string;    // i18n key — resolved via t() at display time
   category: 'diary' | 'health' | 'social' | 'financial' | 'travel' | 'milestone' | 'special';
   xp: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
@@ -68,208 +66,240 @@ export interface PetStats {
 export const ACHIEVEMENT_CATALOG: AchievementDef[] = [
   // ── DIÁRIO ──────────────────────────────────────────────────────────────────
   {
-    key: 'first_entry', titleKey: 'achievements.catalog.first_entry.title', title: 'Primeiro Registro',
-    descKey: 'achievements.catalog.first_entry.desc', desc: 'Criou a primeira entrada no diário',
+    key: 'first_entry',
+    titleKey: 'achievements.catalog.first_entry.title',
+    descKey: 'achievements.catalog.first_entry.desc',
     category: 'diary', xp: 10, rarity: 'common', icon: 'BookOpen',
     evaluate: (s) => s.diary_count >= 1,
   },
   {
-    key: 'diary_10', titleKey: 'achievements.catalog.diary_10.title', title: 'Contador Iniciante',
-    descKey: 'achievements.catalog.diary_10.desc', desc: '10 entradas no diário',
+    key: 'diary_10',
+    titleKey: 'achievements.catalog.diary_10.title',
+    descKey: 'achievements.catalog.diary_10.desc',
     category: 'diary', xp: 20, rarity: 'common', icon: 'BookOpen',
     evaluate: (s) => s.diary_count >= 10,
   },
   {
-    key: 'diary_50', titleKey: 'achievements.catalog.diary_50.title', title: 'Cronista Dedicado',
-    descKey: 'achievements.catalog.diary_50.desc', desc: '50 entradas no diário',
+    key: 'diary_50',
+    titleKey: 'achievements.catalog.diary_50.title',
+    descKey: 'achievements.catalog.diary_50.desc',
     category: 'diary', xp: 50, rarity: 'rare', icon: 'BookMarked',
     evaluate: (s) => s.diary_count >= 50,
   },
   {
-    key: 'diary_100', titleKey: 'achievements.catalog.diary_100.title', title: 'Memória Viva',
-    descKey: 'achievements.catalog.diary_100.desc', desc: '100 entradas no diário',
+    key: 'diary_100',
+    titleKey: 'achievements.catalog.diary_100.title',
+    descKey: 'achievements.catalog.diary_100.desc',
     category: 'diary', xp: 100, rarity: 'epic', icon: 'Library',
     evaluate: (s) => s.diary_count >= 100,
   },
   {
-    key: 'diary_365', titleKey: 'achievements.catalog.diary_365.title', title: 'Um Ano de Histórias',
-    descKey: 'achievements.catalog.diary_365.desc', desc: '365 entradas no diário',
+    key: 'diary_365',
+    titleKey: 'achievements.catalog.diary_365.title',
+    descKey: 'achievements.catalog.diary_365.desc',
     category: 'diary', xp: 300, rarity: 'legendary', icon: 'BookHeart',
     evaluate: (s) => s.diary_count >= 365,
   },
   {
-    key: 'first_photo', titleKey: 'achievements.catalog.first_photo.title', title: 'Fotógrafo Estreante',
-    descKey: 'achievements.catalog.first_photo.desc', desc: 'Primeira foto tirada pelo app',
+    key: 'first_photo',
+    titleKey: 'achievements.catalog.first_photo.title',
+    descKey: 'achievements.catalog.first_photo.desc',
     category: 'diary', xp: 15, rarity: 'common', icon: 'Camera',
     evaluate: (s) => s.photo_count >= 1,
   },
   {
-    key: 'photo_10', titleKey: 'achievements.catalog.photo_10.title', title: 'Fotógrafo Iniciante',
-    descKey: 'achievements.catalog.photo_10.desc', desc: '10 fotos classificadas pela IA',
+    key: 'photo_10',
+    titleKey: 'achievements.catalog.photo_10.title',
+    descKey: 'achievements.catalog.photo_10.desc',
     category: 'diary', xp: 30, rarity: 'common', icon: 'Camera',
     evaluate: (s) => s.photo_count >= 10,
   },
   {
-    key: 'photo_50', titleKey: 'achievements.catalog.photo_50.title', title: 'Scanner Pro',
-    descKey: 'achievements.catalog.photo_50.desc', desc: '50 fotos e documentos classificados',
+    key: 'photo_50',
+    titleKey: 'achievements.catalog.photo_50.title',
+    descKey: 'achievements.catalog.photo_50.desc',
     category: 'diary', xp: 75, rarity: 'rare', icon: 'ScanSearch',
     evaluate: (s) => s.photo_count + s.ocr_count >= 50,
   },
   {
-    key: 'first_voice', titleKey: 'achievements.catalog.first_voice.title', title: 'Primeira Voz',
-    descKey: 'achievements.catalog.first_voice.desc', desc: 'Primeiro registro por voz',
+    key: 'first_voice',
+    titleKey: 'achievements.catalog.first_voice.title',
+    descKey: 'achievements.catalog.first_voice.desc',
     category: 'diary', xp: 15, rarity: 'common', icon: 'Mic',
     evaluate: (s) => s.voice_count >= 1,
   },
   {
-    key: 'first_video', titleKey: 'achievements.catalog.first_video.title', title: 'Diretor Estreante',
-    descKey: 'achievements.catalog.first_video.desc', desc: 'Primeiro vídeo gravado',
+    key: 'first_video',
+    titleKey: 'achievements.catalog.first_video.title',
+    descKey: 'achievements.catalog.first_video.desc',
     category: 'diary', xp: 20, rarity: 'common', icon: 'Video',
     evaluate: (s) => s.video_count >= 1,
   },
   {
-    key: 'first_pdf', titleKey: 'achievements.catalog.first_pdf.title', title: 'Importador',
-    descKey: 'achievements.catalog.first_pdf.desc', desc: 'Primeiro prontuário importado em PDF',
+    key: 'first_pdf',
+    titleKey: 'achievements.catalog.first_pdf.title',
+    descKey: 'achievements.catalog.first_pdf.desc',
     category: 'diary', xp: 25, rarity: 'common', icon: 'FileUp',
     evaluate: (s) => s.pdf_count >= 1,
   },
   {
-    key: 'all_input_types', titleKey: 'achievements.catalog.all_input_types.title', title: 'Explorador Completo',
-    descKey: 'achievements.catalog.all_input_types.desc', desc: 'Usou todos os 8 tipos de entrada',
+    key: 'all_input_types',
+    titleKey: 'achievements.catalog.all_input_types.title',
+    descKey: 'achievements.catalog.all_input_types.desc',
     category: 'diary', xp: 100, rarity: 'epic', icon: 'Layers',
     evaluate: (s) =>
       s.used_text && s.used_voice && s.used_photo && s.used_video &&
       s.used_gallery && s.used_scanner && s.used_document && s.used_listen,
   },
   {
-    key: 'streak_7', titleKey: 'achievements.catalog.streak_7.title', title: '7 Dias Seguidos',
-    descKey: 'achievements.catalog.streak_7.desc', desc: '7 dias consecutivos com registro',
+    key: 'streak_7',
+    titleKey: 'achievements.catalog.streak_7.title',
+    descKey: 'achievements.catalog.streak_7.desc',
     category: 'diary', xp: 50, rarity: 'rare', icon: 'Flame',
     evaluate: (s) => s.streak >= 7,
   },
   {
-    key: 'streak_30', titleKey: 'achievements.catalog.streak_30.title', title: 'Hábito Formado',
-    descKey: 'achievements.catalog.streak_30.desc', desc: '30 dias consecutivos com registro',
+    key: 'streak_30',
+    titleKey: 'achievements.catalog.streak_30.title',
+    descKey: 'achievements.catalog.streak_30.desc',
     category: 'diary', xp: 200, rarity: 'epic', icon: 'FlameKindling',
     evaluate: (s) => s.streak >= 30,
   },
 
   // ── SAÚDE ────────────────────────────────────────────────────────────────────
   {
-    key: 'first_vaccine_scan', titleKey: 'achievements.catalog.first_vaccine_scan.title', title: 'Prontuário Inteligente',
-    descKey: 'achievements.catalog.first_vaccine_scan.desc', desc: 'Registrou vacina via foto da carteirinha',
+    key: 'first_vaccine_scan',
+    titleKey: 'achievements.catalog.first_vaccine_scan.title',
+    descKey: 'achievements.catalog.first_vaccine_scan.desc',
     category: 'health', xp: 30, rarity: 'common', icon: 'ScanLine',
     evaluate: (s) => s.ocr_count >= 1 && s.vaccine_count >= 1,
   },
   {
-    key: 'first_exam_import', titleKey: 'achievements.catalog.first_exam_import.title', title: 'Laudos Digitais',
-    descKey: 'achievements.catalog.first_exam_import.desc', desc: 'Importou primeiro resultado de exame',
+    key: 'first_exam_import',
+    titleKey: 'achievements.catalog.first_exam_import.title',
+    descKey: 'achievements.catalog.first_exam_import.desc',
     category: 'health', xp: 30, rarity: 'common', icon: 'ClipboardList',
     evaluate: (s) => s.exam_count >= 1,
   },
   {
-    key: 'first_weight', titleKey: 'achievements.catalog.first_weight.title', title: 'Peso Registrado',
-    descKey: 'achievements.catalog.first_weight.desc', desc: 'Primeiro registro de peso',
+    key: 'first_weight',
+    titleKey: 'achievements.catalog.first_weight.title',
+    descKey: 'achievements.catalog.first_weight.desc',
     category: 'health', xp: 10, rarity: 'common', icon: 'Scale',
     evaluate: (s) => s.weight_count >= 1,
   },
   {
-    key: 'weight_12_months', titleKey: 'achievements.catalog.weight_12_months.title', title: 'Evolução Completa',
-    descKey: 'achievements.catalog.weight_12_months.desc', desc: '12 meses de peso registrado',
+    key: 'weight_12_months',
+    titleKey: 'achievements.catalog.weight_12_months.title',
+    descKey: 'achievements.catalog.weight_12_months.desc',
     category: 'health', xp: 100, rarity: 'epic', icon: 'TrendingUp',
     evaluate: (s) => s.weight_count >= 12,
   },
 
   // ── SOCIAL ───────────────────────────────────────────────────────────────────
   {
-    key: 'first_friend', titleKey: 'achievements.catalog.first_friend.title', title: 'Primeiro Amigo',
-    descKey: 'achievements.catalog.first_friend.desc', desc: 'Primeiro amigo registrado no diário',
+    key: 'first_friend',
+    titleKey: 'achievements.catalog.first_friend.title',
+    descKey: 'achievements.catalog.first_friend.desc',
     category: 'social', xp: 15, rarity: 'common', icon: 'PawPrint',
     evaluate: (s) => s.friends_count >= 1,
   },
   {
-    key: 'friends_5', titleKey: 'achievements.catalog.friends_5.title', title: 'Pet Popular',
-    descKey: 'achievements.catalog.friends_5.desc', desc: '5 amigos diferentes registrados',
+    key: 'friends_5',
+    titleKey: 'achievements.catalog.friends_5.title',
+    descKey: 'achievements.catalog.friends_5.desc',
     category: 'social', xp: 50, rarity: 'rare', icon: 'Users',
     evaluate: (s) => s.friends_count >= 5,
   },
   {
-    key: 'best_friend', titleKey: 'achievements.catalog.best_friend.title', title: 'Melhor Amigo',
-    descKey: 'achievements.catalog.best_friend.desc', desc: 'Mesmo pet encontrado 8+ vezes',
+    key: 'best_friend',
+    titleKey: 'achievements.catalog.best_friend.title',
+    descKey: 'achievements.catalog.best_friend.desc',
     category: 'social', xp: 75, rarity: 'rare', icon: 'Heart',
     evaluate: (s) => s.max_friend_meets >= 8,
   },
   {
-    key: 'social_butterfly', titleKey: 'achievements.catalog.social_butterfly.title', title: 'Muito Sociável',
-    descKey: 'achievements.catalog.social_butterfly.desc', desc: '10 amigos diferentes registrados',
+    key: 'social_butterfly',
+    titleKey: 'achievements.catalog.social_butterfly.title',
+    descKey: 'achievements.catalog.social_butterfly.desc',
     category: 'social', xp: 100, rarity: 'epic', icon: 'Network',
     evaluate: (s) => s.friends_count >= 10,
   },
 
   // ── FINANCEIRO ────────────────────────────────────────────────────────────────
   {
-    key: 'first_expense', titleKey: 'achievements.catalog.first_expense.title', title: 'Primeiro Gasto',
-    descKey: 'achievements.catalog.first_expense.desc', desc: 'Primeiro gasto registrado',
+    key: 'first_expense',
+    titleKey: 'achievements.catalog.first_expense.title',
+    descKey: 'achievements.catalog.first_expense.desc',
     category: 'financial', xp: 10, rarity: 'common', icon: 'Receipt',
     evaluate: (s) => s.expense_count >= 1,
   },
   {
-    key: 'expense_10', titleKey: 'achievements.catalog.expense_10.title', title: 'Contador de Gastos',
-    descKey: 'achievements.catalog.expense_10.desc', desc: '10 gastos registrados',
+    key: 'expense_10',
+    titleKey: 'achievements.catalog.expense_10.title',
+    descKey: 'achievements.catalog.expense_10.desc',
     category: 'financial', xp: 30, rarity: 'common', icon: 'ReceiptText',
     evaluate: (s) => s.expense_count >= 10,
   },
   {
-    key: 'first_invoice_scan', titleKey: 'achievements.catalog.first_invoice_scan.title', title: 'Nota Fiscal Scanner',
-    descKey: 'achievements.catalog.first_invoice_scan.desc', desc: 'Primeiro gasto via scanner de nota fiscal',
+    key: 'first_invoice_scan',
+    titleKey: 'achievements.catalog.first_invoice_scan.title',
+    descKey: 'achievements.catalog.first_invoice_scan.desc',
     category: 'financial', xp: 25, rarity: 'common', icon: 'ScanLine',
     evaluate: (s) => s.invoice_ocr_count >= 1,
   },
   {
-    key: 'plan_roi_positive', titleKey: 'achievements.catalog.plan_roi_positive.title', title: 'Investimento Inteligente',
-    descKey: 'achievements.catalog.plan_roi_positive.desc', desc: 'Plano pet se pagou (reembolso > mensalidades)',
+    key: 'plan_roi_positive',
+    titleKey: 'achievements.catalog.plan_roi_positive.title',
+    descKey: 'achievements.catalog.plan_roi_positive.desc',
     category: 'financial', xp: 75, rarity: 'rare', icon: 'TrendingUp',
     evaluate: (s) => s.plan_roi > 1.0,
   },
 
   // ── VIAGENS ──────────────────────────────────────────────────────────────────
   {
-    key: 'first_travel', titleKey: 'achievements.catalog.first_travel.title', title: 'Primeira Aventura',
-    descKey: 'achievements.catalog.first_travel.desc', desc: 'Primeira viagem registrada com o pet',
+    key: 'first_travel',
+    titleKey: 'achievements.catalog.first_travel.title',
+    descKey: 'achievements.catalog.first_travel.desc',
     category: 'travel', xp: 25, rarity: 'common', icon: 'Plane',
     evaluate: (s) => s.travel_count >= 1,
   },
   {
-    key: 'travel_5', titleKey: 'achievements.catalog.travel_5.title', title: 'Pet Viajante',
-    descKey: 'achievements.catalog.travel_5.desc', desc: '5 viagens diferentes registradas',
+    key: 'travel_5',
+    titleKey: 'achievements.catalog.travel_5.title',
+    descKey: 'achievements.catalog.travel_5.desc',
     category: 'travel', xp: 75, rarity: 'rare', icon: 'Map',
     evaluate: (s) => s.travel_count >= 5,
   },
   {
-    key: 'travel_10', titleKey: 'achievements.catalog.travel_10.title', title: 'Explorador Aventureiro',
-    descKey: 'achievements.catalog.travel_10.desc', desc: '10 viagens registradas',
+    key: 'travel_10',
+    titleKey: 'achievements.catalog.travel_10.title',
+    descKey: 'achievements.catalog.travel_10.desc',
     category: 'travel', xp: 150, rarity: 'epic', icon: 'Globe',
     evaluate: (s) => s.travel_count >= 10,
   },
 
   // ── MARCOS ───────────────────────────────────────────────────────────────────
   {
-    key: 'pet_birthday_1', titleKey: 'achievements.catalog.pet_birthday_1.title', title: '1 Ano Juntos',
-    descKey: 'achievements.catalog.pet_birthday_1.desc', desc: '1 ano de diário ativo',
+    key: 'pet_birthday_1',
+    titleKey: 'achievements.catalog.pet_birthday_1.title',
+    descKey: 'achievements.catalog.pet_birthday_1.desc',
     category: 'milestone', xp: 100, rarity: 'epic', icon: 'PartyPopper',
     evaluate: (s) => s.diary_age_months >= 12,
   },
   {
-    key: 'anxiety_improvement', titleKey: 'achievements.catalog.anxiety_improvement.title', title: 'Mais Tranquilo',
-    descKey: 'achievements.catalog.anxiety_improvement.desc', desc: 'Humor positivo por 14 dias seguidos',
+    key: 'anxiety_improvement',
+    titleKey: 'achievements.catalog.anxiety_improvement.title',
+    descKey: 'achievements.catalog.anxiety_improvement.desc',
     category: 'milestone', xp: 75, rarity: 'rare', icon: 'Smile',
     evaluate: (s) => s.streak >= 14,
   },
 
   // ── ESPECIAIS ─────────────────────────────────────────────────────────────────
   {
-    key: 'early_adopter', titleKey: 'achievements.catalog.early_adopter.title', title: 'Pioneiro',
-    descKey: 'achievements.catalog.early_adopter.desc', desc: 'Um dos primeiros tutores do auExpert',
+    key: 'early_adopter',
+    titleKey: 'achievements.catalog.early_adopter.title',
+    descKey: 'achievements.catalog.early_adopter.desc',
     category: 'special', xp: 200, rarity: 'legendary', icon: 'Rocket',
     evaluate: (s) => s.diary_count >= 1, // awarded once to early users
   },
@@ -313,9 +343,12 @@ export async function getPetStats(petId: string): Promise<PetStats> {
       .eq('pet_id', petId)
       .eq('metric_type', 'weight')
       .eq('is_active', true),
+    // xp_total/level NÃO existem na tabela `pets` — foram planejados na migration 019
+    // mas nunca aplicados. XP/level são DERIVADOS dos próprios achievements em
+    // hooks/useLens.ts. Aqui só precisamos de `created_at` do pet.
     supabase
       .from('pets')
-      .select('xp_total, level, created_at')
+      .select('created_at')
       .eq('id', petId)
       .single(),
     supabase
@@ -385,8 +418,13 @@ export async function getPetStats(petId: string): Promise<PetStats> {
     travel_count: 0, // Sprint 4.4
     streak,
     diary_age_months: diaryAgeMonths,
-    xp_total: pet?.xp_total ?? 0,
-    level: pet?.level ?? 1,
+    // Campos herdados da PetStats interface. Mantidos zerados porque:
+    // (1) as colunas xp_total/level não existem na tabela pets,
+    // (2) nenhum achievement.evaluate() atualmente os usa.
+    // Se a gamificação for reativada, derivar aqui a partir dos achievements
+    // já desbloqueados (somando xp_reward) como faz hooks/useLens.ts.
+    xp_total: 0,
+    level: 1,
     plan_roi: planRoi,
     used_text: inputTypes.has('text') || inputMethods.has('text'),
     used_voice: inputTypes.has('voice') || inputMethods.has('voice'),
@@ -426,6 +464,7 @@ function computeStreak(isoTimestamps: string[]): number {
 
 export interface AwardedAchievement {
   key: string;
+  /** i18n key for the achievement title — resolve via t() at display time. */
   title: string;
   xp: number;
   rarity: string;
@@ -463,8 +502,10 @@ export async function checkAndAwardAchievements(
     user_id: userId,
     diary_entry_id: diaryEntryId,
     achievement_key: a.key,
-    title: a.title,
-    description: a.desc,
+    // Persist i18n keys (not localized strings) so display renders in the
+    // current UI language regardless of when the row was inserted.
+    title: a.titleKey,
+    description: a.descKey,
     category: a.category,
     xp_reward: a.xp,
     rarity: a.rarity,
@@ -474,5 +515,5 @@ export async function checkAndAwardAchievements(
   // upsert with ignoreDuplicates to handle race conditions gracefully
   await supabase.from('achievements').upsert(rows, { ignoreDuplicates: true });
 
-  return toUnlock.map((a) => ({ key: a.key, title: a.title, xp: a.xp, rarity: a.rarity }));
+  return toUnlock.map((a) => ({ key: a.key, title: a.titleKey, xp: a.xp, rarity: a.rarity }));
 }

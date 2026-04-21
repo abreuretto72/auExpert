@@ -1,5 +1,28 @@
 import type { DiaryNarrationResponse, PhotoAnalysisResponse, AIInsightResponse } from '../types/ai';
 import { supabase } from './supabase';
+import { withTimeout } from './withTimeout';
+
+// AI Edge Functions podem envolver RAG + Claude API + OCR/Vision + TTS —
+// 30s cobre worst case para chamadas simples (CLAUDE.md §12.4: nunca deixar
+// spinner infinito).
+const AI_TIMEOUT_MS = 30_000;
+
+// classify-diary-entry atende múltiplos input_types — cada um tem peso diferente.
+// Chain de timeouts (outermost → innermost):
+//   hooks/_diary/mediaRoutines.ts (outer) → lib/ai.ts (middle — aqui) → callGemini.ts (inner, só video+audio)
+// Invariante: outer > middle > inner, senão a camada interna fire antes da externa
+// e mascara a rotina (sintoma: [timeout:classifyDiaryEntry:ocr_scan] request exceeded 30000ms).
+// Outer atual (mediaRoutines.ts): text=30s, photo=55s, video=75s, audio=75s, ocr=55s.
+// Inner Gemini (callGemini.ts): 60s fixo para video+audio (native inline media).
+const AI_TIMEOUT_CLASSIFY_BY_TYPE: Record<string, number> = {
+  text:     25_000,  // <  outer text 30s
+  gallery:  50_000,  // <  outer photo 55s
+  video:    70_000,  // >  Gemini 60s, <  outer video 75s
+  audio:    70_000,  // >  Gemini 60s, <  outer audio 75s
+  ocr_scan: 50_000,  // <  outer ocr 55s
+  pdf:      55_000,
+};
+const AI_TIMEOUT_CLASSIFY_DEFAULT = 35_000;
 
 export async function generateDiaryNarration(
   petId: string,
@@ -7,9 +30,13 @@ export async function generateDiaryNarration(
   moodId: string,
   language: 'pt-BR' | 'en-US' = 'pt-BR',
 ): Promise<DiaryNarrationResponse> {
-  const { data, error } = await supabase.functions.invoke('generate-diary-narration', {
-    body: { pet_id: petId, content, mood_id: moodId, language },
-  });
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('generate-diary-narration', {
+      body: { pet_id: petId, content, mood_id: moodId, language },
+    }),
+    AI_TIMEOUT_MS,
+    'generateDiaryNarration',
+  );
   if (error) {
     console.error('[ai] generateDiaryNarration ERRO →', error);
     throw error;
@@ -22,9 +49,13 @@ export async function analyzePetPhoto(
   photoUrl: string,
   analysisType: 'breed' | 'mood' | 'health' | 'general' = 'general',
 ): Promise<PhotoAnalysisResponse> {
-  const { data, error } = await supabase.functions.invoke('analyze-pet-photo', {
-    body: { pet_id: petId, photo_url: photoUrl, analysis_type: analysisType },
-  });
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('analyze-pet-photo', {
+      body: { pet_id: petId, photo_url: photoUrl, analysis_type: analysisType },
+    }),
+    AI_TIMEOUT_MS,
+    'analyzePetPhoto',
+  );
   if (error) throw error;
   return data as PhotoAnalysisResponse;
 }
@@ -34,9 +65,13 @@ export async function generatePersonality(
   language: string = 'pt-BR',
 ): Promise<{ personality: string | null; traits: string[]; entries_analyzed: number }> {
   console.log('[generatePersonality] ▶ chamando Edge Function | pet_id:', petId.slice(-8), '| lang:', language);
-  const { data, error } = await supabase.functions.invoke('generate-personality', {
-    body: { pet_id: petId, language },
-  });
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('generate-personality', {
+      body: { pet_id: petId, language },
+    }),
+    AI_TIMEOUT_MS,
+    'generatePersonality',
+  );
   if (error) {
     console.error('[generatePersonality] ✗ ERRO invoke →', error);
     throw error;
@@ -130,20 +165,25 @@ export async function classifyDiaryEntry(
   videoUrl?: string,
   headers?: Record<string, string>,
 ): Promise<ClassifyDiaryResponse> {
-  const { data, error } = await supabase.functions.invoke('classify-diary-entry', {
-    headers,
-    body: {
-      pet_id: petId,
-      text,
-      photos_base64: photosBase64,
-      pdf_base64: pdfBase64 ?? undefined,
-      audio_url: audioUrl ?? undefined,
-      audio_duration_seconds: audioDurationSeconds ?? undefined,
-      video_url: videoUrl ?? undefined,
-      input_type: inputType,
-      language,
-    },
-  });
+  const timeoutMs = AI_TIMEOUT_CLASSIFY_BY_TYPE[inputType] ?? AI_TIMEOUT_CLASSIFY_DEFAULT;
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('classify-diary-entry', {
+      headers,
+      body: {
+        pet_id: petId,
+        text,
+        photos_base64: photosBase64,
+        pdf_base64: pdfBase64 ?? undefined,
+        audio_url: audioUrl ?? undefined,
+        audio_duration_seconds: audioDurationSeconds ?? undefined,
+        video_url: videoUrl ?? undefined,
+        input_type: inputType,
+        language,
+      },
+    }),
+    timeoutMs,
+    `classifyDiaryEntry:${inputType}`,
+  );
 
   console.log('[AI] invoke classify-diary-entry concluído');
   console.log('[AI] error:', error ? JSON.stringify(error).slice(0, 400) : 'nenhum');
@@ -254,9 +294,13 @@ export async function classifyOCR(
 }
 
 export async function generateAIInsight(petId: string): Promise<AIInsightResponse> {
-  const { data, error } = await supabase.functions.invoke('generate-ai-insight', {
-    body: { pet_id: petId },
-  });
+  const { data, error } = await withTimeout(
+    supabase.functions.invoke('generate-ai-insight', {
+      body: { pet_id: petId },
+    }),
+    AI_TIMEOUT_MS,
+    'generateAIInsight',
+  );
   if (error) throw error;
   return data as AIInsightResponse;
 }

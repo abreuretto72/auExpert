@@ -45,9 +45,11 @@ import PdfExportModal from '../../../../components/diary/PdfExportModal';
 import DiaryCalendarModal from '../../../../components/diary/DiaryCalendarModal';
 import { diaryEntryToEvent } from '../../../../components/diary/timelineTypes';
 import PetBottomNav, { PetTab } from '../../../../components/layout/PetBottomNav';
+import { usePetTabStore } from '../../../../stores/petTabStore';
 import LentesTab from '../../../../components/pet/LentesTab';
 import IATab from '../../../../components/pet/IATab';
 import { AgendaLensContent } from '../../../../components/lenses/AgendaLensContent';
+import { SectionErrorBoundary } from '../../../../components/SectionErrorBoundary';
 
 export default function PetScreen() {
   const { id, initialTab } = useLocalSearchParams<{ id: string; initialTab?: string }>();
@@ -59,7 +61,21 @@ export default function PetScreen() {
   const myRole = useMyPetRole(id ?? '');
   const canSeeDeleted = myRole.isOwner || myRole.role === 'co_parent';
 
-  const [activeTab, setActiveTab] = useState<PetTab>((initialTab as PetTab) ?? 'diario');
+  // Remembered tab for this pet (survives PetScreen remounts when returning
+  // from a pushed lens screen). Priority: URL initialTab > remembered > 'diario'.
+  const rememberedTab = usePetTabStore((s) => (id ? s.lastTabByPet[id] : undefined));
+  const setRememberedTab = usePetTabStore((s) => s.setLastTab);
+  const [activeTab, setActiveTabInternal] = useState<PetTab>(
+    (initialTab as PetTab) ?? rememberedTab ?? 'diario',
+  );
+
+  const setActiveTab = useCallback(
+    (next: PetTab) => {
+      setActiveTabInternal(next);
+      if (id) setRememberedTab(id, next);
+    },
+    [id, setRememberedTab],
+  );
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -310,7 +326,7 @@ export default function PetScreen() {
             >
               <CalendarDays
                 size={rs(20)}
-                color={selectedDate ? colors.accent : colors.textDim}
+                color={colors.accent}
                 strokeWidth={1.8}
               />
             </TouchableOpacity>
@@ -324,7 +340,7 @@ export default function PetScreen() {
           </TouchableOpacity>
           {activeTab === 'diario' && (
             <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
-              <FileText size={rs(20)} color="#FFFFFF" strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
           {activeTab === 'ia' && (
@@ -333,54 +349,74 @@ export default function PetScreen() {
               style={s.headerBtn}
               activeOpacity={0.7}
             >
-              <FileText size={rs(20)} color="#FFFFFF" strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            </TouchableOpacity>
+          )}
+          {activeTab === 'agenda' && (
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/(app)/pet/[id]/agenda-pdf', params: { id } } as never)}
+              style={s.headerBtn}
+              activeOpacity={0.7}
+            >
+              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            </TouchableOpacity>
+          )}
+          {activeTab === 'painel' && (
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: '/(app)/pet/[id]/painel-pdf', params: { id } } as never)}
+              style={s.headerBtn}
+              activeOpacity={0.7}
+            >
+              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Tab content */}
-      <View style={s.tabContent}>
+      <SectionErrorBoundary sectionName={`pet-${activeTab}`} resetKeys={[id, activeTab]} onReset={onRefresh}>
+        <View style={s.tabContent}>
 
-        {/* ── Aba Diário ─────────────────────────────────────────── */}
-        {activeTab === 'diario' && (
-          <DiaryTimeline
-            entries={filteredDiaryEntries}
-            isLoading={diaryLoading}
-            petId={id!}
-            petName={pet.name}
-            petSpecies={pet.species}
-            petAvatarUrl={pet.avatar_url}
-            petCreatedAt={pet.created_at}
-            onRefresh={onRefresh}
-            onNewEntry={handleNewEntry}
-            onEditEntry={handleEditEntry}
-            headerExtra={petHeroSection}
-          />
-        )}
+          {/* ── Aba Diário ─────────────────────────────────────────── */}
+          {activeTab === 'diario' && (
+            <DiaryTimeline
+              entries={filteredDiaryEntries}
+              isLoading={diaryLoading}
+              petId={id!}
+              petName={pet.name}
+              petSpecies={pet.species}
+              petAvatarUrl={pet.avatar_url}
+              petCreatedAt={pet.created_at}
+              onRefresh={onRefresh}
+              onNewEntry={handleNewEntry}
+              onEditEntry={handleEditEntry}
+              headerExtra={petHeroSection}
+            />
+          )}
 
-        {/* ── Aba Painel ─────────────────────────────────────────── */}
-        {activeTab === 'painel' && (
-          <LentesTab
-            petId={id!}
-            petName={pet.name}
-            overdueVaccines={overdueCount}
-          />
-        )}
+          {/* ── Aba Painel ─────────────────────────────────────────── */}
+          {activeTab === 'painel' && (
+            <LentesTab
+              petId={id!}
+              petName={pet.name}
+              overdueVaccines={overdueCount}
+            />
+          )}
 
-        {/* ── Aba Agenda ─────────────────────────────────────────── */}
-        {activeTab === 'agenda' && (
-          <AgendaLensContent
-            petId={id!}
-            petName={pet.name}
-          />
-        )}
+          {/* ── Aba Agenda ─────────────────────────────────────────── */}
+          {activeTab === 'agenda' && (
+            <AgendaLensContent
+              petId={id!}
+              petName={pet.name}
+            />
+          )}
 
-        {/* ── Aba IA ─────────────────────────────────────────────── */}
-        {activeTab === 'ia' && (
-          <IATab petId={id!} petName={pet?.name} />
-        )}
-      </View>
+          {/* ── Aba IA ─────────────────────────────────────────────── */}
+          {activeTab === 'ia' && (
+            <IATab petId={id!} petName={pet?.name} />
+          )}
+        </View>
+      </SectionErrorBoundary>
 
       {/* Fixed bottom nav */}
       <PetBottomNav active={activeTab} onChange={setActiveTab} />

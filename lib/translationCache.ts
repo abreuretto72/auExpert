@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { withTimeout } from './withTimeout';
 import ptBR from '../i18n/pt-BR.json';
 
 const CACHE_PREFIX = 'auexpert_i18n_';
@@ -93,13 +94,17 @@ export async function setCachedTranslation(lang: string, translations: Record<st
  */
 export async function fetchTranslation(targetLang: string): Promise<Record<string, unknown> | null> {
   try {
-    const { data, error } = await supabase.functions.invoke('translate-strings', {
-      body: {
-        strings: ptBR,
-        targetLanguage: targetLang,
-        targetLanguageName: getLanguageName(targetLang),
-      },
-    });
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke('translate-strings', {
+        body: {
+          strings: ptBR,
+          targetLanguage: targetLang,
+          targetLanguageName: getLanguageName(targetLang),
+        },
+      }),
+      15_000,
+      `translate-strings:${targetLang}`,
+    );
 
     if (error) {
       console.warn('[i18n] Translation fetch failed:', error.message);

@@ -299,10 +299,9 @@ const styles = StyleSheet.create({
     marginBottom: rs(spacing.md),
   },
   bubbleSignature: {
-    fontFamily: 'Caveat_400Regular',
-    fontSize: fs(16),
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(13),
     color: colors.textDim,
-    fontStyle: 'italic',
   },
 
   // Confirmacao

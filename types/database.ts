@@ -47,9 +47,10 @@ export interface Pet {
   current_mood_updated_at: string | null;
   total_diary_entries: number;
   total_photos: number;
-  xp_total: number;
+  // xp_total e personality_summary foram removidos — não existem na tabela `pets`
+  // em produção (migration 019 nunca foi aplicada). Gamificação é derivada dos
+  // achievements em runtime (ver hooks/useLens.ts).
   ai_personality: string | null;
-  personality_summary: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -68,6 +69,10 @@ export interface DiaryEntry {
   entry_type: 'manual' | 'photo_analysis' | 'vaccine' | 'allergy' | 'ai_insight' | 'milestone' | 'mood_change';
   tags: string[];
   photos: string[];
+  video_url?: string | null;
+  audio_url?: string | null;
+  /** Local-only thumbnail URI for optimistic video temp entries (not persisted to DB). */
+  video_thumb_url?: string | null;
   media_analyses?: unknown[] | null;
   is_special: boolean;
   is_registration_entry: boolean;
@@ -192,7 +197,107 @@ export interface Consultation {
   cost: number | null;
   source: 'manual' | 'ocr' | 'voice' | 'ai';
   photo_url: string | null;
+  // --- sinais vitais (Fase 3 vet-grade, 2026-04-20) ---
+  // Todos opcionais porque consultas antigas não têm estes valores.
+  temperature_celsius?: number | null;
+  heart_rate_bpm?: number | null;
+  respiratory_rate_rpm?: number | null;
+  capillary_refill_sec?: number | null;
+  mucous_color?: 'pink' | 'pale' | 'cyanotic' | 'jaundiced' | 'injected' | 'other' | null;
+  hydration_status?: 'normal' | 'mild' | 'moderate' | 'severe' | null;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ==========================================================================
+// Fase 3 vet-grade (2026-04-20) — 5 novas tabelas clínicas
+// ==========================================================================
+
+export interface BodyConditionScore {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  /** BCS 1-9 escala WSAVA (1 = caquético, 5 = ideal, 9 = obeso severo). */
+  score: number;
+  measured_at: string;
+  measured_by: 'tutor' | 'vet' | 'ai_photo';
+  weight_kg: number | null;
+  notes: string | null;
+  source: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ParasiteControl {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  type: 'flea_tick' | 'vermifuge' | 'heartworm' | 'combined' | 'other';
+  product_name: string;
+  dose: string | null;
+  administered_at: string;
+  next_due_date: string | null;
+  administered_by: 'tutor' | 'vet' | 'other' | null;
+  notes: string | null;
+  source: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChronicCondition {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  name: string;
+  code: string | null;
+  diagnosed_date: string | null;
+  diagnosed_by: string | null;
+  severity: 'mild' | 'moderate' | 'severe' | null;
+  status: 'active' | 'controlled' | 'remission' | 'resolved';
+  treatment_summary: string | null;
+  notes: string | null;
+  source: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrustedVet {
+  id: string;
+  pet_id: string;
+  user_id: string;
+  name: string;
+  specialty: string | null;
+  phone: string | null;
+  clinic: string | null;
+  address: string | null;
+  crmv: string | null;
+  email: string | null;
+  is_primary: boolean;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Dicionário global (não é per-pet). Chaveado por (species, breed, condition_key).
+ * Leitura pública; escrita apenas via service_role (seeds + fallback AI).
+ */
+export interface BreedPredisposition {
+  id: string;
+  species: 'dog' | 'cat';
+  breed: string;
+  condition_key: string;
+  condition_pt: string;
+  condition_en: string;
+  rationale_pt: string | null;
+  rationale_en: string | null;
+  severity: 'monitor' | 'watch' | 'manage';
+  source: 'seed' | 'ai';
   created_at: string;
   updated_at: string;
 }

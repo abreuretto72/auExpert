@@ -24,10 +24,13 @@ Add under a ## Testing & Verification section\n\nAfter fixing a bug, always veri
 - **Fase:** MVP "Diário Inteligente"
 - **Plataforma:** VS Code + Windows + Claude Code
 
-### Bugs ativos (manter logs relacionados, não remover)
-- `fetchDiaryEntries` retorna zero results — log `[fetchDiaryEntries] count:` ATIVO
-- Null crash em `handleSubmitText` com vídeo sem foto — log `[handleSubmitText] media:` ATIVO
-- API totals mostrando 0 no load inicial — log `[apiTotals] data:` ATIVO
+### Bugs ativos
+(nenhum bloqueador conhecido em 2026-04-19 — os 3 bugs anteriormente listados foram auditados e fechados)
+
+#### Histórico de bugs fechados
+- `fetchDiaryEntries` retorna zero results — FECHADO em commit `94f6ee4` (2026-04-12): join corrigido de `users!diary_entries_user_id_fkey` para `users!user_id` em `lib/api.ts`. O log `[fetchDiaryEntries] count:` mencionado em versões anteriores nunca existiu em produção; logs reais são `[API] fetchDiaryEntries petId:` / `[API] total:`.
+- Null crash em `handleSubmitText` com vídeo sem foto — FECHADO em commit `94f6ee4` (2026-04-12): optional chaining em `photo.localUri?.slice(-30)` + correção de `photoCount` ignorando URIs `content://` de vídeo + `videoUris` passando a filtrar `content://`. Log `[handleSubmitText] media:` segue ativo como diagnóstico benigno.
+- API totals em 0 no load inicial — NUNCA FOI BUG REAL: `apiTotals` não existe e nunca existiu em produção; era exemplo sintético em skill docs copiado por engano para esta lista.
 
 ### Features concluídas (13/04/2026)
 - ✅ **Input-first UX em modais de saúde** — Step 0 com Input + mic em todos os 4 modais

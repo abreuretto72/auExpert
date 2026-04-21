@@ -98,3 +98,27 @@ export function countAttemptedRoutines(bundle: MediaAnalysisBundle): number {
     (o) => o.status !== 'skipped',
   ).length;
 }
+
+// ── Parâmetros públicos do hook useDiaryEntry ─────────────────────────────────
+
+export interface SubmitEntryParams {
+  text: string | null;
+  photosBase64: string[] | null; // array of base64 images for AI analysis
+  inputType: string;
+  mediaUris?: string[];      // all attachment URIs (photos + video + audio) in attachment order
+  videoDuration?: number;
+  audioDuration?: number;
+  audioOriginalName?: string; // original filename as picked/recorded by the tutor (e.g. "latido.mp3")
+  additionalContext?: string; // e.g. "The media shows a DIFFERENT pet, not the owner's pet."
+  hasVideo?: boolean;         // true when video URIs are present regardless of inputType
+  docBase64?: string;         // inline base64 of a scanned document (uploaded + OCR'd separately from photos)
+  skipAI?: boolean;           // when true, skip AI classification/narration — just save text + upload media
+  /** Per-routine AI analysis flags. When absent, defaults to all-enabled (backward compat). */
+  aiFlags?: AIAnalysisFlags;
+}
+
+export interface PDFImportParams {
+  pdfBase64: string;
+  fileName: string;
+  additionalText?: string;
+}

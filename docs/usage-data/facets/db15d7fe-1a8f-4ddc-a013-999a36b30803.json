@@ -1,0 +1,15 @@
+{
+  "underlying_goal": "Continue an observer session tracking primary session changes related to toast notifications and audio upload fixes in a React Native app",
+  "goal_categories": {
+    "warmup_minimal": 1
+  },
+  "outcome": "unclear_from_transcript",
+  "user_satisfaction_counts": {},
+  "claude_helpfulness": "slightly_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "none",
+  "brief_summary": "Observer session continuation tracking primary session work on toast and audio fixes; no explicit user tasks were requested.",
+  "session_id": "db15d7fe-1a8f-4ddc-a013-999a36b30803"
+}

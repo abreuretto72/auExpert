@@ -1,0 +1,19 @@
+{
+  "underlying_goal": "Extract sub-widgets from large Dart files to comply with a 400-line widget limit rule",
+  "goal_categories": {
+    "refactoring": 1
+  },
+  "outcome": "partially_achieved",
+  "user_satisfaction_counts": {
+    "likely_satisfied": 2
+  },
+  "claude_helpfulness": "very_helpful",
+  "session_type": "single_task",
+  "friction_counts": {
+    "external_limit": 3
+  },
+  "friction_detail": "Three sub-agents hit API rate limits and couldn't complete their extraction tasks.",
+  "primary_success": "multi_file_changes",
+  "brief_summary": "User wanted sub-widget extraction from large Dart files; some completed successfully but 3 agents failed due to API rate limits.",
+  "session_id": "218ed73a-886e-4904-ad5b-f5105089e600"
+}

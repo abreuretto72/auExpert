@@ -11,12 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   ChevronLeft,
+  ChevronRight,
   Bell,
   Fingerprint,
   Info,
   ShieldCheck,
   Sparkles,
   Trash2,
+  FileText,
+  Shield,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
@@ -28,6 +31,7 @@ import { useToast } from '../../components/Toast';
 import { getErrorMessage } from '../../utils/errorMessages';
 import { useConsent } from '../../hooks/useConsent';
 import { supabase } from '../../lib/supabase';
+import { withTimeout } from '../../lib/withTimeout';
 
 type ConfirmOptions = {
   text: string;
@@ -77,9 +81,13 @@ export default function SettingsScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('No session');
 
-      const { error } = await supabase.functions.invoke('delete-account', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const { error } = await withTimeout(
+        supabase.functions.invoke('delete-account', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        15_000,
+        'delete-account',
+      );
       if (error) throw error;
 
       await logout();
@@ -165,6 +173,36 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Legal */}
+        <Text style={styles.sectionLabel}>{t('settings.legal').toUpperCase()}</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => router.push('/(app)/terms')}
+            activeOpacity={0.7}
+          >
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <View style={styles.toggleTextCol}>
+              <Text style={styles.toggleLabel}>{t('menu.terms')}</Text>
+              <Text style={styles.toggleDesc}>{t('menu.termsDesc')}</Text>
+            </View>
+            <ChevronRight size={rs(18)} color={colors.textDim} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <View style={styles.linkDivider} />
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => router.push('/(app)/privacy')}
+            activeOpacity={0.7}
+          >
+            <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <View style={styles.toggleTextCol}>
+              <Text style={styles.toggleLabel}>{t('menu.privacy')}</Text>
+              <Text style={styles.toggleDesc}>{t('menu.privacyDesc')}</Text>
+            </View>
+            <ChevronRight size={rs(18)} color={colors.textDim} strokeWidth={1.8} />
+          </TouchableOpacity>
+        </View>
+
         {/* Sobre */}
         <Text style={styles.sectionLabel}>{t('settings.about').toUpperCase()}</Text>
         <View style={styles.card}>
@@ -213,6 +251,8 @@ const styles = StyleSheet.create({
   infoLabel: { fontFamily: 'Sora_500Medium', fontSize: fs(14), color: colors.textSec, flex: 1 },
   infoValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(13), color: colors.textDim },
   dangerRow: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm) },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: rs(spacing.sm), paddingVertical: rs(spacing.xs) },
+  linkDivider: { height: 1, backgroundColor: colors.border, marginVertical: rs(spacing.sm) },
   consentNote: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(6), marginTop: rs(10), paddingTop: rs(10), borderTopWidth: 1, borderTopColor: colors.border },
   consentNoteText: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, flex: 1, lineHeight: fs(15) },
   bottomSpacer: { height: rs(40) },

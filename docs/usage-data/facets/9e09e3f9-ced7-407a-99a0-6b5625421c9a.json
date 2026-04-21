@@ -1,0 +1,17 @@
+{
+  "underlying_goal": "Generate an APK to install and test the app on a mobile device without a PC connection",
+  "goal_categories": {
+    "build_and_deploy": 1
+  },
+  "outcome": "unclear_from_transcript",
+  "user_satisfaction_counts": {
+    "likely_satisfied": 1
+  },
+  "claude_helpfulness": "very_helpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "",
+  "primary_success": "proactive_help",
+  "brief_summary": "User asked to generate an APK for mobile testing; Claude offered options and user chose option B (new build), but the session transcript is truncated before completion.",
+  "session_id": "9e09e3f9-ced7-407a-99a0-6b5625421c9a"
+}

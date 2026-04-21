@@ -19,9 +19,12 @@
         "applinks:multiversodigital.com.br"
       ],
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
-        "NSSpeechRecognitionUsageDescription": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz.",
+        "NSMicrophoneUsageDescription": "Allow AuExpert to access the microphone to transcribe your voice and record sounds from your pet.",
+        "NSSpeechRecognitionUsageDescription": "Allow AuExpert to use speech recognition to transcribe what you say.",
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "locales": {
+        "pt-BR": "./locales/pt-BR.json"
       }
     },
     "android": {
@@ -78,7 +81,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permitir que AuExpert acesse sua câmera para análise de fotos do pet."
+          "cameraPermission": "Allow AuExpert to access your camera to analyze photos of your pet."
         }
       ],
       [
@@ -91,28 +94,28 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Permitir que AuExpert use o Face ID para login rápido."
+          "faceIDPermission": "Allow AuExpert to use Face ID for fast and secure sign-in."
         }
       ],
       "expo-localization",
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Permitir que AuExpert acesse o microfone para transcrever sua voz.",
-          "speechRecognitionPermission": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz."
+          "microphonePermission": "Allow AuExpert to access the microphone to transcribe your voice.",
+          "speechRecognitionPermission": "Allow AuExpert to use speech recognition to transcribe what you say."
         }
       ],
       [
         "expo-audio",
         {
-          "microphonePermission": "Permitir que AuExpert acesse o microfone para gravar sons do seu pet."
+          "microphonePermission": "Allow AuExpert to access the microphone to record sounds from your pet."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permitir que AuExpert acesse suas fotos para análise e perfil do pet.",
-          "cameraPermission": "Permitir que AuExpert acesse sua câmera para análise de fotos do pet."
+          "photosPermission": "Allow AuExpert to access your photos for pet analysis and profile.",
+          "cameraPermission": "Allow AuExpert to access your camera to analyze photos of your pet."
         }
       ],
       "expo-sharing",

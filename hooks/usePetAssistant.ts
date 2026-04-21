@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { withTimeout } from '../lib/withTimeout';
 import { getLocales } from 'expo-localization';
 
 export interface ChatMessage {
@@ -58,9 +59,10 @@ export function usePetAssistant(petId: string) {
       };
       console.log('[usePetAssistant] invoking pet-assistant', payload);
 
-      const { data, error: fnError } = await supabase.functions.invoke(
+      const { data, error: fnError } = await withTimeout(
+        supabase.functions.invoke('pet-assistant', { body: payload }),
+        30_000,
         'pet-assistant',
-        { body: payload },
       );
 
       console.log('[usePetAssistant] response →', { data, fnError });

@@ -39,6 +39,7 @@ import { Input } from './ui/Input';
 import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
 import { supabase } from '../lib/supabase';
+import { withTimeout } from '../lib/withTimeout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface VaccineData {
@@ -218,13 +219,17 @@ const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const { data, error } = await supabase.functions.invoke('ocr-document', {
-        body: {
-          photo_base64: base64,
-          document_type: 'vaccine',
-          language: i18n.language,
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('ocr-document', {
+          body: {
+            photo_base64: base64,
+            document_type: 'vaccine',
+            language: i18n.language,
+          },
+        }),
+        15_000,
+        'ocr-document:vaccine',
+      );
 
       if (error) throw error;
 

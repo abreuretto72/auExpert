@@ -1,0 +1,8 @@
+{
+  "NSMicrophoneUsageDescription": "Permitir que AuExpert acesse o microfone para transcrever sua voz e gravar sons do seu pet.",
+  "NSSpeechRecognitionUsageDescription": "Permitir que AuExpert use o reconhecimento de fala para transcrever o que você diz.",
+  "NSCameraUsageDescription": "Permitir que AuExpert acesse a câmera para fotografar e analisar seu pet.",
+  "NSPhotoLibraryUsageDescription": "Permitir que AuExpert acesse suas fotos para análise e perfil do pet.",
+  "NSPhotoLibraryAddUsageDescription": "Permitir que AuExpert salve fotos do seu pet na sua biblioteca.",
+  "NSFaceIDUsageDescription": "Permitir que AuExpert use o Face ID para login rápido e seguro."
+}

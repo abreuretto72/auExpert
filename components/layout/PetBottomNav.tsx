@@ -2,7 +2,7 @@
  * PetBottomNav — 4-tab bottom navigation for the pet screen.
  *
  * Tabs: Diário · Painel · Agenda · IA
- * Active tab: teal indicator dot + teal label.
+ * Active tab: accent (orange) indicator dot + accent label.
  * Inactive tab: textDim label, no dot.
  */
 import React from 'react';
@@ -36,7 +36,7 @@ const TABS: TabConfig[] = [
 ];
 
 // Active color — teal as specified in the nav design
-const ACTIVE_COLOR = '#1D9E75';
+const ACTIVE_COLOR = colors.accent;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -104,13 +104,13 @@ const styles = StyleSheet.create({
     color: colors.textDim,
   },
   labelActive: {
-    color: '#1D9E75',
+    color: colors.accent,
   },
   dot: {
     width: rs(4),
     height: rs(4),
     borderRadius: rs(2),
-    backgroundColor: '#1D9E75',
+    backgroundColor: colors.accent,
     marginTop: rs(1),
   },
 });

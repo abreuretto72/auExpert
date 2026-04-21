@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -101,7 +102,11 @@ export default function ResetPasswordScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo */}
         <View style={styles.logoSection}>
           <AuExpertLogo size="normal" />
@@ -165,7 +170,7 @@ export default function ResetPasswordScreen() {
             )}
           </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -177,6 +182,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
+    paddingHorizontal: rs(28),
+    paddingBottom: rs(40),
+  },
+  scrollContent: {
+    flexGrow: 1,
     backgroundColor: colors.bg,
     paddingHorizontal: rs(28),
     paddingBottom: rs(40),

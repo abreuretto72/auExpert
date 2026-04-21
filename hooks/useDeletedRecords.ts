@@ -4,8 +4,9 @@
  *
  * RLS ensures only owner / co_parent can see is_active=false rows.
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToQueue } from '../lib/offlineQueue';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,14 @@ export function useDeletedRecords(petId: string) {
 
   const restoreEntry = useMutation({
     mutationFn: async (entryId: string) => {
+      if (!onlineManager.isOnline()) {
+        await addToQueue({
+          type: 'restoreDiaryEntry',
+          payload: { id: entryId, pet_id: petId },
+        });
+        return;
+      }
+
       const { error: restoreError } = await supabase
         .from('diary_entries')
         .update({ is_active: true })

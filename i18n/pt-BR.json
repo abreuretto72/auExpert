@@ -23,7 +23,8 @@
     "health": "Saúde",
     "ia": "IA",
     "diary": "Diário",
-    "placeholderDate": "DD/MM/AAAA"
+    "placeholderDate": "DD/MM/AAAA",
+    "aiVetDisclaimer": "Análise feita por IA — Não substitui avaliação veterinária profissional"
   },
   "auth": {
     "login": "Entrar",
@@ -77,7 +78,15 @@
     "confirmNewPassword": "Confirmar nova senha",
     "registerStep1Subtitle": "Passo 1 de 2 — Dados pessoais",
     "emailSentPrefix": "Enviamos um link para",
-    "biometricPrompt": "Entrar no auExpert"
+    "biometricPrompt": "Entrar no auExpert",
+    "birthDate": "Data de nascimento",
+    "errorBirthDateRequired": "Data de nascimento inválida",
+    "errorMinAge": "Você precisa ter ao menos {{age}} anos para criar uma conta",
+    "acceptTermsPrefix": "Li e aceito os",
+    "acceptTermsMiddle": "e a",
+    "readTerms": "Termos de Uso",
+    "readPrivacy": "Política de Privacidade",
+    "errorAcceptTermsRequired": "Você precisa aceitar os termos para continuar"
   },
   "pets": {
     "myPets": "Meus Pets",
@@ -114,6 +123,7 @@
     "breed": "Raça",
     "age": "Idade",
     "weight": "Peso",
+    "weightPlaceholder": "kg",
     "size": "Porte",
     "small": "Pequeno",
     "medium": "Médio",
@@ -281,6 +291,9 @@
     "ocrAnalysis": "Documento Escaneado",
     "ocrItems": "Itens",
     "ocrItemName": "Nome do item",
+    "ocrItemQtyPlaceholder": "qtd",
+    "ocrItemPricePlaceholder": "0,00",
+    "ocrValuePlaceholder": "—",
     "ocrEditHint": "Editar dados extraídos",
     "ocrDivideBy100": "÷100  (8,90 → 0,089)",
     "ocrMultiplyBy100": "×100  (8,90 → 890,00)",
@@ -326,6 +339,20 @@
     "processingPhoto": "✦ Analisando...",
     "processingVideo": "✦ Analisando anexos...",
     "processingAudio": "✦ Analisando sons...",
+    "processingPhases": {
+      "text": "Analisando texto...",
+      "textDone": "Texto analisado",
+      "video": "Analisando vídeo...",
+      "videoDone": "Vídeo analisado",
+      "photo": "Analisando imagem {{current}}/{{total}}...",
+      "photoSingle": "Analisando imagem...",
+      "photoAllDone": "{{count}} imagens analisadas",
+      "photoSingleDone": "Imagem analisada",
+      "audio": "Analisando áudio...",
+      "audioDone": "Áudio analisado",
+      "ocr": "Coletando dados do documento...",
+      "ocrDone": "Dados do documento coletados"
+    },
     "processingError": "Não foi possível gerar a narração",
     "analyzing": "Salvando no diário...",
     "analyzingWait": "A IA vai narrar tudo em segundos.",
@@ -962,6 +989,7 @@
     "regenerateSuccess": "Prontuário atualizado com sucesso!",
     "neutered": "Castrado",
     "notNeutered": "Não castrado",
+    "microchipLabel": "Microchip: {{value}}",
     "tutor": "Tutor",
     "vaccinesStatus": {
       "current": "Vacinas em dia",
@@ -1002,7 +1030,137 @@
     "qrShareMessage_female": "Prontuário de emergência da {{name}}",
     "qrShareTitle": "Prontuário de emergência — {{name}}",
     "qrDisclaimer": "Este QR dá acesso aos dados médicos essenciais em caso de emergência · auExpert",
-    "manageRecords": "Gerenciar registros de saúde"
+    "manageRecords": "Gerenciar registros de saúde",
+    "sexLabel": "Sexo",
+    "sex": {
+      "male": "Macho",
+      "female": "Fêmea"
+    },
+    "birthDate": "Data de nascimento",
+    "sizeLabel": "Porte",
+    "size": {
+      "small": "Pequeno",
+      "medium": "Médio",
+      "large": "Grande"
+    },
+    "color": "Pelagem",
+    "bloodType": "Tipo sanguíneo",
+    "vaccineLab": "Laboratório",
+    "vaccineDose": "Dose",
+    "vaccineClinic": "Clínica",
+    "medicationType": {
+      "antiparasitic": "Antiparasitário",
+      "supplement": "Suplemento",
+      "antibiotic": "Antibiótico",
+      "anti_inflammatory": "Anti-inflamatório",
+      "analgesic": "Analgésico",
+      "antifungal": "Antifúngico",
+      "vermifuge": "Vermífugo",
+      "other": "Outro"
+    },
+    "medicationReason": "Motivo",
+    "prescribedBy": "Prescrito por",
+    "allergyConfirmed": "Confirmada",
+    "allergyUnconfirmed": "Suspeita",
+    "allergyDiagnosedDate": "Diagnosticada em",
+    "allergyDiagnosedBy": "Diagnosticada por",
+    "surgeriesTitle": "Cirurgias",
+    "surgeryStatus": {
+      "scheduled": "Agendada",
+      "recovering": "Em recuperação",
+      "recovered": "Recuperado",
+      "complications": "Com complicações"
+    },
+    "surgeryAnesthesia": "Anestesia",
+    "surgeryClinic": "Clínica",
+    "consultationType": {
+      "routine": "Rotina",
+      "emergency": "Emergência",
+      "specialist": "Especialista",
+      "surgery": "Cirurgia",
+      "follow_up": "Retorno"
+    },
+    "consultationPrescriptions": "Prescrições",
+    "consultationFollowUp": "Retorno em",
+    "consultationCost": "Custo",
+    "examAbnormalCount": "{{n}} exame(s) com alteração",
+    "emergencyCard": {
+      "title": "Cartão de emergência",
+      "subtitle": "Informações críticas para socorristas",
+      "allergies": "Alergias críticas",
+      "activeMeds": "Medicações ativas",
+      "chronic": "Condições crônicas",
+      "bloodType": "Tipo sanguíneo",
+      "tutor": "Tutor",
+      "vet": "Veterinário"
+    },
+    "predispositions": {
+      "title": "Predisposições da raça",
+      "hint": "Condições comuns para a raça — acompanhar proativamente",
+      "severity": {
+        "monitor": "Observar",
+        "watch": "Atenção",
+        "manage": "Manejar"
+      }
+    },
+    "drugInteractions": {
+      "title": "Interações medicamentosas",
+      "hint": "Combinações entre medicações ativas que merecem atenção",
+      "severity": {
+        "mild": "Leve",
+        "moderate": "Moderada",
+        "severe": "Grave"
+      }
+    },
+    "preventive": {
+      "title": "Calendário preventivo",
+      "hint": "Próximas ações de cuidado preventivo sugeridas pela IA",
+      "type": {
+        "vaccine": "Vacina",
+        "deworming": "Vermífugo",
+        "flea_tick": "Antipulgas",
+        "dental": "Higiene dental",
+        "annual_check": "Check-up anual"
+      },
+      "status": {
+        "overdue": "Atrasado",
+        "upcoming": "Em breve",
+        "scheduled": "Agendado",
+        "done": "Concluído"
+      }
+    },
+    "bodySystems": {
+      "title": "Revisão por sistemas",
+      "hint": "Visão geral clínica por sistemas corporais",
+      "status": {
+        "normal": "Normal",
+        "attention": "Atenção",
+        "abnormal": "Alterado",
+        "unknown": "Sem dados"
+      },
+      "name": {
+        "cardiovascular": "Cardiovascular",
+        "respiratory": "Respiratório",
+        "gastrointestinal": "Gastrointestinal",
+        "urinary": "Urinário",
+        "neurological": "Neurológico",
+        "musculoskeletal": "Musculoesquelético",
+        "dermatologic": "Dermatológico",
+        "ophthalmologic": "Oftalmológico",
+        "otologic": "Otológico",
+        "dental": "Odontológico"
+      }
+    },
+    "examFlags": {
+      "title": "Valores alterados em exames",
+      "hint": "Parâmetros fora da faixa de referência identificados pela IA",
+      "ref": "Ref.",
+      "flag": {
+        "low": "Baixo",
+        "high": "Alto",
+        "abnormal": "Anormal"
+      }
+    }
   },
   "pdf": {
     "title": "Histórico Importado",
@@ -1134,6 +1292,8 @@
     "event": {
       "revaccination": "Revacinação",
       "returnVisit": "Retorno",
+      "consultation": "Consulta",
+      "exam": "Exame",
       "medicationEnd": "Fim do tratamento",
       "grooming": "Banho e tosa",
       "boarding": "Hospedagem",
@@ -1284,6 +1444,13 @@
     "activity": {
       "missing": "{{pet}} não tem registro de atividade física esta semana"
     },
+    "photoToxic": {
+      "title": "Planta/objeto tóxico detectado na foto"
+    },
+    "videoLowEnergy": {
+      "title": "Baixa energia ou dificuldade de locomoção detectada",
+      "bodyMetrics": "Energia: {{energy}}/100. Locomoção: {{locomotion}}/100."
+    },
     "tab": "Análises"
   },
   "ia": {
@@ -1361,7 +1528,143 @@
     "category_nutricao": "Nutricao",
     "category_social": "Social",
     "category_aventura": "Aventura",
-    "category_legado": "Legado"
+    "category_legado": "Legado",
+    "category_diary": "Diário",
+    "category_health": "Saúde",
+    "category_financial": "Financeiro",
+    "category_travel": "Viagens",
+    "category_milestone": "Marcos",
+    "category_special": "Especiais",
+    "catalog": {
+      "first_entry": {
+        "title": "Primeiro Registro",
+        "desc": "Criou a primeira entrada no diário"
+      },
+      "diary_10": {
+        "title": "Contador Iniciante",
+        "desc": "10 entradas no diário"
+      },
+      "diary_50": {
+        "title": "Cronista Dedicado",
+        "desc": "50 entradas no diário"
+      },
+      "diary_100": {
+        "title": "Memória Viva",
+        "desc": "100 entradas no diário"
+      },
+      "diary_365": {
+        "title": "Um Ano de Histórias",
+        "desc": "365 entradas no diário"
+      },
+      "first_photo": {
+        "title": "Fotógrafo Estreante",
+        "desc": "Primeira foto tirada pelo app"
+      },
+      "photo_10": {
+        "title": "Fotógrafo Iniciante",
+        "desc": "10 fotos classificadas pela IA"
+      },
+      "photo_50": {
+        "title": "Scanner Pro",
+        "desc": "50 fotos e documentos classificados"
+      },
+      "first_voice": {
+        "title": "Primeira Voz",
+        "desc": "Primeiro registro por voz"
+      },
+      "first_video": {
+        "title": "Diretor Estreante",
+        "desc": "Primeiro vídeo gravado"
+      },
+      "first_pdf": {
+        "title": "Importador",
+        "desc": "Primeiro prontuário importado em PDF"
+      },
+      "all_input_types": {
+        "title": "Explorador Completo",
+        "desc": "Usou todos os 8 tipos de entrada"
+      },
+      "streak_7": {
+        "title": "7 Dias Seguidos",
+        "desc": "7 dias consecutivos com registro"
+      },
+      "streak_30": {
+        "title": "Hábito Formado",
+        "desc": "30 dias consecutivos com registro"
+      },
+      "first_vaccine_scan": {
+        "title": "Prontuário Inteligente",
+        "desc": "Registrou vacina via foto da carteirinha"
+      },
+      "first_exam_import": {
+        "title": "Laudos Digitais",
+        "desc": "Importou primeiro resultado de exame"
+      },
+      "first_weight": {
+        "title": "Peso Registrado",
+        "desc": "Primeiro registro de peso"
+      },
+      "weight_12_months": {
+        "title": "Evolução Completa",
+        "desc": "12 meses de peso registrado"
+      },
+      "first_friend": {
+        "title": "Primeiro Amigo",
+        "desc": "Primeiro amigo registrado no diário"
+      },
+      "friends_5": {
+        "title": "Pet Popular",
+        "desc": "5 amigos diferentes registrados"
+      },
+      "best_friend": {
+        "title": "Melhor Amigo",
+        "desc": "Mesmo pet encontrado 8+ vezes"
+      },
+      "social_butterfly": {
+        "title": "Muito Sociável",
+        "desc": "10 amigos diferentes registrados"
+      },
+      "first_expense": {
+        "title": "Primeiro Gasto",
+        "desc": "Primeiro gasto registrado"
+      },
+      "expense_10": {
+        "title": "Contador de Gastos",
+        "desc": "10 gastos registrados"
+      },
+      "first_invoice_scan": {
+        "title": "Nota Fiscal Scanner",
+        "desc": "Primeiro gasto via scanner de nota fiscal"
+      },
+      "plan_roi_positive": {
+        "title": "Investimento Inteligente",
+        "desc": "Plano pet se pagou (reembolso > mensalidades)"
+      },
+      "first_travel": {
+        "title": "Primeira Aventura",
+        "desc": "Primeira viagem registrada com o pet"
+      },
+      "travel_5": {
+        "title": "Pet Viajante",
+        "desc": "5 viagens diferentes registradas"
+      },
+      "travel_10": {
+        "title": "Explorador Aventureiro",
+        "desc": "10 viagens registradas"
+      },
+      "pet_birthday_1": {
+        "title": "1 Ano Juntos",
+        "desc": "1 ano de diário ativo"
+      },
+      "anxiety_improvement": {
+        "title": "Mais Tranquilo",
+        "desc": "Humor positivo por 14 dias seguidos"
+      },
+      "early_adopter": {
+        "title": "Pioneiro",
+        "desc": "Um dos primeiros tutores do auExpert"
+      }
+    }
   },
   "travels": {
     "screenTitle": "VIAGENS DO {{name}}",
@@ -1557,7 +1860,8 @@
     "aiTrainingDesc": "Compartilhar dados anônimos do diário para treinar nossa IA veterinária",
     "aiTrainingNote": "Apenas dados anonimizados. Nunca seu nome, endereço ou dados de identificação. Você pode revogar a qualquer momento.",
     "saved": "Preferências salvas!",
-    "micSection": "Microfone"
+    "micSection": "Microfone",
+    "legal": "Legal"
   },
   "help": {
     "title": "Ajuda e Suporte",
@@ -1823,6 +2127,7 @@
     "accessGrantedNow":          "{{email}} já tem acesso a {{pet}}!",
     "accessPending":             "{{email}} verá {{pet}} ao abrir o app",
     "emailRequiredForCoparent":  "Co-tutor tem acesso completo — e-mail obrigatório para segurança.",
+    "emailPlaceholder":          "email@exemplo.com",
     "noPermissionCoparent":      "Só o dono pode convidar co-tutores",
     "rootBadge":                 "ROOT",
     "ownerWarning":              "O co-dono tem poderes de administrador. Só o tutor fundador pode remover donos.",
@@ -1838,6 +2143,7 @@
   },
   "errors": {
     "network": "Opa, caí da rede! Verifica o Wi-Fi e tenta de novo?",
+    "timeout": "Isso tá demorando demais! Tenta de novo daqui a pouco?",
     "server": "Os servidores foram tirar uma soneca. Volta daqui a pouquinho!",
     "sessionExpired": "Faz tempo que você não vem! Entra de novo com a senha.",
     "notFound": "Hmm, não achei o que você queria. Tenta atualizar a tela!",
@@ -1853,7 +2159,9 @@
     "aiRoutineTimeout": "A IA demorou demais dessa vez. Mas a entrada foi salva!",
     "editFailed": "Xi, não consegui salvar. Tenta de novo?",
     "unexpectedTitle": "Ops, algo quebrou",
-    "unexpectedBody": "Algo deu errado. Tenta de novo."
+    "unexpectedBody": "Algo deu errado. Tenta de novo.",
+    "sectionCrashTitle": "Essa parte engasgou",
+    "sectionCrashMessage": "Só essa parte do app teve um probleminha — o resto tá tudo bem. Tenta de novo?"
   },
   "pet": {
     "features": "FUNCIONALIDADES",
@@ -2000,7 +2308,77 @@
     "qrEmergency": "Emergência Médica",
     "qrEmergencyDesc": "Alergias, medicamentos e veterinario",
     "qrDaycare": "Check-in Daycare",
-    "qrDaycareDesc": "Entrada rapida em creches e hoteis"
+    "qrDaycareDesc": "Entrada rapida em creches e hoteis",
+    "pdfTitle": "Carteirinha — {{name}}",
+    "pdfSubtitle": "Documento de identificação digital",
+    "pdfReady": "Carteirinha pronta!",
+    "pdfReadySubtitle": "A carteirinha digital está pronta para exportar ou compartilhar.",
+    "printOrSave": "Imprimir ou salvar PDF",
+    "printOrSaveHint": "Abre o visualizador de impressão do sistema",
+    "shareFile": "Compartilhar arquivo",
+    "shareFileHint": "Envie por WhatsApp, e-mail ou qualquer app",
+    "pdfDisclaimer": "Carteirinha digital · auExpert · Multiverso Digital © 2026",
+    "generating": "Gerando carteirinha...",
+    "pdfPetSection": "Dados do Pet",
+    "pdfTutorSection": "Tutor Responsável",
+    "pdfChipSection": "Microchip",
+    "pdfFooterNote": "Em caso de extravio, entre em contato com o tutor pelos dados acima."
+  },
+  "profilePdf": {
+    "pdfTitle": "Perfil do Tutor — {{name}}",
+    "pdfSubtitle": "Ficha completa do tutor",
+    "pdfReady": "Perfil pronto!",
+    "pdfReadySubtitle": "Seu perfil está pronto para exportar ou compartilhar.",
+    "printOrSave": "Imprimir ou salvar PDF",
+    "printOrSaveHint": "Abre o visualizador de impressão do sistema",
+    "shareFile": "Compartilhar arquivo",
+    "shareFileHint": "Envie por WhatsApp, e-mail ou qualquer app",
+    "pdfDisclaimer": "Perfil do tutor · auExpert · Multiverso Digital © 2026",
+    "generating": "Gerando perfil...",
+    "sectionIdentity": "Identificação",
+    "sectionGamification": "Pontuação & Nível",
+    "sectionAddress": "Endereço",
+    "sectionSocial": "Rede Social",
+    "sectionPets": "Pets ({{count}})",
+    "sectionPrivacy": "Privacidade",
+    "memberSince": "Membro desde",
+    "level": "Nível",
+    "xp": "Experiência",
+    "title": "Título",
+    "discount": "Desconto atual",
+    "socialApp": "Aplicativo",
+    "socialHandle": "Contato",
+    "noPets": "Nenhum pet cadastrado ainda.",
+    "footerNote": "Documento gerado automaticamente pelo auExpert. Mantenha seus dados atualizados para receber os melhores cuidados para o seu pet."
+  },
+  "photoAnalysis": {
+    "pdfTitle": "Análises Visuais — {{name}}",
+    "pdfSubtitle": "Relatório de análises por IA",
+    "pdfReady": "Relatório pronto!",
+    "pdfReadySubtitle": "As análises visuais estão prontas para exportar ou compartilhar.",
+    "printOrSave": "Imprimir ou salvar PDF",
+    "printOrSaveHint": "Abre o visualizador de impressão do sistema",
+    "shareFile": "Compartilhar arquivo",
+    "shareFileHint": "Envie por WhatsApp, e-mail ou qualquer app",
+    "pdfDisclaimer": "Análise feita por IA · auExpert · Não substitui laudo veterinário",
+    "generating": "Gerando relatório...",
+    "exportPdf": "Exportar PDF",
+    "emptyExport": "Sem análises para exportar",
+    "sectionBreed": "Identificação",
+    "sectionMood": "Humor observado",
+    "sectionHealth": "Saúde visual",
+    "sectionAlerts": "Alertas",
+    "severityNormal": "Normal",
+    "severityAttention": "Atenção",
+    "severityConcern": "Preocupação",
+    "sourcesTitle": "Fontes da pesquisa",
+    "bodyCondition": "Condição corporal",
+    "skinCoat": "Pele e pelagem",
+    "eyes": "Olhos",
+    "ears": "Orelhas",
+    "mouthTeeth": "Boca e dentes",
+    "posture": "Postura e corpo",
+    "noAlerts": "Nenhum alerta clínico nesta análise"
   },
   "nutrition": {
     "tabRecords": "Registros",
@@ -2111,10 +2489,12 @@
     "racaoPortionValue": "{{g}}g por refeição",
     "racaoDailyPortions": "{{n}}x ao dia",
     "racaoCalories": "{{kcal}} kcal/dia",
+    "caloriesPerDayLabel": "kcal/dia",
     "racaoSince": "Em uso desde {{date}}",
     "racaoLifeStageAlert": "Esta ração pode não ser ideal para esta fase de vida",
     "racaoCalcTitle": "CALCULADORA DE PORÇÃO",
     "racaoCalcWeightLabel": "Peso atual (kg)",
+    "racaoCalcWeightPlaceholder": "4,5",
     "racaoCalcSuggestion": "Sugestão: {{g}}g por refeição",
     "btnTrocarRacao": "Trocar ração",
     "restricoesTitle": "Restrições Alimentares",
@@ -2479,6 +2859,226 @@
     "inOneHour": "Em 1 hora",
     "now": "Agora!",
     "channelAgendaName": "Agenda",
-    "channelAgendaDescription": "Lembretes de eventos agendados para seu pet"
+    "channelAgendaDescription": "Lembretes de eventos agendados para seu pet",
+    "screenTitle": "Notificações",
+    "emptyTitle": "Sem notificações por aqui",
+    "emptyHint": "Quando houver lembretes de vacina, diário ou insights da IA, eles vão aparecer aqui.",
+    "markAllRead": "Marcar todas como lidas",
+    "dismissAction": "Dispensar",
+    "unreadBadge": "{{count}} não lida",
+    "unreadBadge_plural": "{{count}} não lidas",
+    "typeVaccineReminder": "Lembrete de vacina",
+    "typeDiaryReminder": "Lembrete do diário",
+    "typeAiInsight": "Insight da IA",
+    "typeWelcome": "Boas-vindas",
+    "timeJustNow": "Agora mesmo",
+    "timeMinutesAgo": "Há {{count}} min",
+    "timeHoursAgo": "Há {{count}} h",
+    "timeDaysAgo": "Há {{count}} d"
+  },
+  "pdfCommon": {
+    "printOrSave": "Imprimir ou salvar PDF",
+    "printOrSaveHint": "Abre a tela de impressão do sistema",
+    "shareFile": "Compartilhar arquivo",
+    "shareFileHint": "Envia o PDF por e-mail, WhatsApp ou outro app",
+    "generating": "Gerando seu PDF...",
+    "disclaimer": "Relatório gerado pelo auExpert · Multiverso Digital © 2026",
+    "empty": "Nada pra exportar ainda.",
+    "emptyHint": "Quando tiver conteúdo nesta tela, você poderá gerar um PDF."
+  },
+  "agendaPdf": {
+    "title": "Agenda de {{name}}",
+    "subtitle": "{{count}} evento",
+    "subtitle_plural": "{{count}} eventos",
+    "ready": "Agenda pronta para exportar!",
+    "readySubtitle": "Compartilhe com o veterinário ou o cuidador responsável.",
+    "sectionPast": "Histórico",
+    "sectionUpcoming": "Próximos eventos",
+    "allDay": "Dia inteiro",
+    "status_scheduled": "Agendado",
+    "status_confirmed": "Confirmado",
+    "status_done": "Concluído",
+    "status_cancelled": "Cancelado",
+    "status_missed": "Não realizado",
+    "recurrent": "Recorrente"
+  },
+  "healthPdf": {
+    "title": "Saúde de {{name}}",
+    "subtitle": "Relatório completo de saúde",
+    "ready": "Saúde pronta para exportar!",
+    "readySubtitle": "Compartilhe com o veterinário o histórico clínico completo.",
+    "sectionVaccines": "Vacinas",
+    "sectionAllergies": "Alergias",
+    "sectionConsultations": "Consultas",
+    "sectionExams": "Exames",
+    "sectionMedications": "Medicações",
+    "sectionSurgeries": "Cirurgias",
+    "sectionMetrics": "Métricas clínicas",
+    "sectionExpenses": "Gastos com saúde",
+    "empty": "Nenhum registro nesta seção."
+  },
+  "happinessPdf": {
+    "title": "Felicidade de {{name}}",
+    "subtitle": "Tendência de humor (últimos 90 dias)",
+    "ready": "Relatório de humor pronto!",
+    "readySubtitle": "Um retrato sensível de como {{name}} tem passado nos últimos dias.",
+    "summary": "Resumo",
+    "avgScore": "Score médio",
+    "dominantMood": "Humor dominante",
+    "totalEntries": "Registros",
+    "streak": "Sequência",
+    "streakDays": "{{count}} dia",
+    "streakDays_plural": "{{count}} dias",
+    "trend": "Tendência",
+    "trendUp": "Em alta",
+    "trendDown": "Em queda",
+    "trendStable": "Estável",
+    "daysBreakdown": "Detalhamento por dia"
+  },
+  "expensesPdf": {
+    "title": "Gastos de {{name}}",
+    "subtitle": "{{count}} gasto registrado",
+    "subtitle_plural": "{{count}} gastos registrados",
+    "ready": "Relatório de gastos pronto!",
+    "readySubtitle": "Ótimo para fechar contas, reembolsos ou mostrar ao seu contador.",
+    "total": "Total",
+    "byCategory": "Por categoria",
+    "itemsTable": "Detalhe das compras"
+  },
+  "friendsPdf": {
+    "title": "Amigos de {{name}}",
+    "subtitle": "{{count}} amigo registrado",
+    "subtitle_plural": "{{count}} amigos registrados",
+    "ready": "Rede de amigos pronta!",
+    "readySubtitle": "A galera que o(a) {{name}} encontra pelo caminho.",
+    "firstMet": "Se conheceram em",
+    "lastSeen": "Último encontro",
+    "meetCount": "{{count}} encontro",
+    "meetCount_plural": "{{count}} encontros"
+  },
+  "achievementsPdf": {
+    "title": "Conquistas de {{name}}",
+    "subtitle": "Nível {{level}} · {{xp}} XP",
+    "ready": "Conquistas prontas para exportar!",
+    "readySubtitle": "A jornada de {{name}} em medalhas e marcos.",
+    "level": "Nível",
+    "xp": "XP total",
+    "unlockedAt": "Desbloqueada em",
+    "category": "Categoria",
+    "rarity_common": "Comum",
+    "rarity_rare": "Rara",
+    "rarity_epic": "Épica",
+    "rarity_legendary": "Lendária"
+  },
+  "travelPdf": {
+    "title": "Viagens de {{name}}",
+    "subtitle": "Histórico completo de aventuras",
+    "ready": "Relatório de viagens pronto!",
+    "readySubtitle": "Compartilhe com familiares ou com o cuidador.",
+    "summary": "Resumo",
+    "dates": "Período",
+    "distance": "Distância"
+  },
+  "plansPdf": {
+    "title": "Planos de {{name}}",
+    "subtitle": "Seguros, planos de saúde e assistências",
+    "ready": "Relatório de planos pronto!",
+    "readySubtitle": "Tenha sempre em mãos os contratos e coberturas do seu pet.",
+    "summary": "Resumo",
+    "listTitle": "Planos registrados",
+    "active": "Ativos",
+    "monthlyCost": "Gasto mensal",
+    "nextRenewal": "Próxima renovação",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "coverage": "Cobertura",
+    "start": "Início",
+    "end": "Fim",
+    "renewal": "Renovação",
+    "coverageIncludes": "Inclui"
+  },
+  "painelPdf": {
+    "title": "Painel de {{name}}",
+    "subtitle": "Visão geral consolidada de todas as lentes",
+    "ready": "Painel pronto para exportar!",
+    "readySubtitle": "Um panorama completo de {{name}} em um único documento.",
+    "prontuarioTitle": "Prontuário",
+    "prontuarioTotalVac": "Vacinas",
+    "prontuarioOk": "Em dia",
+    "prontuarioOverdue": "Atrasadas",
+    "prontuarioUpcoming": "Próximas (30d)",
+    "prontuarioOverdueList": "Vacinas atrasadas",
+    "nutritionTitle": "Nutrição",
+    "nutritionNone": "Sem alimento ativo registrado.",
+    "nutritionPortion": "Porção",
+    "nutritionDaily": "Diárias",
+    "nutritionKcal": "Kcal",
+    "nutritionSupplements": "Suplementos",
+    "nutritionTreats": "Petiscos (30d)",
+    "nutritionIntolerances": "Intolerâncias",
+    "expensesTitle": "Gastos",
+    "expensesNone": "Sem gastos registrados no mês.",
+    "expensesMonthTotal": "Total do mês",
+    "expensesMonthCount": "Lançamentos",
+    "expensesTopCategories": "Principais categorias",
+    "friendsTitle": "Amigos",
+    "friendsNone": "Nenhum amigo registrado ainda.",
+    "friendsTotal": "Total",
+    "friendsBest": "Melhores amigos",
+    "achievementsTitle": "Conquistas",
+    "achievementsNone": "Nenhuma conquista desbloqueada ainda.",
+    "achievementsLevel": "Nível",
+    "achievementsXP": "XP",
+    "achievementsCount": "Total",
+    "achievementsRecent": "Recentes",
+    "happinessTitle": "Felicidade",
+    "happinessNone": "Sem registros de humor recentes.",
+    "happinessAvg": "Score médio",
+    "happinessDominant": "Humor dominante",
+    "happinessStreak": "Sequência",
+    "happinessEntries": "Registros",
+    "happinessTrendLabel": "Tendência",
+    "trendUp": "Em alta",
+    "trendDown": "Em queda",
+    "trendStable": "Estável",
+    "travelsTitle": "Viagens",
+    "travelsNone": "Nenhuma viagem registrada ainda.",
+    "travelsTrips": "Viagens",
+    "travelsKm": "Km",
+    "travelsDays": "Dias",
+    "plansTitle": "Planos",
+    "plansNone": "Nenhum plano registrado ainda.",
+    "plansActive": "Ativos",
+    "plansMonthly": "Mensal",
+    "plansNextRenewal": "Próx. renovação"
+  },
+  "nutritionPdf": {
+    "icon": "Relatório de nutrição",
+    "title": "Nutrição de {{name}}",
+    "subtitle": "Alimentação, restrições e avaliação da IA",
+    "ready": "Relatório de nutrição pronto!",
+    "readySubtitle": "Um resumo completo da alimentação de {{name}}.",
+    "sectionOverview": "Visão geral",
+    "sectionAlerts": "Alertas",
+    "sectionCurrentFood": "Alimentação atual",
+    "sectionRestrictions": "Restrições e intolerâncias",
+    "sectionSupplements": "Suplementos",
+    "sectionHistory": "Histórico de alimentos",
+    "sectionAI": "Avaliação da IA",
+    "modalidade": "Modalidade",
+    "natural": "natural",
+    "lifeStage": "Fase de vida",
+    "weight": "Peso",
+    "startedAt": "Início",
+    "ongoing": "em uso",
+    "noCurrentFood": "Nenhum alimento ativo registrado.",
+    "aiScore": "Score nutricional",
+    "aiPros": "Pontos positivos",
+    "aiCons": "Pontos de atenção",
+    "aiRecommendation": "Recomendação",
+    "aiUpdatedAt": "Atualizado em"
+  },
+  "hubPdf": {
+    "icon": "Exportar meu perfil"
   }
 }

@@ -11,7 +11,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,12 +32,15 @@ import {
   Settings2,
   Venus,
   Mars,
+  FileText,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
+import { radii, spacing } from '../../../../constants/spacing';
 import { useNutricao } from '../../../../hooks/useNutricao';
 import { usePets } from '../../../../hooks/usePets';
 import { sexContext } from '../../../../utils/petGender';
+import { Skeleton } from '../../../../components/Skeleton';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +132,8 @@ export default function NutricaoScreen() {
   const nav = (sub: string) => router.push(`/pet/${petId}/nutrition/${sub}` as never);
 
   // ── Loading ───────────────────────────────────────────────────────────────
+  // Skeleton que espelha a estrutura real: pills → food card → 2 feature cards.
+  // CLAUDE.md §12.2: nunca mostrar tela vazia / spinner infinito.
   if (isLoadingNutricao) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -138,10 +142,26 @@ export default function NutricaoScreen() {
             <ChevronLeft size={rs(22)} color={colors.accent} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('nutrition.title')}</Text>
-          <View style={styles.backBtn} />
+          <View style={styles.headerActions}>
+            <View style={styles.actionBtn} />
+            <View style={styles.actionBtn} />
+          </View>
         </View>
-        <View style={styles.centered}>
-          <ActivityIndicator color={colors.accent} size="large" />
+        <View style={styles.scrollContent}>
+          {/* Subtitle + sex pill row */}
+          <Skeleton width="80%" height={rs(20)} />
+          <View style={{ height: spacing.md }} />
+          {/* Info pills row */}
+          <Skeleton width="100%" height={rs(32)} radius={radii.md} />
+          <View style={{ height: spacing.lg }} />
+          {/* Current food card */}
+          <Skeleton width="100%" height={rs(130)} radius={radii.card} />
+          <View style={{ height: spacing.md }} />
+          {/* Modalidade feature card */}
+          <Skeleton width="100%" height={rs(100)} radius={radii.card} />
+          <View style={{ height: spacing.md }} />
+          {/* IA evaluation card */}
+          <Skeleton width="100%" height={rs(120)} radius={radii.card} />
         </View>
       </SafeAreaView>
     );
@@ -171,9 +191,18 @@ export default function NutricaoScreen() {
           <ChevronLeft size={rs(22)} color={colors.accent} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('nutrition.title')}</Text>
-        <TouchableOpacity onPress={() => nav('modalidade')} style={styles.backBtn}>
-          <Settings2 size={rs(20)} color={colors.accent} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={() => router.push(`/pet/${petId}/nutrition-pdf` as never)}
+            style={styles.actionBtn}
+            accessibilityLabel={t('nutritionPdf.icon')}
+          >
+            <FileText size={rs(20)} color={colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => nav('modalidade')} style={styles.actionBtn}>
+            <Settings2 size={rs(20)} color={colors.accent} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -356,9 +385,10 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: rs(36), height: rs(36), alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: fs(17), fontWeight: '700', color: colors.text },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: rs(2) },
+  actionBtn: { width: rs(36), height: rs(36), alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: rs(16), paddingBottom: rs(40) },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',

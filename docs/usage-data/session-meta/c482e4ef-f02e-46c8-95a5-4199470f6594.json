@@ -1,0 +1,49 @@
+{
+  "session_id": "c482e4ef-f02e-46c8-95a5-4199470f6594",
+  "project_path": "e:\\aa_projetos_claude\\antigolpe_ia",
+  "start_time": "2026-04-06T19:35:42.338Z",
+  "duration_minutes": 93,
+  "user_message_count": 5,
+  "assistant_message_count": 51,
+  "tool_counts": {
+    "Bash": 32,
+    "Read": 1,
+    "Edit": 1,
+    "Write": 2
+  },
+  "languages": {
+    "Markdown": 1
+  },
+  "git_commits": 3,
+  "git_pushes": 3,
+  "input_tokens": 55,
+  "output_tokens": 13469,
+  "first_prompt": "atualizar documentação e o github. Gerar versão release no github.",
+  "user_interruptions": 0,
+  "user_response_times": [],
+  "tool_errors": 5,
+  "tool_error_categories": {
+    "Command Failed": 5
+  },
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 308,
+  "lines_removed": 1,
+  "files_modified": 3,
+  "message_hours": [
+    16,
+    16,
+    16,
+    16,
+    16
+  ],
+  "user_message_timestamps": [
+    "2026-04-06T19:35:42.338Z",
+    "2026-04-06T19:34:17.753Z",
+    "2026-04-06T19:34:17.753Z",
+    "2026-04-06T19:35:42.450Z",
+    "2026-04-06T19:38:08.095Z"
+  ]
+}

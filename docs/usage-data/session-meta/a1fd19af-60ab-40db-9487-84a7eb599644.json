@@ -1,0 +1,42 @@
+{
+  "session_id": "a1fd19af-60ab-40db-9487-84a7eb599644",
+  "project_path": "e:\\Beli\\Minha Financas\\IR_GERAL\\IRPF2026\\venda ações",
+  "start_time": "2026-04-11T03:03:23.515Z",
+  "duration_minutes": 507,
+  "user_message_count": 5,
+  "assistant_message_count": 3,
+  "tool_counts": {
+    "Agent": 1
+  },
+  "languages": {},
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 7,
+  "output_tokens": 1143,
+  "first_prompt": "como configurar o claude",
+  "user_interruptions": 0,
+  "user_response_times": [],
+  "tool_errors": 0,
+  "tool_error_categories": {},
+  "uses_task_agent": true,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    0,
+    8,
+    8,
+    8,
+    8
+  ],
+  "user_message_timestamps": [
+    "2026-04-11T03:03:23.515Z",
+    "2026-04-11T11:26:45.747Z",
+    "2026-04-11T11:26:45.747Z",
+    "2026-04-11T11:30:15.175Z",
+    "2026-04-11T11:30:15.175Z"
+  ]
+}

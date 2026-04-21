@@ -1,0 +1,15 @@
+{
+  "underlying_goal": "User appeared to be attempting to run a local plugin command but encountered repeated errors",
+  "goal_categories": {
+    "warmup_minimal": 1
+  },
+  "outcome": "unclear_from_transcript",
+  "user_satisfaction_counts": {},
+  "claude_helpfulness": "unhelpful",
+  "session_type": "single_task",
+  "friction_counts": {},
+  "friction_detail": "Session consisted only of local command error messages with no actual interaction with Claude.",
+  "primary_success": "none",
+  "brief_summary": "User triggered local commands that produced 'Unknown skill: plugin' errors repeatedly with no Claude interaction.",
+  "session_id": "19e13911-c760-4d09-abbf-dd240ad99134"
+}

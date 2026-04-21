@@ -23,7 +23,8 @@
     "health": "Health",
     "ia": "AI",
     "diary": "Diary",
-    "placeholderDate": "MM/DD/YYYY"
+    "placeholderDate": "MM/DD/YYYY",
+    "aiVetDisclaimer": "AI-generated analysis — Does not replace professional veterinary evaluation"
   },
   "auth": {
     "login": "Sign In",
@@ -77,7 +78,15 @@
     "confirmNewPassword": "Confirm new password",
     "registerStep1Subtitle": "Step 1 of 2 — Personal details",
     "emailSentPrefix": "We sent a link to",
-    "biometricPrompt": "Sign in to auExpert"
+    "biometricPrompt": "Sign in to auExpert",
+    "birthDate": "Date of birth",
+    "errorBirthDateRequired": "Invalid date of birth",
+    "errorMinAge": "You must be at least {{age}} years old to create an account",
+    "acceptTermsPrefix": "I have read and accept the",
+    "acceptTermsMiddle": "and the",
+    "readTerms": "Terms of Service",
+    "readPrivacy": "Privacy Policy",
+    "errorAcceptTermsRequired": "You must accept the terms to continue"
   },
   "pets": {
     "myPets": "My Pets",
@@ -114,6 +123,7 @@
     "breed": "Breed",
     "age": "Age",
     "weight": "Weight",
+    "weightPlaceholder": "kg",
     "size": "Size",
     "small": "Small",
     "medium": "Medium",
@@ -280,6 +290,9 @@
     "ocrAnalysis": "Scanned Document",
     "ocrItems": "Items",
     "ocrItemName": "Item name",
+    "ocrItemQtyPlaceholder": "qty",
+    "ocrItemPricePlaceholder": "0.00",
+    "ocrValuePlaceholder": "—",
     "ocrEditHint": "Edit extracted data",
     "ocrDivideBy100": "÷100  (8.90 → 0.09)",
     "ocrMultiplyBy100": "×100  (8.90 → 890.00)",
@@ -325,6 +338,20 @@
     "processingPhoto": "✦ Analyzing...",
     "processingVideo": "✦ Analyzing attachments...",
     "processingAudio": "✦ Analyzing sounds...",
+    "processingPhases": {
+      "text": "Analyzing text...",
+      "textDone": "Text analyzed",
+      "video": "Analyzing video...",
+      "videoDone": "Video analyzed",
+      "photo": "Analyzing image {{current}}/{{total}}...",
+      "photoSingle": "Analyzing image...",
+      "photoAllDone": "{{count}} images analyzed",
+      "photoSingleDone": "Image analyzed",
+      "audio": "Analyzing audio...",
+      "audioDone": "Audio analyzed",
+      "ocr": "Collecting document data...",
+      "ocrDone": "Document data collected"
+    },
     "processingError": "Could not generate the narration",
     "analyzing": "Saving to diary...",
     "analyzingWait": "AI will narrate everything in seconds.",
@@ -949,6 +976,7 @@
     "regenerateSuccess": "Medical record updated successfully!",
     "neutered": "Neutered",
     "notNeutered": "Not neutered",
+    "microchipLabel": "Microchip: {{value}}",
     "tutor": "Tutor",
     "vaccinesStatus": {
       "current": "Vaccines up to date",
@@ -988,7 +1016,137 @@
     "qrShareMessage": "{{name}}'s emergency medical record",
     "qrShareTitle": "Emergency medical record — {{name}}",
     "qrDisclaimer": "This QR provides access to essential medical data in emergencies · auExpert",
-    "manageRecords": "Manage health records"
+    "manageRecords": "Manage health records",
+    "sexLabel": "Sex",
+    "sex": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "birthDate": "Date of birth",
+    "sizeLabel": "Size",
+    "size": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    },
+    "color": "Coat",
+    "bloodType": "Blood type",
+    "vaccineLab": "Laboratory",
+    "vaccineDose": "Dose",
+    "vaccineClinic": "Clinic",
+    "medicationType": {
+      "antiparasitic": "Antiparasitic",
+      "supplement": "Supplement",
+      "antibiotic": "Antibiotic",
+      "anti_inflammatory": "Anti-inflammatory",
+      "analgesic": "Analgesic",
+      "antifungal": "Antifungal",
+      "vermifuge": "Vermifuge",
+      "other": "Other"
+    },
+    "medicationReason": "Reason",
+    "prescribedBy": "Prescribed by",
+    "allergyConfirmed": "Confirmed",
+    "allergyUnconfirmed": "Suspected",
+    "allergyDiagnosedDate": "Diagnosed on",
+    "allergyDiagnosedBy": "Diagnosed by",
+    "surgeriesTitle": "Surgeries",
+    "surgeryStatus": {
+      "scheduled": "Scheduled",
+      "recovering": "Recovering",
+      "recovered": "Recovered",
+      "complications": "With complications"
+    },
+    "surgeryAnesthesia": "Anesthesia",
+    "surgeryClinic": "Clinic",
+    "consultationType": {
+      "routine": "Routine",
+      "emergency": "Emergency",
+      "specialist": "Specialist",
+      "surgery": "Surgery",
+      "follow_up": "Follow-up"
+    },
+    "consultationPrescriptions": "Prescriptions",
+    "consultationFollowUp": "Follow-up on",
+    "consultationCost": "Cost",
+    "examAbnormalCount": "{{n}} exam(s) with abnormal findings",
+    "emergencyCard": {
+      "title": "Emergency card",
+      "subtitle": "Critical information for first responders",
+      "allergies": "Critical allergies",
+      "activeMeds": "Active medications",
+      "chronic": "Chronic conditions",
+      "bloodType": "Blood type",
+      "tutor": "Tutor",
+      "vet": "Veterinarian"
+    },
+    "predispositions": {
+      "title": "Breed predispositions",
+      "hint": "Conditions commonly seen in this breed — monitor proactively",
+      "severity": {
+        "monitor": "Monitor",
+        "watch": "Watch",
+        "manage": "Manage"
+      }
+    },
+    "drugInteractions": {
+      "title": "Drug interactions",
+      "hint": "Combinations among active medications that deserve attention",
+      "severity": {
+        "mild": "Mild",
+        "moderate": "Moderate",
+        "severe": "Severe"
+      }
+    },
+    "preventive": {
+      "title": "Preventive calendar",
+      "hint": "Upcoming preventive care actions suggested by the AI",
+      "type": {
+        "vaccine": "Vaccine",
+        "deworming": "Deworming",
+        "flea_tick": "Flea & tick",
+        "dental": "Dental care",
+        "annual_check": "Annual check-up"
+      },
+      "status": {
+        "overdue": "Overdue",
+        "upcoming": "Upcoming",
+        "scheduled": "Scheduled",
+        "done": "Done"
+      }
+    },
+    "bodySystems": {
+      "title": "Systems review",
+      "hint": "Clinical overview by body system",
+      "status": {
+        "normal": "Normal",
+        "attention": "Attention",
+        "abnormal": "Abnormal",
+        "unknown": "No data"
+      },
+      "name": {
+        "cardiovascular": "Cardiovascular",
+        "respiratory": "Respiratory",
+        "gastrointestinal": "Gastrointestinal",
+        "urinary": "Urinary",
+        "neurological": "Neurological",
+        "musculoskeletal": "Musculoskeletal",
+        "dermatologic": "Dermatologic",
+        "ophthalmologic": "Ophthalmologic",
+        "otologic": "Otologic",
+        "dental": "Dental"
+      }
+    },
+    "examFlags": {
+      "title": "Abnormal lab values",
+      "hint": "Parameters outside the reference range flagged by the AI",
+      "ref": "Ref.",
+      "flag": {
+        "low": "Low",
+        "high": "High",
+        "abnormal": "Abnormal"
+      }
+    }
   },
   "pdf": {
     "title": "Imported History",
@@ -1120,6 +1278,8 @@
     "event": {
       "revaccination": "Revaccination",
       "returnVisit": "Return visit",
+      "consultation": "Consultation",
+      "exam": "Exam",
       "medicationEnd": "End of treatment",
       "grooming": "Grooming",
       "boarding": "Boarding",
@@ -1269,6 +1429,13 @@
     "activity": {
       "missing": "{{pet}} has no physical activity logged this week"
     },
+    "photoToxic": {
+      "title": "Toxic plant/object detected in photo"
+    },
+    "videoLowEnergy": {
+      "title": "Low energy or locomotion issues detected",
+      "bodyMetrics": "Energy: {{energy}}/100. Locomotion: {{locomotion}}/100."
+    },
     "tab": "Insights"
   },
   "ia": {
@@ -1346,7 +1513,143 @@
     "category_nutricao": "Nutrition",
     "category_social": "Social",
     "category_aventura": "Adventure",
-    "category_legado": "Legacy"
+    "category_legado": "Legacy",
+    "category_diary": "Diary",
+    "category_health": "Health",
+    "category_financial": "Expenses",
+    "category_travel": "Travel",
+    "category_milestone": "Milestones",
+    "category_special": "Special",
+    "catalog": {
+      "first_entry": {
+        "title": "First Entry",
+        "desc": "Created the first diary entry"
+      },
+      "diary_10": {
+        "title": "Rookie Storyteller",
+        "desc": "10 diary entries"
+      },
+      "diary_50": {
+        "title": "Dedicated Chronicler",
+        "desc": "50 diary entries"
+      },
+      "diary_100": {
+        "title": "Living Memory",
+        "desc": "100 diary entries"
+      },
+      "diary_365": {
+        "title": "A Year of Stories",
+        "desc": "365 diary entries"
+      },
+      "first_photo": {
+        "title": "Rookie Photographer",
+        "desc": "First photo taken with the app"
+      },
+      "photo_10": {
+        "title": "Amateur Photographer",
+        "desc": "10 photos classified by AI"
+      },
+      "photo_50": {
+        "title": "Scanner Pro",
+        "desc": "50 photos and documents classified"
+      },
+      "first_voice": {
+        "title": "First Voice",
+        "desc": "First voice entry"
+      },
+      "first_video": {
+        "title": "Rookie Director",
+        "desc": "First video recorded"
+      },
+      "first_pdf": {
+        "title": "Importer",
+        "desc": "First medical record imported as PDF"
+      },
+      "all_input_types": {
+        "title": "Complete Explorer",
+        "desc": "Used all 8 input types"
+      },
+      "streak_7": {
+        "title": "7 Days Straight",
+        "desc": "7 consecutive days with entries"
+      },
+      "streak_30": {
+        "title": "Habit Formed",
+        "desc": "30 consecutive days with entries"
+      },
+      "first_vaccine_scan": {
+        "title": "Smart Medical Record",
+        "desc": "Registered vaccine via vaccine card photo"
+      },
+      "first_exam_import": {
+        "title": "Digital Reports",
+        "desc": "Imported first exam result"
+      },
+      "first_weight": {
+        "title": "Weight Tracked",
+        "desc": "First weight entry"
+      },
+      "weight_12_months": {
+        "title": "Complete Progress",
+        "desc": "12 months of weight records"
+      },
+      "first_friend": {
+        "title": "First Friend",
+        "desc": "First friend registered in the diary"
+      },
+      "friends_5": {
+        "title": "Popular Pet",
+        "desc": "5 different friends registered"
+      },
+      "best_friend": {
+        "title": "Best Friend",
+        "desc": "Same pet met 8+ times"
+      },
+      "social_butterfly": {
+        "title": "Social Butterfly",
+        "desc": "10 different friends registered"
+      },
+      "first_expense": {
+        "title": "First Expense",
+        "desc": "First expense recorded"
+      },
+      "expense_10": {
+        "title": "Expense Tracker",
+        "desc": "10 expenses recorded"
+      },
+      "first_invoice_scan": {
+        "title": "Receipt Scanner",
+        "desc": "First expense via receipt scan"
+      },
+      "plan_roi_positive": {
+        "title": "Smart Investment",
+        "desc": "Pet plan paid for itself (refunds > fees)"
+      },
+      "first_travel": {
+        "title": "First Adventure",
+        "desc": "First trip recorded with the pet"
+      },
+      "travel_5": {
+        "title": "Traveling Pet",
+        "desc": "5 different trips recorded"
+      },
+      "travel_10": {
+        "title": "Adventurous Explorer",
+        "desc": "10 trips recorded"
+      },
+      "pet_birthday_1": {
+        "title": "1 Year Together",
+        "desc": "1 year of active diary"
+      },
+      "anxiety_improvement": {
+        "title": "More Relaxed",
+        "desc": "Positive mood for 14 straight days"
+      },
+      "early_adopter": {
+        "title": "Pioneer",
+        "desc": "One of the first auExpert tutors"
+      }
+    }
   },
   "travels": {
     "screenTitle": "{{name}}'S TRAVELS",
@@ -1539,7 +1842,8 @@
     "aiTrainingDesc": "Share anonymous diary data to train our veterinary AI",
     "aiTrainingNote": "Only anonymized data. Never your name, address or identifying information. You can revoke at any time.",
     "saved": "Preferences saved!",
-    "micSection": "Microphone"
+    "micSection": "Microphone",
+    "legal": "Legal"
   },
   "help": {
     "title": "Help & Support",
@@ -1805,6 +2109,7 @@
     "accessGrantedNow":          "{{email}} can already access {{pet}}!",
     "accessPending":             "{{email}} will see {{pet}} when they open the app",
     "emailRequiredForCoparent":  "Co-parent has full access — email required for security.",
+    "emailPlaceholder":          "email@example.com",
     "noPermissionCoparent":      "Only the owner can invite co-parents",
     "rootBadge":                 "ROOT",
     "ownerWarning":              "A co-owner has admin powers. Only the founding tutor can remove owners.",
@@ -1820,6 +2125,7 @@
   },
   "errors": {
     "network": "Oops, lost the signal! Check your Wi-Fi and try again?",
+    "timeout": "This is taking too long! Want to try again in a moment?",
     "server": "The servers went for a nap. Come back in a bit!",
     "sessionExpired": "It's been a while! Log in again with your password.",
     "notFound": "Hmm, couldn't find that. Try refreshing the screen!",
@@ -1835,7 +2141,9 @@
     "aiRoutineTimeout": "AI took too long this time. But the entry was saved!",
     "editFailed": "Oops, couldn't save. Try again?",
     "unexpectedTitle": "Oops, something broke",
-    "unexpectedBody": "Something went wrong. Try again."
+    "unexpectedBody": "Something went wrong. Try again.",
+    "sectionCrashTitle": "This part hiccuped",
+    "sectionCrashMessage": "Just this section had a little hiccup — the rest of the app is fine. Try again?"
   },
   "pet": {
     "features": "FEATURES",
@@ -1982,7 +2290,77 @@
     "qrEmergency": "Medical Emergency",
     "qrEmergencyDesc": "Allergies, medications and veterinarian",
     "qrDaycare": "Daycare Check-in",
-    "qrDaycareDesc": "Quick entry at daycares and pet hotels"
+    "qrDaycareDesc": "Quick entry at daycares and pet hotels",
+    "pdfTitle": "ID Card — {{name}}",
+    "pdfSubtitle": "Digital identification document",
+    "pdfReady": "ID card ready!",
+    "pdfReadySubtitle": "The digital ID card is ready to export or share.",
+    "printOrSave": "Print or save PDF",
+    "printOrSaveHint": "Opens the system's print viewer",
+    "shareFile": "Share file",
+    "shareFileHint": "Send via WhatsApp, email or any app",
+    "pdfDisclaimer": "Digital ID card · auExpert · Multiverso Digital © 2026",
+    "generating": "Generating ID card...",
+    "pdfPetSection": "Pet Data",
+    "pdfTutorSection": "Responsible Tutor",
+    "pdfChipSection": "Microchip",
+    "pdfFooterNote": "If lost, please contact the tutor using the information above."
+  },
+  "profilePdf": {
+    "pdfTitle": "Tutor Profile — {{name}}",
+    "pdfSubtitle": "Complete tutor record",
+    "pdfReady": "Profile ready!",
+    "pdfReadySubtitle": "Your profile is ready to export or share.",
+    "printOrSave": "Print or save PDF",
+    "printOrSaveHint": "Opens the system print viewer",
+    "shareFile": "Share file",
+    "shareFileHint": "Send via WhatsApp, email, or any app",
+    "pdfDisclaimer": "Tutor profile · auExpert · Multiverso Digital © 2026",
+    "generating": "Generating profile...",
+    "sectionIdentity": "Identification",
+    "sectionGamification": "Score & Level",
+    "sectionAddress": "Address",
+    "sectionSocial": "Social Network",
+    "sectionPets": "Pets ({{count}})",
+    "sectionPrivacy": "Privacy",
+    "memberSince": "Member since",
+    "level": "Level",
+    "xp": "Experience",
+    "title": "Title",
+    "discount": "Current discount",
+    "socialApp": "App",
+    "socialHandle": "Contact",
+    "noPets": "No pets registered yet.",
+    "footerNote": "Document generated automatically by auExpert. Keep your information up to date to get the best care for your pet."
+  },
+  "photoAnalysis": {
+    "pdfTitle": "Visual Analyses — {{name}}",
+    "pdfSubtitle": "AI visual analysis report",
+    "pdfReady": "Report ready!",
+    "pdfReadySubtitle": "The visual analyses are ready to export or share.",
+    "printOrSave": "Print or save PDF",
+    "printOrSaveHint": "Opens the system's print viewer",
+    "shareFile": "Share file",
+    "shareFileHint": "Send via WhatsApp, email or any app",
+    "pdfDisclaimer": "AI analysis · auExpert · Does not replace veterinary diagnosis",
+    "generating": "Generating report...",
+    "exportPdf": "Export PDF",
+    "emptyExport": "No analyses to export",
+    "sectionBreed": "Identification",
+    "sectionMood": "Observed mood",
+    "sectionHealth": "Visual health",
+    "sectionAlerts": "Alerts",
+    "severityNormal": "Normal",
+    "severityAttention": "Attention",
+    "severityConcern": "Concern",
+    "sourcesTitle": "Research sources",
+    "bodyCondition": "Body condition",
+    "skinCoat": "Skin and coat",
+    "eyes": "Eyes",
+    "ears": "Ears",
+    "mouthTeeth": "Mouth and teeth",
+    "posture": "Posture and body",
+    "noAlerts": "No clinical alerts in this analysis"
   },
   "nutrition": {
     "tabRecords": "Records",
@@ -2090,10 +2468,12 @@
     "racaoPortionValue": "{{g}}g per meal",
     "racaoDailyPortions": "{{n}}x per day",
     "racaoCalories": "{{kcal}} kcal/day",
+    "caloriesPerDayLabel": "kcal/day",
     "racaoSince": "In use since {{date}}",
     "racaoLifeStageAlert": "This food may not be ideal for this life stage",
     "racaoCalcTitle": "PORTION CALCULATOR",
     "racaoCalcWeightLabel": "Current weight (kg)",
+    "racaoCalcWeightPlaceholder": "4.5",
     "racaoCalcSuggestion": "Suggestion: {{g}}g per meal",
     "btnTrocarRacao": "Change food",
     "restricoesTitle": "Dietary Restrictions",
@@ -2454,6 +2834,226 @@
     "inOneHour": "In 1 hour",
     "now": "Now!",
     "channelAgendaName": "Agenda",
-    "channelAgendaDescription": "Reminders for your pet's scheduled events"
+    "channelAgendaDescription": "Reminders for your pet's scheduled events",
+    "screenTitle": "Notifications",
+    "emptyTitle": "No notifications yet",
+    "emptyHint": "When there are vaccine reminders, diary prompts, or AI insights, they'll show up here.",
+    "markAllRead": "Mark all as read",
+    "dismissAction": "Dismiss",
+    "unreadBadge": "{{count}} unread",
+    "unreadBadge_plural": "{{count}} unread",
+    "typeVaccineReminder": "Vaccine reminder",
+    "typeDiaryReminder": "Diary reminder",
+    "typeAiInsight": "AI insight",
+    "typeWelcome": "Welcome",
+    "timeJustNow": "Just now",
+    "timeMinutesAgo": "{{count}} min ago",
+    "timeHoursAgo": "{{count}} h ago",
+    "timeDaysAgo": "{{count}} d ago"
+  },
+  "pdfCommon": {
+    "printOrSave": "Print or save PDF",
+    "printOrSaveHint": "Opens the system print preview",
+    "shareFile": "Share file",
+    "shareFileHint": "Send the PDF via email, chat or any other app",
+    "generating": "Generating your PDF...",
+    "disclaimer": "Report generated by auExpert · Multiverso Digital © 2026",
+    "empty": "Nothing to export yet.",
+    "emptyHint": "Once there's content on this screen, you'll be able to export a PDF."
+  },
+  "agendaPdf": {
+    "title": "{{name}}'s Agenda",
+    "subtitle": "{{count}} event",
+    "subtitle_plural": "{{count}} events",
+    "ready": "Agenda ready to export!",
+    "readySubtitle": "Share it with the vet or the caregiver.",
+    "sectionPast": "History",
+    "sectionUpcoming": "Upcoming events",
+    "allDay": "All day",
+    "status_scheduled": "Scheduled",
+    "status_confirmed": "Confirmed",
+    "status_done": "Done",
+    "status_cancelled": "Cancelled",
+    "status_missed": "Missed",
+    "recurrent": "Recurrent"
+  },
+  "healthPdf": {
+    "title": "{{name}}'s Health",
+    "subtitle": "Complete health report",
+    "ready": "Health report ready!",
+    "readySubtitle": "Share the full clinical history with the vet.",
+    "sectionVaccines": "Vaccines",
+    "sectionAllergies": "Allergies",
+    "sectionConsultations": "Consultations",
+    "sectionExams": "Exams",
+    "sectionMedications": "Medications",
+    "sectionSurgeries": "Surgeries",
+    "sectionMetrics": "Clinical metrics",
+    "sectionExpenses": "Health expenses",
+    "empty": "No records in this section."
+  },
+  "happinessPdf": {
+    "title": "{{name}}'s Happiness",
+    "subtitle": "Mood trend (last 90 days)",
+    "ready": "Mood report ready!",
+    "readySubtitle": "A warm snapshot of how {{name}} has been doing lately.",
+    "summary": "Summary",
+    "avgScore": "Average score",
+    "dominantMood": "Dominant mood",
+    "totalEntries": "Entries",
+    "streak": "Streak",
+    "streakDays": "{{count}} day",
+    "streakDays_plural": "{{count}} days",
+    "trend": "Trend",
+    "trendUp": "Trending up",
+    "trendDown": "Trending down",
+    "trendStable": "Stable",
+    "daysBreakdown": "Day-by-day"
+  },
+  "expensesPdf": {
+    "title": "{{name}}'s Expenses",
+    "subtitle": "{{count}} expense",
+    "subtitle_plural": "{{count}} expenses",
+    "ready": "Expenses report ready!",
+    "readySubtitle": "Great for closing the books, reimbursements or your accountant.",
+    "total": "Total",
+    "byCategory": "By category",
+    "itemsTable": "Purchase details"
+  },
+  "friendsPdf": {
+    "title": "{{name}}'s Friends",
+    "subtitle": "{{count}} friend logged",
+    "subtitle_plural": "{{count}} friends logged",
+    "ready": "Friends list ready!",
+    "readySubtitle": "The crew {{name}} meets along the way.",
+    "firstMet": "First met",
+    "lastSeen": "Last seen",
+    "meetCount": "{{count}} meeting",
+    "meetCount_plural": "{{count}} meetings"
+  },
+  "achievementsPdf": {
+    "title": "{{name}}'s Achievements",
+    "subtitle": "Level {{level}} · {{xp}} XP",
+    "ready": "Achievements ready to export!",
+    "readySubtitle": "{{name}}'s journey in medals and milestones.",
+    "level": "Level",
+    "xp": "Total XP",
+    "unlockedAt": "Unlocked on",
+    "category": "Category",
+    "rarity_common": "Common",
+    "rarity_rare": "Rare",
+    "rarity_epic": "Epic",
+    "rarity_legendary": "Legendary"
+  },
+  "travelPdf": {
+    "title": "{{name}}'s Travels",
+    "subtitle": "Full adventure history",
+    "ready": "Travels report ready!",
+    "readySubtitle": "Share with family or with the caretaker.",
+    "summary": "Summary",
+    "dates": "Period",
+    "distance": "Distance"
+  },
+  "plansPdf": {
+    "title": "{{name}}'s Plans",
+    "subtitle": "Insurance, health plans and assistances",
+    "ready": "Plans report ready!",
+    "readySubtitle": "Always have your pet's contracts and coverages at hand.",
+    "summary": "Summary",
+    "listTitle": "Registered plans",
+    "active": "Active",
+    "monthlyCost": "Monthly cost",
+    "nextRenewal": "Next renewal",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "coverage": "Coverage",
+    "start": "Start",
+    "end": "End",
+    "renewal": "Renewal",
+    "coverageIncludes": "Includes"
+  },
+  "painelPdf": {
+    "title": "{{name}}'s Panel",
+    "subtitle": "Consolidated overview across all lenses",
+    "ready": "Panel ready to export!",
+    "readySubtitle": "A complete snapshot of {{name}} in a single document.",
+    "prontuarioTitle": "Medical record",
+    "prontuarioTotalVac": "Vaccines",
+    "prontuarioOk": "Up to date",
+    "prontuarioOverdue": "Overdue",
+    "prontuarioUpcoming": "Upcoming (30d)",
+    "prontuarioOverdueList": "Overdue vaccines",
+    "nutritionTitle": "Nutrition",
+    "nutritionNone": "No active food registered.",
+    "nutritionPortion": "Portion",
+    "nutritionDaily": "Daily",
+    "nutritionKcal": "Kcal",
+    "nutritionSupplements": "Supplements",
+    "nutritionTreats": "Treats (30d)",
+    "nutritionIntolerances": "Intolerances",
+    "expensesTitle": "Expenses",
+    "expensesNone": "No expenses registered this month.",
+    "expensesMonthTotal": "Month total",
+    "expensesMonthCount": "Entries",
+    "expensesTopCategories": "Top categories",
+    "friendsTitle": "Friends",
+    "friendsNone": "No friends registered yet.",
+    "friendsTotal": "Total",
+    "friendsBest": "Best friends",
+    "achievementsTitle": "Achievements",
+    "achievementsNone": "No achievements unlocked yet.",
+    "achievementsLevel": "Level",
+    "achievementsXP": "XP",
+    "achievementsCount": "Total",
+    "achievementsRecent": "Recent",
+    "happinessTitle": "Happiness",
+    "happinessNone": "No recent mood records.",
+    "happinessAvg": "Avg score",
+    "happinessDominant": "Dominant mood",
+    "happinessStreak": "Streak",
+    "happinessEntries": "Entries",
+    "happinessTrendLabel": "Trend",
+    "trendUp": "Rising",
+    "trendDown": "Falling",
+    "trendStable": "Stable",
+    "travelsTitle": "Travels",
+    "travelsNone": "No travels registered yet.",
+    "travelsTrips": "Trips",
+    "travelsKm": "Km",
+    "travelsDays": "Days",
+    "plansTitle": "Plans",
+    "plansNone": "No plans registered yet.",
+    "plansActive": "Active",
+    "plansMonthly": "Monthly",
+    "plansNextRenewal": "Next renewal"
+  },
+  "nutritionPdf": {
+    "icon": "Nutrition report",
+    "title": "{{name}}'s Nutrition",
+    "subtitle": "Diet, restrictions and AI evaluation",
+    "ready": "Nutrition report ready!",
+    "readySubtitle": "A complete summary of {{name}}'s diet.",
+    "sectionOverview": "Overview",
+    "sectionAlerts": "Alerts",
+    "sectionCurrentFood": "Current diet",
+    "sectionRestrictions": "Restrictions and intolerances",
+    "sectionSupplements": "Supplements",
+    "sectionHistory": "Food history",
+    "sectionAI": "AI evaluation",
+    "modalidade": "Approach",
+    "natural": "natural",
+    "lifeStage": "Life stage",
+    "weight": "Weight",
+    "startedAt": "Started",
+    "ongoing": "ongoing",
+    "noCurrentFood": "No active food registered.",
+    "aiScore": "Nutritional score",
+    "aiPros": "Positive points",
+    "aiCons": "Watch-outs",
+    "aiRecommendation": "Recommendation",
+    "aiUpdatedAt": "Updated on"
+  },
+  "hubPdf": {
+    "icon": "Export my profile"
   }
 }

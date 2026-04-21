@@ -17,6 +17,8 @@ import { useDiary } from '../../../../hooks/useDiary';
 import { useDiaryEntry } from '../../../../hooks/useDiaryEntry';
 import { usePet } from '../../../../hooks/usePets';
 import { useToast } from '../../../../components/Toast';
+import { getErrorMessage } from '../../../../utils/errorMessages';
+import { SectionErrorBoundary } from '../../../../components/SectionErrorBoundary';
 import DiaryTimeline from '../../../../components/diary/DiaryTimeline';
 import { OfflineBanner } from '../../../../components/ui/OfflineBanner';
 import { diaryEntryToEvent, scheduledEventToTimelineEvent } from '../../../../components/diary/timelineTypes';
@@ -58,8 +60,8 @@ export default function DiaryScreen() {
   }, [router, id, entries]);
 
   const handleRetryEntry = useCallback((entryId: string) => {
-    retryEntry(entryId).catch(() => {});
-  }, [retryEntry]);
+    retryEntry(entryId).catch((err) => toast(getErrorMessage(err), 'error'));
+  }, [retryEntry, toast]);
 
   const handleOpenPdf = useCallback(() => {
     if (timelineEvents.length === 0) {
@@ -74,23 +76,24 @@ export default function DiaryScreen() {
   return (
     <View style={styles.container}>
       <OfflineBanner petId={id!} />
-      <DiaryTimeline
-        entries={entries}
-        scheduledEvents={scheduledEvents}
-        isLoading={isLoading}
-        petId={id!}
-        petName={petName}
-        petSex={pet?.sex}
-        petSpecies={pet?.species}
-        petAvatarUrl={pet?.avatar_url}
-        petCreatedAt={pet?.created_at}
-        onRefresh={refetch}
-        onNewEntry={handleNewEntry}
-        onEditEntry={handleEditEntry}
-        onRetryEntry={handleRetryEntry}
-        onOpenPdf={handleOpenPdf}
-      />
-
+      <SectionErrorBoundary sectionName="diary" resetKeys={[id]} onReset={refetch}>
+        <DiaryTimeline
+          entries={entries}
+          scheduledEvents={scheduledEvents}
+          isLoading={isLoading}
+          petId={id!}
+          petName={petName}
+          petSex={pet?.sex}
+          petSpecies={pet?.species}
+          petAvatarUrl={pet?.avatar_url}
+          petCreatedAt={pet?.created_at}
+          onRefresh={refetch}
+          onNewEntry={handleNewEntry}
+          onEditEntry={handleEditEntry}
+          onRetryEntry={handleRetryEntry}
+          onOpenPdf={handleOpenPdf}
+        />
+      </SectionErrorBoundary>
     </View>
   );
 }

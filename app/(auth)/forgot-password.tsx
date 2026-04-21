@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -50,7 +51,11 @@ export default function ForgotPasswordScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -140,7 +145,7 @@ export default function ForgotPasswordScreen() {
             </TouchableOpacity>
           </>
         )}
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -150,8 +155,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  container: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     backgroundColor: colors.bg,
     paddingHorizontal: rs(28),
     paddingBottom: rs(40),

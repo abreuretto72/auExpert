@@ -1,0 +1,44 @@
+{
+  "session_id": "348d8d43-955b-4987-9519-983ae6c8d53b",
+  "project_path": "e:\\aa_projetos_claude\\auExpert",
+  "start_time": "2026-04-01T12:27:30.650Z",
+  "duration_minutes": 12,
+  "user_message_count": 2,
+  "assistant_message_count": 9,
+  "tool_counts": {
+    "ToolSearch": 1,
+    "TodoWrite": 1,
+    "Read": 3
+  },
+  "languages": {
+    "TypeScript": 3
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 21,
+  "output_tokens": 2581,
+  "first_prompt": "execute na melhor ordem",
+  "user_interruptions": 0,
+  "user_response_times": [
+    662.516
+  ],
+  "tool_errors": 1,
+  "tool_error_categories": {
+    "File Too Large": 1
+  },
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    9,
+    9
+  ],
+  "user_message_timestamps": [
+    "2026-04-01T12:27:30.650Z",
+    "2026-04-01T12:38:53.389Z"
+  ]
+}

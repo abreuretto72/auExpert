@@ -1,0 +1,45 @@
+{
+  "session_id": "bf0f99e8-49f0-4eca-9893-bb77a93a3855",
+  "project_path": "e:\\aa_projetos_claude\\PetsauLife",
+  "start_time": "2026-03-27T18:36:27.683Z",
+  "duration_minutes": 3,
+  "user_message_count": 2,
+  "assistant_message_count": 16,
+  "tool_counts": {
+    "Read": 5,
+    "Bash": 3,
+    "Glob": 1
+  },
+  "languages": {
+    "JSON": 1,
+    "TypeScript": 2
+  },
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 30,
+  "output_tokens": 1243,
+  "first_prompt": "compilar o app",
+  "user_interruptions": 0,
+  "user_response_times": [
+    99.121
+  ],
+  "tool_errors": 1,
+  "tool_error_categories": {
+    "Command Failed": 1
+  },
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    15,
+    15
+  ],
+  "user_message_timestamps": [
+    "2026-03-27T18:36:27.683Z",
+    "2026-03-27T18:39:11.628Z"
+  ]
+}

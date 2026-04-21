@@ -4,11 +4,21 @@ export async function signIn(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password });
 }
 
-export async function signUp(email: string, password: string, fullName: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  fullName: string,
+  birthDate?: string, // ISO 'yyyy-mm-dd' — stored in user_metadata for audit trail
+) {
   return supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName } },
+    options: {
+      data: {
+        full_name: fullName,
+        ...(birthDate ? { birth_date: birthDate } : {}),
+      },
+    },
   });
 }
 

@@ -25,6 +25,7 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: CORS_HEADERS });
   }
 
+  const t0 = Date.now();
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
@@ -104,15 +105,19 @@ Deno.serve(async (req: Request) => {
 
     // ── pet_registration context: 3rd person intro narration ───────────────────
     if (context === 'pet_registration') {
+      // System prompt — 100% estático (zero interpolação). Cacheado pela Anthropic
+      // via cache_control. Tudo que varia por pet/tutor foi pro user prompt.
       const registrationSystemPrompt = `You are a warm storyteller writing the first diary entry for a newly registered pet.
-Write in THIRD PERSON about ${petName}, a ${petSex} ${species} (${breedDesc}).
-Format: "Hoje ${petName} foi cadastrado no auExpert. [description of the pet based on the provided analysis, max 60 words, 3rd person, warm tone]"
+Write in THIRD PERSON about the pet, using the pet's name provided in the user message.
+
+FORMAT: "Hoje [PET_NAME] foi cadastrado no auExpert. [description of the pet based on the provided analysis, max 60 words, 3rd person, warm tone]"
+
 RULES:
-- Start with "Hoje ${petName} foi cadastrado no auExpert."
+- Start with "Hoje [PET_NAME] foi cadastrado no auExpert." (replace [PET_NAME] with the actual name)
 - Use the analysis data provided to describe the pet (breed, mood, appearance, health highlights)
 - Maximum 60 words total
 - Warm, celebratory tone — this is a special moment
-- Respond ONLY in ${lang}
+- Respond ONLY in the language specified in the user message
 - Return ONLY valid JSON, no markdown wrapping
 
 Return this exact JSON:
@@ -123,7 +128,15 @@ Return this exact JSON:
   "mood_score": 80
 }`;
 
+      const registrationUserPrompt = `Pet: ${petName}, a ${petSex} ${species} (${breedDesc}).
+Respond in ${lang}.
+
+Pet analysis summary:
+
+${content}`;
+
       const cfg = await getAIConfig();
+      const t1 = Date.now();
       const regResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -133,12 +146,15 @@ Return this exact JSON:
         },
         body: JSON.stringify({
           model: cfg.model_narrate,
-          max_tokens: 512,
-          system: registrationSystemPrompt,
-          messages: [{
-            role: 'user',
-            content: `Pet analysis summary:\n\n${content}`,
-          }],
+          // Narração de registro: 60 palavras + JSON ≈ 250 tokens. 400 dá folga.
+          max_tokens: 400,
+          temperature: 0.7,
+          // Prompt caching: system é estático → cache hit entre tutores/pets
+          // corta input tokens em ~90% dentro da janela de 5 min.
+          system: [
+            { type: 'text', text: registrationSystemPrompt, cache_control: { type: 'ephemeral' } },
+          ],
+          messages: [{ role: 'user', content: registrationUserPrompt }],
         }),
       });
 
@@ -152,6 +168,7 @@ Return this exact JSON:
       }
 
       const regAiResponse = await regResponse.json();
+      const t2 = Date.now();
       const regTextContent = regAiResponse.content?.find((c: { type: string }) => c.type === 'text');
       if (!regTextContent?.text) {
         return new Response(
@@ -165,7 +182,19 @@ Return this exact JSON:
       }
       const regResult = JSON.parse(regJsonText);
       const regTokens = regAiResponse.usage?.output_tokens ?? 0;
-      console.log('[generate-diary-narration] registration narration OK, tokens:', regTokens);
+      const t3 = Date.now();
+
+      console.log('[generate-diary-narration] timing', JSON.stringify({
+        boot_ms: t1 - t0,
+        ai_ms: t2 - t1,
+        post_ms: t3 - t2,
+        total_ms: t3 - t0,
+        cache_read: regAiResponse.usage?.cache_read_input_tokens ?? 0,
+        cache_write: regAiResponse.usage?.cache_creation_input_tokens ?? 0,
+        input_tokens: regAiResponse.usage?.input_tokens ?? 0,
+        output_tokens: regTokens,
+        ctx: 'pet_registration',
+      }));
 
       return new Response(
         JSON.stringify({
@@ -181,30 +210,47 @@ Return this exact JSON:
     }
     // ── regular diary narration (3rd person — CLAUDE.md rule #5) ───────────────
 
-    const systemPrompt = `You are a warm, empathetic storyteller narrating the life of ${petName}, a ${petSex} ${species} (${breedDesc}, ${ageDesc}).
-You write diary entries in third person, as if narrating a story about ${petName} to their tutor.
-${genderNote}
+    // System prompt — 100% estático (zero interpolação). Cacheado via cache_control
+    // (ephemeral, 5 min). Tudo que varia por pet/tutor/humor foi pro user prompt,
+    // então o cache hita entre TODAS as narrações dentro da janela.
+    const systemPrompt = `You are a warm, empathetic storyteller narrating the life of a pet (dog or cat).
+You write diary entries in THIRD PERSON, as if narrating a story about the pet to their tutor.
 
-RULES:
-- Write in THIRD PERSON: "${petName} foi ao parque" / "${petName} went to the park" — NEVER "Fui ao parque" / "I went"
-- NEVER use "I", "me", "my", "Eu", "meu", "minha" — always use ${petName}'s name or "${species === 'dog' ? 'ele/ela / he/she' : 'ele/ela / he/she'}"
+The user message will provide: pet name, species, breed, age, sex, current mood, language, and the tutor's content.
+
+UNIVERSAL RULES:
+- Write in THIRD PERSON using the pet's name: "[PET_NAME] foi ao parque" / "[PET_NAME] went to the park"
+- NEVER use "I", "me", "my", "Eu", "meu", "minha" — always use the pet's name or "ele/ela / he/she"
 - Maximum 50 words — be BRIEF, concise, punchy. 2-3 short sentences MAX
-- Tone varies with mood: ${petName} is currently feeling ${moodDesc}
-- Be authentic to the species: ${species === 'dog' ? 'loyal, excited, loves attention' : 'independent, curious, a bit sassy'}
+- Tone must vary with the mood specified in the user message
+- Be authentic to the species — dogs: loyal, excited, loves attention; cats: independent, curious, a bit sassy
 - Include emotional nuances that reflect the mood
 - Do NOT be generic — reference specific details from what the tutor said
-- Respond ONLY in ${lang}
+- Respect the grammatical gender note provided in the user message (masculine/feminine)
+- Respond ONLY in the language specified in the user message
 - Return ONLY valid JSON, no markdown wrapping
 
 Return this exact JSON:
 {
-  "narration": "narration text here (3rd person, about ${petName})",
-  "mood_detected": "${mood_id}",
+  "narration": "narration text here (3rd person, about the pet)",
+  "mood_detected": "the mood_id provided",
   "tags_suggested": ["tag1", "tag2"],
   "mood_score": number (0-100, matching the mood intensity)
 }`;
 
+    const userPrompt = `Pet: ${petName}, a ${petSex} ${species} (${breedDesc}, ${ageDesc}).
+${genderNote}
+Current mood: ${moodDesc} (mood_id: ${mood_id})
+Respond in ${lang}.
+
+The tutor wrote this about ${petName} today:
+
+"${content}"
+
+Narrate this in third person about ${petName}, reflecting their ${moodDesc} mood.`;
+
     const cfg2 = await getAIConfig();
+    const t1 = Date.now();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -214,12 +260,16 @@ Return this exact JSON:
       },
       body: JSON.stringify({
         model: cfg2.model_narrate,
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: `The tutor wrote this about ${petName} today:\n\n"${content}"\n\nNarrate this in third person about ${petName}, reflecting their ${moodDesc} mood.`,
-        }],
+        // Narração: 50 palavras + JSON overhead ≈ 200 tokens. 400 dá folga sem
+        // reservar budget à toa.
+        max_tokens: 400,
+        temperature: 0.7,
+        // Prompt caching: system é estático → cache hit em narrações subsequentes
+        // corta input tokens em ~90% e reduz TTFT.
+        system: [
+          { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+        ],
+        messages: [{ role: 'user', content: userPrompt }],
       }),
     });
 
@@ -233,6 +283,7 @@ Return this exact JSON:
     }
 
     const aiResponse = await response.json();
+    const t2 = Date.now();
     const textContent = aiResponse.content?.find((c: { type: string }) => c.type === 'text');
 
     if (!textContent?.text) {
@@ -251,8 +302,20 @@ Return this exact JSON:
 
     const result = JSON.parse(jsonText);
     const tokensUsed = aiResponse.usage?.output_tokens ?? 0;
+    const t3 = Date.now();
 
-    console.log('[generate-diary-narration] SUCCESS — narration length:', result.narration?.length, 'tokens:', tokensUsed);
+    console.log('[generate-diary-narration] timing', JSON.stringify({
+      boot_ms: t1 - t0,
+      ai_ms: t2 - t1,
+      post_ms: t3 - t2,
+      total_ms: t3 - t0,
+      cache_read: aiResponse.usage?.cache_read_input_tokens ?? 0,
+      cache_write: aiResponse.usage?.cache_creation_input_tokens ?? 0,
+      input_tokens: aiResponse.usage?.input_tokens ?? 0,
+      output_tokens: tokensUsed,
+      narr_len: result.narration?.length ?? 0,
+      ctx: 'diary',
+    }));
 
     return new Response(
       JSON.stringify({

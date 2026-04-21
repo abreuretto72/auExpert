@@ -239,6 +239,10 @@ export default function OCRResultScreen({
         </View>
       )}
 
+      {/* Fontes da pesquisa — título + disclaimer em itálico */}
+      <Text style={styles.sourcesTitle}>{t('photoAnalysis.sourcesTitle')}</Text>
+      <Text style={styles.aiDisclaimer}>{t('common.aiVetDisclaimer')}</Text>
+
       {/* Action buttons */}
       <TouchableOpacity
         style={[styles.primaryBtn, isSaving && styles.btnDisabled]}
@@ -503,18 +507,36 @@ const styles = StyleSheet.create({
     gap: rs(6),
   },
   narrationText: {
-    color: colors.textSec,
+    color: colors.text,
     fontSize: fs(15),
-    fontStyle: 'italic',
     lineHeight: fs(23),
-    fontFamily: 'Caveat_400Regular',
+    fontFamily: 'Sora_400Regular',
   },
   narrationSig: {
     color: colors.textDim,
     fontSize: fs(13),
-    fontStyle: 'italic',
     textAlign: 'right',
-    fontFamily: 'Caveat_400Regular',
+    fontFamily: 'Sora_400Regular',
+  },
+
+  sourcesTitle: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(11),
+    color: colors.textSec,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    marginTop: rs(spacing.md),
+    textTransform: 'uppercase',
+  },
+  aiDisclaimer: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(10),
+    color: colors.textDim,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: rs(4),
+    marginBottom: rs(spacing.sm),
+    paddingHorizontal: rs(spacing.md),
   },
 
   // Buttons

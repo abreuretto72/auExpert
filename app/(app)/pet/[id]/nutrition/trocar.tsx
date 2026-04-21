@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
+import { compressImageForAI } from '../../../../../lib/imageCompression';
 import { getLocales } from 'expo-localization';
 import {
   ChevronLeft, Mic, MicOff, Camera, Images,
@@ -253,13 +254,12 @@ export default function TrocarRacaoScreen() {
       toast(t('toast.cameraPermission'), 'warning');
       return null;
     }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      base64: true,
-      quality: 0.85,
-    });
-    if (result.canceled || !result.assets[0]?.base64) return null;
-    return result.assets[0].base64;
+    const t_capture = Date.now();
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 });
+    if (result.canceled || !result.assets[0]?.uri) return null;
+    console.log('[TrocarRacao] capture ok ms:', Date.now() - t_capture);
+    const compressed = await compressImageForAI(result.assets[0].uri);
+    return compressed.base64;
   }, [toast, t]);
 
   const pickFromGallery = useCallback(async (): Promise<string | null> => {
@@ -268,24 +268,25 @@ export default function TrocarRacaoScreen() {
       toast(t('toast.galleryPermission'), 'warning');
       return null;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      base64: true,
-      quality: 0.85,
-    });
-    if (result.canceled || !result.assets[0]?.base64) return null;
-    return result.assets[0].base64;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+    if (result.canceled || !result.assets[0]?.uri) return null;
+    const compressed = await compressImageForAI(result.assets[0].uri);
+    return compressed.base64;
   }, [toast, t]);
 
   const runOcr = useCallback(async (frontB64: string, backB64?: string) => {
     setIsCapturingImage(true);
     setExtractedData(null);
     setTranscription('');
+    const frontKB = Math.round(frontB64.length * 0.75 / 1024);
+    const backKB = backB64 ? Math.round(backB64.length * 0.75 / 1024) : 0;
+    const t_ocr = Date.now();
     try {
       const imagesText = backB64
         ? 'Frente e verso da embalagem de ração. Extraia produto, marca, fase de vida, porção diária e calorias.'
         : 'Frente da embalagem de ração. Extraia produto, marca, fase de vida e porção.';
-      console.log('[TrocarRacao] OCR → START sides:', backB64 ? 'front+back' : 'front only');
+      console.log('[TrocarRacao] OCR → START sides:', backB64 ? 'front+back' : 'front only',
+        '| payload KB:', frontKB + backKB, `(front:${frontKB}, back:${backKB})`);
       const photos = backB64 ? [frontB64, backB64] : undefined;
       const { data, error } = await supabase.functions.invoke<{
         classifications?: { type: string; extracted_data?: Record<string, string> }[];
@@ -300,9 +301,10 @@ export default function TrocarRacaoScreen() {
           photos_base64: photos,
         },
       });
-      console.log('[TrocarRacao] OCR ← error:', error?.message ?? null,
-        'classifications:', JSON.stringify(data?.classifications?.map((c) => ({ type: c.type, keys: Object.keys(c.extracted_data ?? {}) }))),
-        'description:', data?.description?.slice(0, 100));
+      console.log('[TrocarRacao] OCR ← done ms:', Date.now() - t_ocr,
+        '| error:', error?.message ?? null,
+        '| classifications:', JSON.stringify(data?.classifications?.map((c) => ({ type: c.type, keys: Object.keys(c.extracted_data ?? {}) }))),
+        '| description:', data?.description?.slice(0, 100));
       if (error) throw error;
 
       const foodCls = data?.classifications?.find((c) => c.type === 'food');
@@ -338,13 +340,17 @@ export default function TrocarRacaoScreen() {
     if (isListening) stopListening();
 
     if (scanStep === null) {
+      const t_front = Date.now();
       const b64 = await captureImage();
       if (!b64) return;
       frontBase64Ref.current = b64;
       scanSourceRef.current = 'camera';
       setScanStep('front');
+      console.log('[TrocarRacao] front captured+compressed ms:', Date.now() - t_front);
     } else if (scanStep === 'front' && scanSourceRef.current === 'camera') {
+      const t_back = Date.now();
       const b64Back = await captureImage();
+      console.log('[TrocarRacao] back captured+compressed ms:', Date.now() - t_back, 'hasBack:', !!b64Back);
       setScanStep('processing');
       await runOcr(frontBase64Ref.current!, b64Back ?? undefined);
     }
@@ -354,13 +360,17 @@ export default function TrocarRacaoScreen() {
     if (isListening) stopListening();
 
     if (scanStep === null) {
+      const t_front = Date.now();
       const b64 = await pickFromGallery();
       if (!b64) return;
       frontBase64Ref.current = b64;
       scanSourceRef.current = 'gallery';
       setScanStep('front');
+      console.log('[TrocarRacao] front gallery+compressed ms:', Date.now() - t_front);
     } else if (scanStep === 'front' && scanSourceRef.current === 'gallery') {
+      const t_back = Date.now();
       const b64Back = await pickFromGallery();
+      console.log('[TrocarRacao] back gallery+compressed ms:', Date.now() - t_back, 'hasBack:', !!b64Back);
       setScanStep('processing');
       await runOcr(frontBase64Ref.current!, b64Back ?? undefined);
     }
@@ -660,6 +670,8 @@ export default function TrocarRacaoScreen() {
                 <Text style={s.fieldValue}>{extractedData.daily_portion || '—'}</Text>
               </View>
             </View>
+
+            <Text style={s.aiDisclaimer}>{t('common.aiVetDisclaimer')}</Text>
           </View>
         )}
 
@@ -820,6 +832,11 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: colors.success + '30', padding: rs(10),
   },
   okText: { fontFamily: 'Sora_500Medium', fontSize: fs(11), color: colors.success },
+
+  aiDisclaimer: {
+    fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim,
+    textAlign: 'center', marginTop: rs(12), fontStyle: 'italic',
+  },
 
   fieldsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8) },
   fieldItem: {

@@ -526,7 +526,10 @@ export default function IATab({ petId, petName }: IATabProps) {
   useEffect(() => {
     const userId = useAuthStore.getState().user?.id;
     if (!petId || !userId) return;
-    indexPetHealthData(petId, userId).catch(() => {});
+    indexPetHealthData(petId, userId).catch((err) => {
+      // Intentional: background RAG indexing — non-critical, but log for dev observability
+      if (__DEV__) console.warn('[IATab] indexPetHealthData failed:', err);
+    });
   }, [petId]);
 
   const presentCategories = useMemo(
@@ -729,7 +732,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: rs(8),
     paddingHorizontal: rs(spacing.md), paddingVertical: rs(8),
   },
-  thinkingText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim, fontStyle: 'italic' },
+  thinkingText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim },
   errorRow: { paddingHorizontal: rs(spacing.md), paddingVertical: rs(6) },
   errorMsg: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.danger },
   inputBar: {
@@ -763,7 +766,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Sora_400Regular',
     fontSize: fs(12),
     color: colors.textDim,
-    fontStyle: 'italic',
   },
   sendBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(21),

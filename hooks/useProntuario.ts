@@ -26,6 +26,11 @@ export interface ProntuarioVaccine {
   batch_number: string | null;
   veterinarian: string | null;
   is_overdue: boolean;
+  // Fase 1 — campos já existentes no banco, agora surfaceados
+  laboratory: string | null;
+  dose_number: string | null;
+  clinic: string | null;
+  notes: string | null;
 }
 
 export interface ProntuarioMedication {
@@ -35,6 +40,11 @@ export interface ProntuarioMedication {
   frequency: string | null;
   start_date: string | null;
   end_date: string | null;
+  // Fase 1 — campos já existentes no banco, agora surfaceados
+  type: string | null;
+  reason: string | null;
+  prescribed_by: string | null;
+  notes: string | null;
 }
 
 export interface ProntuarioAllergy {
@@ -42,6 +52,10 @@ export interface ProntuarioAllergy {
   allergen: string;
   reaction: string | null;
   severity: string | null;
+  // Fase 1 — campos já existentes no banco, agora surfaceados
+  diagnosed_date: string | null;
+  diagnosed_by: string | null;
+  confirmed: boolean;
 }
 
 export interface ProntuarioConsultation {
@@ -52,6 +66,104 @@ export interface ProntuarioConsultation {
   diagnosis: string | null;
   notes: string | null;
   consult_type: string | null;
+  // Fase 1 — campos já existentes no banco, agora surfaceados
+  type: string | null;
+  time: string | null;
+  prescriptions: string | null;
+  follow_up_at: string | null;
+  cost: number | null;
+}
+
+// Fase 1 — tabela `surgeries` existia em 011_health_tables.sql mas estava ignorada
+export interface ProntuarioSurgery {
+  id: string;
+  name: string;
+  date: string | null;
+  veterinarian: string | null;
+  clinic: string | null;
+  anesthesia: string | null;
+  status: 'scheduled' | 'recovering' | 'recovered' | 'complications' | null;
+  notes: string | null;
+}
+
+// ── Fase 2 — campos derivados pela IA (vet-grade) ─────────────────────────────
+
+export interface ProntuarioBreedPredisposition {
+  condition: string;
+  rationale: string;
+  severity: 'monitor' | 'watch' | 'manage';
+}
+
+export interface ProntuarioDrugInteraction {
+  drugs: string[];
+  warning: string;
+  severity: 'mild' | 'moderate' | 'severe';
+}
+
+export type ProntuarioCalendarType =
+  | 'vaccine'
+  | 'deworming'
+  | 'flea_tick'
+  | 'dental'
+  | 'annual_check';
+
+export type ProntuarioCalendarStatus =
+  | 'overdue'
+  | 'upcoming'
+  | 'scheduled'
+  | 'done';
+
+export interface ProntuarioPreventiveCalendarItem {
+  type: ProntuarioCalendarType;
+  label: string;
+  due_date: string | null;
+  status: ProntuarioCalendarStatus;
+}
+
+export type ProntuarioBodySystem =
+  | 'cardiovascular'
+  | 'respiratory'
+  | 'gastrointestinal'
+  | 'urinary'
+  | 'neurological'
+  | 'musculoskeletal'
+  | 'dermatologic'
+  | 'ophthalmologic'
+  | 'otologic'
+  | 'dental';
+
+export interface ProntuarioBodySystemReview {
+  system: ProntuarioBodySystem;
+  status: 'normal' | 'attention' | 'abnormal' | 'unknown';
+  notes: string | null;
+}
+
+export interface ProntuarioExamAbnormalFlag {
+  exam_name: string;
+  parameter: string;
+  value: string;
+  reference: string | null;
+  flag: 'low' | 'high' | 'abnormal';
+}
+
+export interface ProntuarioEmergencyCardMed {
+  name: string;
+  dose: string | null;
+}
+
+export interface ProntuarioEmergencyCardContact {
+  tutor_name: string | null;
+  phone: string | null;
+  vet_name: string | null;
+  vet_phone: string | null;
+}
+
+export interface ProntuarioEmergencyCard {
+  critical_allergies: string[];
+  active_meds_with_dose: ProntuarioEmergencyCardMed[];
+  chronic_conditions_flagged: string[];
+  blood_type: string | null;
+  contact: ProntuarioEmergencyCardContact;
 }
 
 export interface Prontuario {
@@ -83,6 +195,21 @@ export interface Prontuario {
   emergency_token: string;
   generated_at: string;
   is_stale: boolean;
+  // Fase 1 — campos já existentes no banco, agora surfaceados
+  sex: 'male' | 'female' | null;
+  birth_date: string | null;
+  size: 'small' | 'medium' | 'large' | null;
+  color: string | null;
+  blood_type: string | null;
+  surgeries: ProntuarioSurgery[];
+  exam_abnormal_count: number;
+  // Fase 2 — campos derivados pela IA (opcional — IA pode não gerar em todas as chamadas)
+  breed_predispositions?: ProntuarioBreedPredisposition[];
+  drug_interactions?: ProntuarioDrugInteraction[];
+  preventive_calendar?: ProntuarioPreventiveCalendarItem[];
+  body_systems_review?: ProntuarioBodySystemReview[];
+  exam_abnormal_flags?: ProntuarioExamAbnormalFlag[];
+  emergency_card?: ProntuarioEmergencyCard | null;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────

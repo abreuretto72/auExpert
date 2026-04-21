@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
   narrationText: {
     fontWeight: '400',
     fontSize: fs(14),
-    fontStyle: 'italic',
     color: colors.text,
     lineHeight: fs(14) * 1.7,
     marginBottom: spacing.sm,
@@ -280,7 +279,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: fs(11),
     color: colors.textDim,
-    fontStyle: 'italic',
   },
   regenerateBtn: {
     flexDirection: 'row',
@@ -298,7 +296,6 @@ const styles = StyleSheet.create({
   editInput: {
     fontWeight: '400',
     fontSize: fs(14),
-    fontStyle: 'italic',
     color: colors.text,
     lineHeight: fs(14) * 1.7,
     backgroundColor: colors.bgCard,

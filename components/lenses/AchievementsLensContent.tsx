@@ -97,7 +97,7 @@ const BadgeTile = React.memo(function BadgeTile({
   const IconComp = ICON_MAP[achievement.icon] ?? Star;
   const color = isUnlocked ? (RARITY_COLOR[achievement.rarity] ?? colors.textDim) : colors.textGhost;
 
-  const displayTitle = t(achievement.titleKey, { defaultValue: achievement.title });
+  const displayTitle = t(achievement.titleKey);
 
   return (
     <View style={[styles.badgeTile, !isUnlocked && styles.badgeTileLocked]}>
@@ -175,9 +175,11 @@ function RecentAchievements({ achievements }: { achievements: Achievement[] }) {
         const catalogItem = ACHIEVEMENT_CATALOG.find((c) => c.key === a.achievement_key);
         const IconComp = catalogItem ? (ICON_MAP[catalogItem.icon] ?? Star) : Star;
         const color = RARITY_COLOR[a.rarity] ?? colors.textDim;
-        const displayTitle = catalogItem
-          ? t(catalogItem.titleKey, { defaultValue: a.title })
-          : a.title;
+        // Prefer current catalog key (always renders in current UI language).
+        // Fallback: a.title is either an i18n key (new rows) or legacy raw text
+        // (rows inserted before the refactor). t() returns the string unchanged
+        // if it's not a recognized key, so legacy rows still render correctly.
+        const displayTitle = catalogItem ? t(catalogItem.titleKey) : t(a.title);
         return (
           <View key={a.id} style={styles.recentRow}>
             <View style={[styles.recentIcon, { backgroundColor: color + '18', borderColor: color + '30' }]}>

@@ -1,0 +1,60 @@
+{
+  "session_id": "11fba31d-e96c-4300-8315-4204d5912196",
+  "project_path": "C:\\Users\\Abreu\\.claude-mem\\observer-sessions",
+  "start_time": "2026-04-11T13:59:40.675Z",
+  "duration_minutes": 11,
+  "user_message_count": 12,
+  "assistant_message_count": 33,
+  "tool_counts": {
+    "ToolSearch": 3
+  },
+  "languages": {},
+  "git_commits": 0,
+  "git_pushes": 0,
+  "input_tokens": 314,
+  "output_tokens": 8337,
+  "first_prompt": "--- MODE SWITCH: PROGRESS SUMMARY --- Do NOT output <observation> tags. This is a summary request, not an observation request. Your response MUST use <summary> tags ONLY. Any <observation> output will…",
+  "user_interruptions": 0,
+  "user_response_times": [
+    11.402,
+    16.744,
+    2.643
+  ],
+  "tool_errors": 0,
+  "tool_error_categories": {},
+  "uses_task_agent": false,
+  "uses_mcp": false,
+  "uses_web_search": false,
+  "uses_web_fetch": false,
+  "lines_added": 0,
+  "lines_removed": 0,
+  "files_modified": 0,
+  "message_hours": [
+    10,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11,
+    11
+  ],
+  "user_message_timestamps": [
+    "2026-04-11T13:59:40.675Z",
+    "2026-04-11T14:06:40.375Z",
+    "2026-04-11T14:07:23.758Z",
+    "2026-04-11T14:07:35.351Z",
+    "2026-04-11T14:07:51.991Z",
+    "2026-04-11T14:08:22.201Z",
+    "2026-04-11T14:08:29.748Z",
+    "2026-04-11T14:08:55.401Z",
+    "2026-04-11T14:09:05.638Z",
+    "2026-04-11T14:09:18.954Z",
+    "2026-04-11T14:09:28.840Z",
+    "2026-04-11T14:09:44.042Z"
+  ]
+}

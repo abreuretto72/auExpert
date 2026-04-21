@@ -279,7 +279,7 @@ function InviteSheet({
                 style={[s.fieldInput, emailRequired && !email.trim() && s.fieldInputError]}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="email@exemplo.com"
+                placeholder={t('members.emailPlaceholder')}
                 placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
                 keyboardType="email-address"

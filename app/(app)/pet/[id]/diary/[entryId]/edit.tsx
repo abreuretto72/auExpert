@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
 import { ChevronLeft, Check, Trash2, Video, Play, Image as ImageIcon, Music2, FileText } from 'lucide-react-native';
 import { supabase } from '../../../../../../lib/supabase';
+import { withTimeout } from '../../../../../../lib/withTimeout';
 import { useToast } from '../../../../../../components/Toast';
 import DiaryNarration from '../../../../../../components/diary/DiaryNarration';
 import { DiaryModuleCard } from '../../../../../../components/diary/DiaryModuleCard';
@@ -226,9 +227,13 @@ export default function DiaryEntryEditScreen() {
 
         // Reprocessar em background (fire-and-forget)
         const language = getLocales()[0]?.languageTag ?? 'pt-BR';
-        supabase.functions.invoke('classify-diary-entry', {
-          body: { pet_id: id, text: newText, language },
-        }).then(({ data: result }) => {
+        withTimeout(
+          supabase.functions.invoke('classify-diary-entry', {
+            body: { pet_id: id, text: newText, language },
+          }),
+          30_000,
+          'classify-diary-entry:edit',
+        ).then(({ data: result }) => {
           if (!result) return;
           return supabase.from('diary_entries').update({
             narration:         result.narration ?? null,

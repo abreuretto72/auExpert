@@ -189,14 +189,14 @@ export default function VoiceDiaryScreen() {
     if (micState === 'recording') {
       pauseListening();
     } else {
-      startListening().catch(() => {});
+      startListening().catch(() => toast(t('diary.micError'), 'error'));
     }
-  }, [micState, pauseListening, startListening]);
+  }, [micState, pauseListening, startListening, toast, t]);
 
   // ── Mount / unmount ────────────────────────────────────────────────────────
 
   useEffect(() => {
-    startListening().catch(() => {});
+    startListening().catch(() => toast(t('diary.micError'), 'error'));
     return () => {
       intentionalStopRef.current = true;
       if (SpeechModule) SpeechModule.stop();

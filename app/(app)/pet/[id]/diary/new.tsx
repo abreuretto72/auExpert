@@ -16,7 +16,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { getLocales } from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChevronLeft, Mic, Check, Trash2, Camera, Video, Music2, FileText, Ear, Square, Image as ImageIcon, HelpCircle, PawPrint, X as XIcon, ShieldCheck, Stethoscope, FlaskConical, Pill, Scale, DollarSign, ThermometerSun, Utensils, AlertTriangle, Scissors, Activity, ShoppingBag, MapPin, Sparkles, ScanLine, Wifi } from 'lucide-react-native';
 import { Modal } from 'react-native';
@@ -32,7 +31,6 @@ import { useToast } from '../../../../../components/Toast';
 import { useDiaryAIToggleStore } from '../../../../../stores/diaryAIToggleStore';
 import { getErrorMessage } from '../../../../../utils/errorMessages';
 import { useDiaryEntry } from '../../../../../hooks/useDiaryEntry';
-import { setAudioModeAsync } from 'expo-audio';
 import DocumentScanner from '../../../../../components/diary/DocumentScanner';
 import PhotoCamera from '../../../../../components/diary/PhotoCamera';
 import VideoRecorder from '../../../../../components/diary/VideoRecorder';
@@ -44,66 +42,16 @@ import {
   AudioPreviewStep, DocumentPreviewStep,
 } from '../../../../../components/diary/CapturePreview';
 import type { DocType } from '../../../../../components/diary/CapturePreview';
-
-// ── STT (optional native module) ──────────────────────────────────────────
-
-let SpeechModule: typeof import('expo-speech-recognition').ExpoSpeechRecognitionModule | null = null;
-let useSpeechEvent: typeof import('expo-speech-recognition').useSpeechRecognitionEvent | null = null;
-try {
-  const sr = require('expo-speech-recognition');
-  SpeechModule = sr.ExpoSpeechRecognitionModule;
-  useSpeechEvent = sr.useSpeechRecognitionEvent;
-  console.log('[STT] expo-speech-recognition loaded, SpeechModule:', !!SpeechModule);
-} catch (e) {
-  console.warn('[STT] expo-speech-recognition load failed:', e);
-}
-
-// ── Types ──────────────────────────────────────────────────────────────────
-
-type Step =
-  | 'mic'
-  | 'text'
-  | 'photo_camera'         // in-app camera (avoids Android process death)
-  | 'scanner'
-  | 'document_scan'
-  | 'video_record'
-  | 'listen_record'
-  | 'photo_preview'
-  | 'gallery_preview'
-  | 'video_preview'
-  | 'audio_preview'
-  | 'document_preview';
-
-const FULLSCREEN_STEPS: Step[] = ['photo_camera', 'scanner', 'document_scan', 'video_record', 'listen_record'];
-// 'voice' was removed — voice entries use the dedicated /diary/voice screen
-const PREVIEW_STEPS: Step[] = ['photo_preview', 'gallery_preview', 'video_preview', 'audio_preview', 'document_preview'];
-
-const WAVE_BARS = 20;
-
-// ── Component ──────────────────────────────────────────────────────────────
-
-// ── DotsText — animated trailing dots for the overlay title ──────────────────
-
-function DotsText({
-  baseText,
-  dotsAnim,
-  style,
-}: {
-  baseText: string;
-  dotsAnim: Animated.Value;
-  style?: object;
-}) {
-  const [dots, setDots] = React.useState('');
-
-  React.useEffect(() => {
-    const id = dotsAnim.addListener(({ value }) => {
-      setDots('.'.repeat(Math.round(value)));
-    });
-    return () => dotsAnim.removeListener(id);
-  }, [dotsAnim]);
-
-  return <Text style={style}>{baseText}{dots}</Text>;
-}
+import { styles } from './_new/styles';
+import { DotsText } from './_new/DotsText';
+import { PainelLentes } from './_new/PainelLentes';
+import { type Step, FULLSCREEN_STEPS } from './_new/types';
+import { useSTT, SpeechModule } from './_new/stt';
+import { useAnimations } from './_new/animations';
+import { useConfirmHandlers } from './_new/confirmHandlers';
+import { useAttachmentHandlers } from './_new/attachmentHandlers';
+import { useHandleSubmitText } from './_new/handleSubmitText';
+import { useEditHandlers } from './_new/editHandlers';
 
 // ── Component ──────────────────────────────────────────────────────────────
 
@@ -208,175 +156,27 @@ export default function NewDiaryEntryScreen() {
   stepRef.current = step;
   // remembers the step to return to after photo_camera closes
   const prevStepRef = useRef<Step>('mic');
-  const intentionalStopRef = useRef(false);
   const isListeningRef = useRef(isListening);
   isListeningRef.current = isListening;
   const isPickerOpenRef = useRef(false);
 
-  // Waveform animated bars (driven by isListening state)
-  const barAnims = useRef(
-    Array.from({ length: WAVE_BARS }, () => new Animated.Value(0.15)),
-  ).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-  const pawAnim    = useRef(new Animated.Value(1)).current;
-  const pawLoopRef = useRef<Animated.CompositeAnimation | null>(null);
-  const ringAnim    = useRef(new Animated.Value(0.8)).current;
-  const ringOpacity = useRef(new Animated.Value(0.6)).current;
-  const dotsAnim    = useRef(new Animated.Value(0)).current;
+  // ── Animations (extracted to ./_new/animations.ts) ───────────────────────
 
-  // ── STT event handlers ───────────────────────────────────────────────────
+  const { barAnims, pulseAnim, pawAnim, ringAnim, ringOpacity, dotsAnim, showAnalyzingAndBack } =
+    useAnimations({ isListening, setIsAnalyzing, draftKey, router });
 
-  const noopHook = (_event: string, _cb: (event: never) => void) => {};
-  const useEvent = useSpeechEvent ?? noopHook;
+  // ── STT (extracted to ./_new/stt.ts) ─────────────────────────────────────
 
-  useEvent('result', (event: { results: { transcript: string }[]; isFinal: boolean }) => {
-    const transcript = event.results[0]?.transcript ?? '';
-    const isPreview = PREVIEW_STEPS.includes(stepRef.current);
-    if (event.isFinal) {
-      if (isPreview) {
-        setCaptureCaption((prev) => (prev ? `${prev} ${transcript}`.trim() : transcript));
-      } else {
-        setTutorText((prev) => (prev ? `${prev} ${transcript}`.trim() : transcript));
-      }
-      setInterimText('');
-    } else {
-      setInterimText(transcript);
-    }
+  const { startListening, stopListening, handleMicToggle } = useSTT({
+    isListening,
+    setIsListening,
+    setInterimText,
+    setTutorText,
+    setCaptureCaption,
+    stepRef,
+    toast,
+    t,
   });
-
-  useEvent('end', () => {
-    if (!intentionalStopRef.current && SpeechModule) {
-      SpeechModule.start({
-        lang: getLocales()[0]?.languageTag ?? 'pt-BR',
-        interimResults: true,
-        maxAlternatives: 1,
-      });
-      return;
-    }
-    setIsListening(false);
-    setInterimText('');
-  });
-
-  useEvent('error', (event: { error: string }) => {
-    if (event.error === 'no-speech') return;
-    setInterimText('');
-    // Fatal only: mic cannot recover, must stop
-    const fatalErrors = ['permission', 'not-allowed', 'service-not-available'];
-    if (fatalErrors.includes(event.error)) {
-      intentionalStopRef.current = true;
-      setIsListening(false);
-      toast(t('diary.micError'), 'error');
-      return;
-    }
-    // Non-fatal (audio interruption, recognizer_busy, network, etc.):
-    // intentionalStopRef stays false → 'end' will fire next and restart automatically
-  });
-
-  useEffect(() => {
-    return () => {
-      intentionalStopRef.current = true;
-      if (SpeechModule) SpeechModule.stop();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Waveform animation (driven by isListening) ───────────────────────────
-
-  useEffect(() => {
-    if (!isListening) {
-      barAnims.forEach((anim) => {
-        Animated.timing(anim, { toValue: 0.15, duration: 400, useNativeDriver: true }).start();
-      });
-      pulseLoopRef.current?.stop();
-      pulseAnim.setValue(1);
-      return;
-    }
-
-    const animateBars = () => {
-      barAnims.forEach((anim, i) => {
-        const phase = Math.sin((Date.now() / 200) + i * 0.4) * 0.25;
-        const target = Math.max(0.1, Math.min(1, 0.4 + phase + (Math.random() * 0.3)));
-        Animated.timing(anim, { toValue: target, duration: 200, useNativeDriver: true }).start();
-      });
-    };
-    animateBars();
-    const intervalId = setInterval(animateBars, 200);
-
-    pulseLoopRef.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.12, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ]),
-    );
-    pulseLoopRef.current.start();
-
-    return () => {
-      clearInterval(intervalId);
-      pulseLoopRef.current?.stop();
-      pulseAnim.setValue(1);
-    };
-  }, [isListening, barAnims, pulseAnim]);
-
-  // ── STT helpers ──────────────────────────────────────────────────────────
-
-  const startListening = useCallback(async () => {
-    if (!SpeechModule) {
-      toast(t('diary.micUnavailable'), 'warning');
-      return;
-    }
-    const { granted } = await SpeechModule.requestPermissionsAsync();
-    if (!granted) {
-      toast(t('diary.micPermission'), 'warning');
-      return;
-    }
-    intentionalStopRef.current = false;
-    setIsListening(true);
-    setInterimText('');
-    try {
-      await setAudioModeAsync({
-        allowsRecording: true,
-        playsInSilentMode: true,
-        interruptionMode: 'doNotMix',
-        shouldRouteThroughEarpiece: false,
-        shouldPlayInBackground: false,
-      });
-    } catch (_e) { /* ignorar — não crítico */ }
-    SpeechModule.start({
-      lang: getLocales()[0]?.languageTag ?? 'pt-BR',
-      interimResults: true,
-      maxAlternatives: 1,
-      continuous: true,
-      androidIntentOptions: {
-        EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 10000,
-        EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 10000,
-        EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS: 0,
-      },
-    });
-  }, [toast, t]);
-
-  const stopListening = useCallback(() => {
-    intentionalStopRef.current = true;
-    if (SpeechModule && isListening) SpeechModule.stop();
-    setIsListening(false);
-    // Guard: setAudioModeAsync can be undefined on certain emulators/devices (expo-audio v55)
-    try {
-      if (typeof setAudioModeAsync === 'function') {
-        setAudioModeAsync({
-          allowsRecording: false,
-          playsInSilentMode: false,
-          interruptionMode: 'duckOthers',
-          shouldRouteThroughEarpiece: false,
-          shouldPlayInBackground: false,
-        }).catch(() => { /* ignorar */ });
-      }
-    } catch { /* ignorar — setAudioModeAsync indisponível no dispositivo */ }
-  }, [isListening]);
-
-  const handleMicToggle = useCallback(async () => {
-    if (isListening) stopListening();
-    else await startListening();
-  }, [isListening, stopListening, startListening]);
 
   // ── Input selector handlers ───────────────────────────────────────────────
 
@@ -490,737 +290,89 @@ export default function NewDiaryEntryScreen() {
     setStep('audio_preview');
   }, []);
 
-  // ── Analyzing overlay (shown 2s after Gravar no Diário) ─────────────────
+  // ── Confirm handlers (extracted to ./_new/confirmHandlers.ts) ────────────
 
-  const showAnalyzingAndBack = useCallback(() => {
-    setIsAnalyzing(true);
+  const {
+    handleConfirmPhoto,
+    handleConfirmGallery,
+    handleConfirmVideo,
+    handleConfirmAudio,
+    handleConfirmDocument,
+  } = useConfirmHandlers({
+    captureCaption,
+    capturedPhotoUri,
+    capturedGalleryUris,
+    capturedVideoUri,
+    capturedVideoDuration,
+    capturedAudioUri,
+    capturedAudioDuration,
+    docType,
+    capturedDocBase64,
+    submitEntry,
+    showAnalyzingAndBack,
+  });
 
-    // Pata — pulso suave, never shrinks below 1.0
-    const pawLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pawAnim, { toValue: 1.18, duration: 700, useNativeDriver: true }),
-        Animated.timing(pawAnim, { toValue: 1.0,  duration: 700, useNativeDriver: true }),
-      ]),
-    );
+  // ── Attachment handlers (extracted to ./_new/attachmentHandlers.ts) ──────
 
-    // Anel externo — ripple: expands and fades
-    ringAnim.setValue(0.8);
-    ringOpacity.setValue(0.6);
-    const ringLoop = Animated.loop(
-      Animated.parallel([
-        Animated.timing(ringAnim,    { toValue: 1.6, duration: 1400, useNativeDriver: true }),
-        Animated.timing(ringOpacity, { toValue: 0,   duration: 1400, useNativeDriver: true }),
-      ]),
-    );
-
-    // Dots — 0 → 1 → 2 → 3 → 0 (not native driver — drives JS state)
-    const dotsLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(dotsAnim, { toValue: 1, duration: 400, useNativeDriver: false }),
-        Animated.timing(dotsAnim, { toValue: 2, duration: 400, useNativeDriver: false }),
-        Animated.timing(dotsAnim, { toValue: 3, duration: 400, useNativeDriver: false }),
-        Animated.timing(dotsAnim, { toValue: 0, duration: 400, useNativeDriver: false }),
-      ]),
-    );
-
-    pawLoopRef.current = pawLoop;
-    pawLoop.start();
-    ringLoop.start();
-    dotsLoop.start();
-
-    setTimeout(() => {
-      pawLoop.stop();
-      ringLoop.stop();
-      dotsLoop.stop();
-      pawAnim.setValue(1);
-      void AsyncStorage.removeItem(draftKey);
-      router.back();
-    }, 2500);
-  }, [pawAnim, ringAnim, ringOpacity, dotsAnim, draftKey, router]);
-
-  // ── Confirm handlers (from preview steps) ────────────────────────────────
-
-  const handleConfirmPhoto = useCallback(async () => {
-    showAnalyzingAndBack();
-    let b64: string | null = null;
-    try {
-      const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
-      b64 = await readAsStringAsync(capturedPhotoUri!, { encoding: EncodingType.Base64 });
-    } catch (e) {
-      console.warn('[handleConfirmPhoto] base64 read failed:', e);
-    }
-    void submitEntry({
-      text: captureCaption.trim() || null,
-      photosBase64: b64 ? [b64] : null,
-      inputType: 'photo',
-      mediaUris: [capturedPhotoUri!],
-    });
-  }, [captureCaption, capturedPhotoUri, submitEntry, showAnalyzingAndBack]);
-
-  const handleConfirmGallery = useCallback(async () => {
-    showAnalyzingAndBack();
-    let galleryBase64: string[] | null = null;
-    try {
-      const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
-      const results: string[] = [];
-      for (const uri of capturedGalleryUris) {
-        const b64 = await readAsStringAsync(uri, { encoding: EncodingType.Base64 });
-        if (b64) results.push(b64);
-      }
-      galleryBase64 = results.length > 0 ? results : null;
-    } catch (e) {
-      console.warn('[handleConfirmGallery] base64 read failed:', e);
-    }
-    void submitEntry({
-      text: captureCaption.trim() || null,
-      photosBase64: galleryBase64,
-      inputType: 'gallery',
-      mediaUris: capturedGalleryUris,
-    });
-  }, [captureCaption, capturedGalleryUris, submitEntry, showAnalyzingAndBack]);
-
-  const handleConfirmVideo = useCallback(() => {
-    void submitEntry({
-      text: captureCaption.trim() || null,
-      photosBase64: null,
-      inputType: 'video',
-      mediaUris: [capturedVideoUri!],
-      videoDuration: capturedVideoDuration,
-    });
-    showAnalyzingAndBack();
-  }, [captureCaption, capturedVideoUri, capturedVideoDuration, submitEntry, showAnalyzingAndBack]);
-
-  const handleConfirmAudio = useCallback(() => {
-    void submitEntry({
-      text: captureCaption.trim() || null,
-      photosBase64: null,
-      inputType: 'pet_audio',
-      mediaUris: [capturedAudioUri!],
-      audioDuration: capturedAudioDuration,
-    });
-    showAnalyzingAndBack();
-  }, [captureCaption, capturedAudioUri, capturedAudioDuration, submitEntry, showAnalyzingAndBack]);
-
-  const handleConfirmDocument = useCallback(() => {
-    // Pass docType as text so the classifier has explicit context
-    void submitEntry({
-      text: docType !== 'other' ? docType : null,
-      photosBase64: [capturedDocBase64!],
-      inputType: 'ocr_scan',
-    });
-    showAnalyzingAndBack();
-  }, [docType, capturedDocBase64, submitEntry, showAnalyzingAndBack]);
-
-  // ── Photo compression helper ────────────────────────────────────────────
-  // Compresses a photo to 1200px/78% quality BEFORE size validation.
-  // Returns compressed URI + estimated size. Falls back to original on error.
-
-  const compressPhoto = useCallback(async (uri: string): Promise<{ uri: string; size?: number }> => {
-    try {
-      const ImageManipulator = require('expo-image-manipulator');
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1200 } }],
-        { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG },
-      );
-      // After 1200px / 78% compression the result is always well under 5 MB —
-      // no need to re-read the file size from disk.
-      return { uri: result.uri };
-    } catch {
-      return { uri };
-    }
-  }, []);
-
-  // ── Attachment handlers (text/voice step) ───────────────────────────────
-
-  const handleAttachPhoto = useCallback(async () => {
-    console.log('[ATTACH] handleAttachPhoto iniciado');
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    console.log('[ATTACH] abrindo picker...');
-    isPickerOpenRef.current = true;
-    if (!canAddAttachment('photo')) { toast(attachmentDeniedMsg('photo'), 'warning'); isPickerOpenRef.current = false; return; }
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { toast(t('toast.galleryPermission'), 'warning'); return; }
-      const remaining = !analyzeWithAI
-        ? Math.max(1, MAX_SLOTS - attachments.length)
-        : MAX_PHOTOS - attachments.filter((a) => a.type === 'photo').length;
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: remaining,
-        quality: 0.7,
-      });
-      if (result.canceled || result.assets.length === 0) return;
-      result.assets.forEach((a, i) => {
-        console.log(`[ATTACH] photo selecionada[${i}] | uri:`, a.uri?.slice(-30), '| size original:', a.fileSize);
-      });
-      const newPhotos: Attachment[] = [];
-      for (const asset of result.assets) {
-        const compressed = await compressPhoto(asset.uri);
-        console.log(`[ATTACH] photo comprimida | size:`, compressed.size);
-        if (compressed.size && compressed.size > MEDIA_LIMITS.photo.maxSizeBytes) {
-          toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
-          continue;
-        }
-        newPhotos.push({
-          id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          type:         'photo' as const,
-          localUri:     compressed.uri,
-          thumbnailUri: compressed.uri,
-          mimeType:     asset.mimeType ?? 'image/jpeg',
-          fileSize:     compressed.size,
-          // base64 not stored here — read lazily in handleSubmitText
-        });
-      }
-      setAttachments((prev) => [...prev, ...newPhotos]);
-      console.log('[ATTACH] fotos adicionadas | total:', attachments.length + newPhotos.length);
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — liberando guard');
-    }
-  }, [attachments, canAddAttachment, toast, t]);
-
-  // ── In-app camera (replaces launchCameraAsync to prevent Android process death) ──
-  // launchCameraAsync launches an external Activity; Android kills the Expo JS
-  // process to free memory, causing a full app restart and losing all state.
-  // PhotoCamera uses CameraView directly inside the app — no process death risk.
-
-  const handleAttachTakePhoto = useCallback(() => {
-    console.log('[ATTACH] handleAttachTakePhoto → abrindo PhotoCamera in-app | step:', stepRef.current);
-    if (!canAddAttachment('photo')) {
-      toast(attachmentDeniedMsg('photo'), 'warning');
-      return;
-    }
-    prevStepRef.current = stepRef.current;
-    console.log('[ATTACH] prevStep salvo:', prevStepRef.current);
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    setStep('photo_camera');
-  }, [canAddAttachment, attachmentDeniedMsg, stopListening, toast]);
-
-  // Receives compressed URI from PhotoCamera after shutter or gallery pick
-  const handlePhotoCameraCapture = useCallback((uri: string) => {
-    console.log('[ATTACH] handlePhotoCameraCapture | uri suffix:', uri?.slice(-40));
-    setStep(prevStepRef.current);
-    console.log('[ATTACH] step restaurado para:', prevStepRef.current);
-    setAttachments((prev) => {
-      const next = [...prev, {
-        id:           `photo-${Date.now()}`,
-        type:         'photo' as const,
-        localUri:     uri,
-        thumbnailUri: uri,
-        mimeType:     'image/jpeg',
-      }];
-      console.log('[ATTACH] foto adicionada via PhotoCamera | total:', next.length);
-      return next;
-    });
-  }, []);
-
-  // User pressed back in PhotoCamera without capturing
-  const handlePhotoCameraClose = useCallback(() => {
-    console.log('[ATTACH] handlePhotoCameraClose | restaurando step:', prevStepRef.current);
-    setStep(prevStepRef.current);
-  }, []);
-
-  // ── Galeria unificada — fotos, vídeos e documentos num único picker ──────
-
-  const handleAttachGallery = useCallback(async () => {
-    console.log('[ATTACH] handleAttachGallery iniciado');
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    console.log('[ATTACH] abrindo picker...');
-    isPickerOpenRef.current = true;
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        multiple: true,
-        copyToCacheDirectory: false,
-      });
-      if (result.canceled || !result.assets?.length) return;
-      console.log('[ATTACH] galeria selecionada | assets:', result.assets.length);
-      result.assets.forEach((a, i) => {
-        console.log(`[ATTACH] asset[${i}]: type=${a.mimeType} size=${a.size} name=${a.name}`);
-      });
-
-      const newAttachments: Attachment[] = [];
-
-      for (const asset of result.assets) {
-        const mime = asset.mimeType ?? '';
-        if (mime.startsWith('image/')) {
-          if (!canAddAttachment('photo', newAttachments.length)) { toast(attachmentDeniedMsg('photo'), 'warning'); continue; }
-          const compressed = await compressPhoto(asset.uri);
-          if (compressed.size && compressed.size > MEDIA_LIMITS.photo.maxSizeBytes) {
-            toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
-            continue;
-          }
-          newAttachments.push({
-            id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:         'photo',
-            localUri:     compressed.uri,
-            thumbnailUri: compressed.uri,
-            mimeType:     mime,
-            fileName:     asset.name,
-            fileSize:     compressed.size,
-            // base64 not stored here — read lazily in handleSubmitText
-          });
-        } else if (mime.startsWith('video/')) {
-          if (!canAddAttachment('video', newAttachments.length)) { toast(attachmentDeniedMsg('video'), 'warning'); continue; }
-          newAttachments.push({
-            id:       `video-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:     'video',
-            localUri: asset.uri,
-            mimeType: mime,
-            fileName: asset.name,
-            fileSize: asset.size,
-          });
-        } else if (mime.startsWith('audio/')) {
-          if (!canAddAttachment('audio', newAttachments.length)) { toast(attachmentDeniedMsg('audio'), 'warning'); continue; }
-          if (asset.size && asset.size > MEDIA_LIMITS.audio.maxSizeBytes) {
-            toast(t('diary.audioTooLarge', { max: MEDIA_LIMITS.audio.maxSizeMB }), 'warning');
-            continue;
-          }
-          newAttachments.push({
-            id:       `audio-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:     'audio',
-            localUri: asset.uri,
-            mimeType: mime,
-            fileName: asset.name,
-            fileSize: asset.size,
-          });
-        } else {
-          if (!canAddAttachment('document', newAttachments.length)) { toast(attachmentDeniedMsg('document'), 'warning'); continue; }
-          newAttachments.push({
-            id:       `doc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:     'document',
-            localUri: asset.uri,
-            mimeType: mime || 'application/octet-stream',
-            fileName: asset.name,
-            fileSize: asset.size,
-          });
-        }
-      }
-
-      if (newAttachments.length > 0) {
-        setAttachments((prev) => [...prev, ...newAttachments]);
-        console.log('[ATTACH] galeria adicionada | total:', attachments.length + newAttachments.length);
-      }
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — liberando guard');
-      if (wasListening) await startListening();
-    }
-  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
-
-  const handleAttachVideo = useCallback(async () => {
-    console.log('[ATTACH] handleAttachVideo iniciado');
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    console.log('[ATTACH] abrindo picker...');
-    isPickerOpenRef.current = true;
-    if (!canAddAttachment('video')) { toast(attachmentDeniedMsg('video'), 'warning'); isPickerOpenRef.current = false; return; }
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { toast(t('toast.galleryPermission'), 'warning'); return; }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['videos'],
-        videoMaxDuration: 60,
-        quality: 0.7,
-      });
-      if (result.canceled || !result.assets[0]) return;
-      const asset = result.assets[0];
-      console.log('[ATTACH] video selecionado | uri:', asset.uri?.slice(-30), '| size:', asset.fileSize, '| duration:', asset.duration);
-      if (asset.duration != null && asset.duration > MEDIA_LIMITS.video.maxDurationSec * 1000) {
-        toast(t('diary.videoTooLong', { max: MEDIA_LIMITS.video.maxDurationSec }), 'warning');
-        return;
-      }
-      if (asset.fileSize != null && asset.fileSize > MEDIA_LIMITS.video.maxSizeBytes) {
-        toast(t('diary.videoTooLarge', { max: MEDIA_LIMITS.video.maxSizeMB }), 'warning');
-        return;
-      }
-      setAttachments((prev) => [...prev, {
-        id:       `video-${Date.now()}`,
-        type:     'video' as const,
-        localUri: asset.uri,
-        duration: asset.duration ?? undefined,
-        mimeType: 'video/mp4',
-      }]);
-      console.log('[ATTACH] video adicionado | total:', attachments.length + 1);
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — liberando guard');
-      if (wasListening) await startListening();
-    }
-  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
-
-  const handleAttachDocument = useCallback(async () => {
-    console.log('[ATTACH] handleAttachDocument iniciado');
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    console.log('[ATTACH] abrindo picker...');
-    isPickerOpenRef.current = true;
-    if (!canAddAttachment('document')) { toast(attachmentDeniedMsg('document'), 'warning'); isPickerOpenRef.current = false; return; }
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
-        multiple: false,
-        copyToCacheDirectory: false,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      if (asset.size != null && asset.size > MEDIA_LIMITS.document.maxSizeBytes) {
-        toast(t('diary.documentTooLarge', { max: MEDIA_LIMITS.document.maxSizeMB }), 'warning');
-        return;
-      }
-      setAttachments((prev) => [...prev, {
-        id:       `doc-${Date.now()}`,
-        type:     'document' as const,
-        localUri: asset.uri,
-        fileName: asset.name,
-        fileSize: asset.size,
-        mimeType: asset.mimeType ?? 'application/octet-stream',
-      }]);
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      if (Platform.OS === 'android') { await new Promise(r => setTimeout(r, 2000)); }
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — liberando guard');
-      if (wasListening) await startListening();
-    }
-  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
-
-  // ── Fotos + vídeos — ImagePicker (roda dentro da Activity do app, sem crash) ─
-  const handleAttachMedia = useCallback(async () => {
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    isPickerOpenRef.current = true;
-    console.log('[ATTACH] abrindo ImagePicker (fotos+vídeos)...');
-
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { toast(t('toast.galleryPermission'), 'warning'); return; }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images', 'videos'],
-        allowsMultipleSelection: true,
-        quality: 0.8,
-        videoMaxDuration: MEDIA_LIMITS.video.maxDurationSec,
-        selectionLimit: !analyzeWithAI ? Math.max(1, MAX_SLOTS - attachments.length) : 10,
-        orderedSelection: true,
-      });
-
-      if (result.canceled || !result.assets?.length) return;
-
-      console.log('[ATTACH] ImagePicker selecionados:', result.assets.length);
-
-      const newAttachments: Attachment[] = [];
-      for (const asset of result.assets) {
-        if (asset.type === 'image') {
-          if (!canAddAttachment('photo', newAttachments.length)) { toast(attachmentDeniedMsg('photo'), 'warning'); continue; }
-          const compressed = await compressPhoto(asset.uri);
-          if (compressed.size && compressed.size > MEDIA_LIMITS.photo.maxSizeBytes) {
-            toast(t('diary.photoTooLarge', { max: MEDIA_LIMITS.photo.maxSizeMB }), 'warning');
-            continue;
-          }
-          newAttachments.push({
-            id:           `photo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:         'photo',
-            localUri:     compressed.uri,
-            thumbnailUri: compressed.uri,
-            mimeType:     'image/jpeg',
-            fileSize:     compressed.size,
-          });
-        } else if (asset.type === 'video') {
-          if (!canAddAttachment('video', newAttachments.length)) { toast(attachmentDeniedMsg('video'), 'warning'); continue; }
-          if (asset.fileSize && asset.fileSize > MEDIA_LIMITS.video.maxSizeBytes) {
-            toast(t('diary.videoTooLarge', { max: MEDIA_LIMITS.video.maxSizeMB }), 'warning');
-            continue;
-          }
-          newAttachments.push({
-            id:           `video-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            type:         'video',
-            localUri:     asset.uri,
-            thumbnailUri: asset.uri,
-            mimeType:     'video/mp4',
-            duration:     asset.duration ? asset.duration / 1000 : undefined,
-            fileSize:     asset.fileSize,
-          });
-        }
-      }
-
-      if (newAttachments.length > 0) {
-        setAttachments((prev) => [...prev, ...newAttachments]);
-        console.log('[ATTACH] total após seleção:', attachments.length + newAttachments.length);
-      }
-
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — guard liberado');
-      if (wasListening) await startListening();
-    }
-  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
-
-  // ── Áudio de arquivo — DocumentPicker (uma única vez) ──────────────────────
-  const handleAttachAudio = useCallback(async () => {
-    if (isPickerOpenRef.current) { console.log('[ATTACH] picker já aberto — ignorando'); return; }
-    const wasListening = isListeningRef.current;
-    if (wasListening) stopListening();
-    isPickerOpenRef.current = true;
-    console.log('[ATTACH] abrindo DocumentPicker (áudio)...');
-
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          'audio/mpeg',   // MP3
-          'audio/mp3',    // MP3 (alias)
-          'audio/mp4',    // M4A / AAC
-          'audio/aac',    // AAC
-          'audio/x-m4a',  // M4A (iOS)
-          'audio/wav',    // WAV
-          'audio/wave',   // WAV (alias)
-          'audio/ogg',    // OGG
-          'audio/flac',   // FLAC
-          'audio/webm',   // WebM audio
-        ],
-        multiple: false,
-        copyToCacheDirectory: false,
-      });
-
-      if (result.canceled || !result.assets?.length) {
-        console.log('[AUDIO-PICK] cancelado ou sem assets');
-        return;
-      }
-
-      const asset = result.assets[0];
-      console.log('[AUDIO-PICK] asset selecionado:', {
-        name: asset.name,
-        uri: asset.uri?.slice(-60),
-        mimeType: asset.mimeType,
-        size: asset.size,
-        isContentUri: asset.uri?.startsWith('content://'),
-      });
-
-      if (!canAddAttachment('audio')) { toast(attachmentDeniedMsg('audio'), 'warning'); return; }
-      if (asset.size && asset.size > MEDIA_LIMITS.audio.maxSizeBytes) {
-        console.warn('[AUDIO-PICK] arquivo muito grande:', asset.size, '>', MEDIA_LIMITS.audio.maxSizeBytes);
-        toast(t('diary.audioTooLarge', { max: MEDIA_LIMITS.audio.maxSizeMB }), 'warning');
-        return;
-      }
-
-      setAttachments((prev) => [...prev, {
-        id:       `audio-${Date.now()}`,
-        type:     'audio',
-        localUri: asset.uri,
-        mimeType: asset.mimeType ?? 'audio/mpeg',
-        fileName: asset.name,
-        fileSize: asset.size,
-      }]);
-      console.log('[AUDIO-PICK] ✅ áudio anexado:', asset.name, '| uri scheme:', asset.uri?.split('://')[0]);
-
-    } catch (err) { toast(getErrorMessage(err), 'error'); }
-    finally {
-      isPickerOpenRef.current = false;
-      console.log('[ATTACH] picker fechado — guard liberado');
-      if (wasListening) await startListening();
-    }
-  }, [attachments, canAddAttachment, stopListening, startListening, toast, t]);
-
-  const onPetAudioCaptured = useCallback(async (uri: string, duration: number) => {
-    console.log('[AUDIO-REC] capturado via PetAudioRecorder:', {
-      uri: uri?.slice(-60),
-      duration,
-      isContentUri: uri?.startsWith('content://'),
-      isFileUri: uri?.startsWith('file://'),
-    });
-    setAttachments((prev) => [...prev, {
-      id:       `audio-${Date.now()}`,
-      type:     'audio' as const,
-      localUri: uri,
-      duration,
-      mimeType: 'audio/m4a',
-    }]);
-    setShowPetAudioModal(false);
-  }, []);
+  const {
+    handleAttachPhoto,
+    handleAttachTakePhoto,
+    handlePhotoCameraCapture,
+    handlePhotoCameraClose,
+    handleAttachGallery,
+    handleAttachVideo,
+    handleAttachDocument,
+    handleAttachMedia,
+    handleAttachAudio,
+    onPetAudioCaptured,
+  } = useAttachmentHandlers({
+    attachments,
+    setAttachments,
+    setStep,
+    setShowPetAudioModal,
+    isPickerOpenRef,
+    isListeningRef,
+    stepRef,
+    prevStepRef,
+    canAddAttachment,
+    attachmentDeniedMsg,
+    analyzeWithAI,
+    MAX_SLOTS,
+    MAX_PHOTOS,
+    stopListening,
+    startListening,
+    toast,
+    t,
+  });
 
   // ── Text step handlers ────────────────────────────────────────────────────
 
-  const handleSubmitText = useCallback(async () => {
-    console.log('[SUBMIT] handleSubmitText chamado');
-    console.log('[SUBMIT] attachments:', attachments.length);
-    console.log('[handleSubmitText] media:', attachments.map((m) => m.type));
-    attachments.forEach((a, i) => {
-      console.log(`[SUBMIT] attachment[${i}]: type=${a.type} uri=${a.localUri?.slice(-30)} size=${a.fileSize}`);
-    });
+  const handleSubmitText = useHandleSubmitText({
+    tutorText,
+    attachments,
+    analyzeWithAI,
+    submitEntry,
+    router,
+    toast,
+    t,
+  });
 
-    const text = tutorText.trim();
+  // ── Edit mode + back navigation handlers (extracted to ./_new/editHandlers.ts) ──
 
-    const hasContent = text.length >= 3 || attachments.length > 0;
-    if (!hasContent) {
-      toast(t('diary.contentMin'), 'warning');
-      return;
-    }
-
-    const photoAttachments = attachments.filter((a) => a.type === 'photo');
-    const videoAttachments = attachments.filter((a) => a.type === 'video');
-    const audioAttachments = attachments.filter((a) => a.type === 'audio');
-    const docAttachments   = attachments.filter((a) => a.type === 'document');
-
-    // Determine inputType for classify:
-    // fotos + vídeo → 'gallery' (prompt clínico vê fotos; hasVideo garante extração de frames)
-    // só vídeo      → 'video'   (prompt de comportamento)
-    let inputType = 'text';
-    if (videoAttachments.length > 0 && photoAttachments.length > 0) {
-      inputType = 'gallery';  // classify usa prompt clínico das fotos
-    } else if (videoAttachments.length > 0) {
-      inputType = 'video';
-    } else if (audioAttachments.length > 0) {
-      inputType = 'pet_audio';
-    } else if (photoAttachments.length > 0) {
-      inputType = 'gallery';
-    } else if (docAttachments.length > 0 && tutorText.trim().length < 50) {
-      // Pure document scan with no significant text → dedicated OCR prompt
-      inputType = 'ocr_scan';
-    }
-    // When text + doc: inputType stays 'text' → inlineDocBase64 handles doc as secondary OCR call
-    const hasVideo = videoAttachments.length > 0;
-
-    // Log BEFORE base64 read so we know if crash is during read or before
-    console.log('[S1] handleSubmitText iniciado');
-    console.log('[S1] inputType:', inputType);
-    console.log('[S1] photoAttachments:', photoAttachments.length);
-    console.log('[S1] videoAttachments:', videoAttachments.length);
-    console.log('[S1] audioAttachments:', audioAttachments.length);
-
-    // Read base64 only for AI path — skip-AI doesn't need it (upload happens in background)
-    // Max 3 photos for AI analysis — remaining photos (4-10) are upload-only (no AI)
-    const photosForAI     = photoAttachments.slice(0, 3);
-    const photosOnlyUpload = photoAttachments.slice(3);
-    let photosBase64: string[] | null = null;
-    if (analyzeWithAI && photosForAI.length > 0) {
-      console.log('[S1] iniciando leitura de base64 (', photosForAI.length, 'fotos para IA,', photosOnlyUpload.length, 'só upload)...');
-      try {
-        const { readAsStringAsync, EncodingType } = require('expo-file-system/legacy');
-        const ImageManipulator = require('expo-image-manipulator');
-        const results: string[] = [];
-        for (const photo of photosForAI) {
-          console.log('[S1] comprimindo foto:', photo.localUri?.slice(-30));
-          const compressed = await ImageManipulator.manipulateAsync(
-            photo.localUri,
-            [{ resize: { width: 800 } }],
-            { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG },
-          );
-          console.log('[S1] lendo base64 comprimida:', compressed.uri.slice(-30));
-          const b64 = await readAsStringAsync(compressed.uri, { encoding: EncodingType.Base64 });
-          console.log('[S1] base64 lido:', Math.round(b64.length * 0.75 / 1024), 'KB');
-          if (b64) results.push(b64);
-        }
-        photosBase64 = results.length > 0 ? results : null;
-      } catch (e) {
-        console.warn('[S1] base64 read failed:', e);
-        photosBase64 = null;
-      }
-    }
-
-    // If OCR-only entry (no photos for AI) but a scanned document attachment has inline base64,
-    // pass it directly as the OCR image (no photos in this case)
-    if (photosBase64 === null && inputType === 'ocr_scan' && docAttachments.length > 0) {
-      const docBase64 = docAttachments[0].base64;
-      if (docBase64) photosBase64 = [docBase64];
-    }
-
-    // Extract inline doc base64 for ALL entries that have a scanned document attachment.
-    // For ocr_scan: used by runOCRClassification to extract fields; upload is handled by the
-    // OCR-specific path (analysisFramesCapped → uploadedPhotos[0]), not by DOC-ATTACH.
-    // For mixed entries (photos + doc): pipeline uploads + OCR-classifies it separately.
-    const inlineDocBase64 = docAttachments.length > 0
-      ? (docAttachments[0].base64 ?? undefined)
-      : undefined;
-
-    // All attachment URIs: photos first, then video/audio (order matters for BG upload logic)
-    const mediaUris = [
-      ...photoAttachments.map((a) => a.localUri),
-      ...videoAttachments.map((a) => a.localUri),
-      ...audioAttachments.map((a) => a.localUri),
-    ].filter((uri): uri is string => !!uri);
-
-    const videoDuration = videoAttachments[0]?.duration
-      ? Math.round(videoAttachments[0].duration) : undefined;
-    const audioDuration = audioAttachments[0]?.duration
-      ? Math.round(audioAttachments[0].duration) : undefined;
-
-    console.log('[S1] submitEntry chamado | photosBase64:', photosBase64?.length ?? 0, '| mediaUris:', mediaUris.length, mediaUris);
-    void submitEntry({
-      text: text || null,
-      photosBase64,
-      inputType,
-      mediaUris,
-      videoDuration,
-      audioDuration,
-      audioOriginalName: audioAttachments[0]?.fileName,
-      hasVideo,
-      docBase64: inlineDocBase64,
-      skipAI: !analyzeWithAI,
-    });
-    router.back();
-  }, [tutorText, attachments, toast, t, submitEntry, router]);
-
-  // ── Edit mode handlers ────────────────────────────────────────────────────
-
-  const handleSaveEdit = useCallback(async () => {
-    if (!edit) return;
-    const text = tutorText.trim();
-    if (text.length < 3) {
-      toast(t('diary.contentMin'), 'warning');
-      return;
-    }
-    try {
-      await updateEntry({ id: edit, content: text });
-      toast(t('diary.updated'), 'success');
-      router.back();
-    } catch (err) {
-      toast(getErrorMessage(err), 'error');
-    }
-  }, [edit, tutorText, updateEntry, toast, t, router]);
-
-  const handleDelete = useCallback(async () => {
-    if (!edit) return;
-    const yes = await confirm({ text: t('diary.deleteConfirmDiary'), type: 'warning' });
-    if (!yes) return;
-    try {
-      await deleteEntry(edit);
-      toast(t('diary.deleted'), 'success');
-      router.back();
-    } catch {
-      toast(t('diary.deleteFailed'), 'error');
-    }
-  }, [edit, deleteEntry, confirm, toast, t, router]);
-
-  // ── Back navigation ───────────────────────────────────────────────────────
-
-  const handleBack = useCallback(async () => {
-    if (PREVIEW_STEPS.includes(step)) {
-      const discard = await confirm({ text: t('diary.discardCapture'), type: 'warning' });
-      if (!discard) return;
-    }
-    stopListening();
-    if (step !== 'mic') {
-      setStep('mic');
-    } else {
-      void AsyncStorage.removeItem(draftKey);
-      router.back();
-    }
-  }, [step, confirm, t, stopListening, draftKey, router]);
+  const { handleSaveEdit, handleDelete, handleBack } = useEditHandlers({
+    edit,
+    tutorText,
+    step,
+    draftKey,
+    updateEntry,
+    deleteEntry,
+    stopListening,
+    setStep,
+    router,
+    toast,
+    confirm,
+    t,
+  });
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -1548,8 +700,8 @@ export default function NewDiaryEntryScreen() {
               <Switch
                 value={analyzeWithAI}
                 onValueChange={setAnalyzeWithAI}
-                trackColor={{ false: colors.border, true: colors.purple + '50' }}
-                thumbColor={analyzeWithAI ? colors.purple : colors.textDim}
+                trackColor={{ false: colors.border, true: colors.accent + '50' }}
+                thumbColor={analyzeWithAI ? colors.accent : colors.textDim}
               />
             </View>
 
@@ -1583,7 +735,7 @@ export default function NewDiaryEntryScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Mic size={rs(18)} color={colors.rose} strokeWidth={1.8} />
+                <Mic size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                 <Text style={styles.attachLabel}>{t('mic.addAudio')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1591,7 +743,7 @@ export default function NewDiaryEntryScreen() {
                 onPress={handleSelectScanner}
                 activeOpacity={0.7}
               >
-                <ScanLine size={rs(18)} color={colors.success} strokeWidth={1.8} />
+                <ScanLine size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                 <Text style={styles.attachLabel}>{t('mic.scanner')}</Text>
               </TouchableOpacity>
             </View>
@@ -1674,7 +826,7 @@ export default function NewDiaryEntryScreen() {
                     <Text style={styles.attachLabel}>{t('mic.addMedia')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.attachBtn} onPress={handleAttachAudio} activeOpacity={0.7}>
-                    <Music2 size={rs(18)} color={colors.gold} strokeWidth={1.8} />
+                    <Music2 size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                     <Text style={styles.attachLabel}>{t('mic.addAudio')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -1685,7 +837,7 @@ export default function NewDiaryEntryScreen() {
                     }}
                     activeOpacity={0.7}
                   >
-                    <Ear size={rs(18)} color={colors.rose} strokeWidth={1.8} />
+                    <Ear size={rs(18)} color={colors.accent} strokeWidth={1.8} />
                     <Text style={styles.attachLabel}>{t('mic.addPetAudio')}</Text>
                   </TouchableOpacity>
                 </View>
@@ -1747,544 +899,3 @@ export default function NewDiaryEntryScreen() {
     </View>
   );
 }
-
-// ── PainelLentes ───────────────────────────────────────────────────────────
-
-function PainelLentes({ t }: { t: (k: string, opts?: Record<string, unknown>) => string }) {
-  const LENTES = [
-    { icon: <ShieldCheck   size={rs(14)} color={colors.success} strokeWidth={1.8} />, color: colors.success, labelKey: 'mic.lenteVacina',      descKey: 'mic.lenteVacinaDesc' },
-    { icon: <Stethoscope   size={rs(14)} color={colors.petrol}  strokeWidth={1.8} />, color: colors.petrol,  labelKey: 'mic.lenteConsulta',     descKey: 'mic.lenteConsultaDesc' },
-    { icon: <FlaskConical  size={rs(14)} color={colors.sky}     strokeWidth={1.8} />, color: colors.sky,     labelKey: 'mic.lenteExame',        descKey: 'mic.lenteExameDesc' },
-    { icon: <Pill          size={rs(14)} color={colors.purple}  strokeWidth={1.8} />, color: colors.purple,  labelKey: 'mic.lenteMedicamento',  descKey: 'mic.lenteMedicamentoDesc' },
-    { icon: <Scale         size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lentePeso',         descKey: 'mic.lentePesoDesc' },
-    { icon: <DollarSign    size={rs(14)} color={colors.warning} strokeWidth={1.8} />, color: colors.warning, labelKey: 'mic.lenteGasto',        descKey: 'mic.lenteGastoDesc' },
-    { icon: <ThermometerSun size={rs(14)} color={colors.danger} strokeWidth={1.8} />, color: colors.danger,  labelKey: 'mic.lenteSintoma',      descKey: 'mic.lenteSintomaDesc' },
-    { icon: <Utensils      size={rs(14)} color={colors.success} strokeWidth={1.8} />, color: colors.success, labelKey: 'mic.lenteAlimentacao',  descKey: 'mic.lenteAlimentacaoDesc' },
-    { icon: <AlertTriangle size={rs(14)} color={colors.warning} strokeWidth={1.8} />, color: colors.warning, labelKey: 'mic.lenteAlergia',      descKey: 'mic.lenteAlergiaDesc' },
-    { icon: <Scissors      size={rs(14)} color={colors.petrol}  strokeWidth={1.8} />, color: colors.petrol,  labelKey: 'mic.lenteCirurgia',     descKey: 'mic.lenteCirurgiaDesc' },
-    { icon: <Activity      size={rs(14)} color={colors.rose}    strokeWidth={1.8} />, color: colors.rose,    labelKey: 'mic.lenteMetrica',      descKey: 'mic.lenteMetricaDesc' },
-    { icon: <ShoppingBag   size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lenteCompra',       descKey: 'mic.lenteCompraDesc' },
-    { icon: <MapPin        size={rs(14)} color={colors.sky}     strokeWidth={1.8} />, color: colors.sky,     labelKey: 'mic.lenteViagem',       descKey: 'mic.lenteViagemDesc' },
-    { icon: <PawPrint      size={rs(14)} color={colors.accent}  strokeWidth={1.8} />, color: colors.accent,  labelKey: 'mic.lenteConexao',      descKey: 'mic.lenteConexaoDesc' },
-    { icon: <Sparkles      size={rs(14)} color={colors.gold}    strokeWidth={1.8} />, color: colors.gold,    labelKey: 'mic.lenteMomento',      descKey: 'mic.lenteMomentoDesc' },
-  ];
-
-  return (
-    <View style={painelStyles.container}>
-      <Text style={painelStyles.subtitle}>{t('mic.painelSubtitle')}</Text>
-      {LENTES.map((lente, idx) => (
-        <View key={idx} style={painelStyles.item}>
-          <View style={[painelStyles.iconBox, { backgroundColor: lente.color + '18' }]}>
-            {lente.icon}
-          </View>
-          <View style={painelStyles.textCol}>
-            <Text style={[painelStyles.label, { color: lente.color }]}>
-              {t(lente.labelKey).toUpperCase()}
-            </Text>
-            <Text style={painelStyles.desc}>{t(lente.descKey)}</Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-const painelStyles = StyleSheet.create({
-  container: { gap: rs(8) },
-  subtitle: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(12),
-    color: colors.textSec,
-    marginBottom: rs(4),
-    lineHeight: fs(18),
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(10),
-    paddingVertical: rs(6),
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border + '50',
-  },
-  iconBox: {
-    width: rs(28), height: rs(28),
-    borderRadius: rs(8),
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  textCol: { flex: 1, gap: rs(2) },
-  label: {
-    fontFamily: 'Sora_700Bold',
-    fontSize: fs(10),
-    letterSpacing: 0.5,
-  },
-  desc: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(11),
-    color: colors.textSec,
-    lineHeight: fs(16),
-  },
-});
-
-// ── Styles ─────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  flex: { flex: 1 },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: rs(spacing.md),
-    paddingTop: rs(spacing.lg),
-    paddingBottom: rs(spacing.sm),
-    gap: rs(spacing.sm),
-  },
-  backBtn: {
-    width: rs(40), height: rs(40),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1, color: colors.text,
-    fontSize: fs(17), fontFamily: 'Sora_700Bold',
-  },
-  deleteBtn: {
-    width: rs(40), height: rs(40),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.dangerSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  helpBtn: {
-    width: rs(40), height: rs(40),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.accentGlow,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  helpBackdrop: {
-    flex: 1, backgroundColor: 'rgba(11,18,25,0.6)',
-  },
-  helpSheet: {
-    backgroundColor: colors.bgCard,
-    borderTopLeftRadius: rs(radii.modal),
-    borderTopRightRadius: rs(radii.modal),
-    padding: rs(spacing.lg),
-    gap: rs(spacing.md),
-  },
-  helpHandle: {
-    width: rs(40), height: rs(5),
-    borderRadius: rs(3),
-    backgroundColor: colors.textGhost,
-    alignSelf: 'center',
-    marginBottom: rs(spacing.sm),
-  },
-  helpHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: rs(spacing.sm),
-  },
-  helpTitle: {
-    color: colors.text,
-    fontSize: fs(17),
-    fontFamily: 'Sora_700Bold',
-  },
-  helpItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: rs(spacing.md),
-  },
-  helpItemIcon: {
-    width: rs(40), height: rs(40),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.card,
-    borderWidth: 1, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  helpItemText: {
-    flex: 1,
-    gap: rs(4),
-  },
-  helpItemTitle: {
-    color: colors.text,
-    fontSize: fs(14),
-    fontFamily: 'Sora_600SemiBold',
-  },
-  helpItemDesc: {
-    color: colors.textSec,
-    fontSize: fs(13),
-    fontFamily: 'Sora_400Regular',
-    lineHeight: fs(13) * 1.5,
-  },
-  helpItemLimit: {
-    color: colors.textDim,
-    fontSize: fs(11),
-    fontFamily: 'Sora_400Regular',
-    marginTop: rs(2),
-  },
-  helpScrollArea: {
-    maxHeight: rs(480),
-  },
-  helpScrollContent: {
-    gap: rs(spacing.md),
-  },
-  helpWifiCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: rs(spacing.sm),
-    backgroundColor: colors.warningSoft,
-    borderWidth: 1,
-    borderColor: colors.warning + '30',
-    borderRadius: rs(radii.lg),
-    padding: rs(spacing.md),
-    marginTop: rs(spacing.md),
-  },
-  helpWifiTitle: {
-    color: colors.warning,
-    fontSize: fs(13),
-    fontFamily: 'Sora_600SemiBold',
-    marginBottom: rs(2),
-  },
-  helpWifiDesc: {
-    color: colors.textSec,
-    fontSize: fs(12),
-    fontFamily: 'Sora_400Regular',
-    lineHeight: fs(12) * 1.55,
-  },
-  helpAICard: {
-    flexDirection: 'column',
-    gap: rs(spacing.sm),
-    backgroundColor: colors.purpleSoft,
-    borderWidth: 1,
-    borderColor: colors.purple + '30',
-    borderRadius: rs(radii.lg),
-    padding: rs(spacing.md),
-    marginTop: rs(spacing.md),
-  },
-  helpAIHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(6),
-    marginBottom: rs(2),
-  },
-  helpAITitle: {
-    color: colors.purple,
-    fontSize: fs(13),
-    fontFamily: 'Sora_600SemiBold',
-  },
-  helpAIStateRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: rs(spacing.sm),
-  },
-  helpAIBadge: {
-    borderRadius: rs(radii.sm),
-    paddingHorizontal: rs(6),
-    paddingVertical: rs(2),
-    marginTop: rs(1),
-  },
-  helpAIBadgeOn: {
-    backgroundColor: colors.purple + '20',
-  },
-  helpAIBadgeOff: {
-    backgroundColor: colors.border,
-  },
-  helpAIBadgeText: {
-    fontSize: fs(10),
-    fontFamily: 'Sora_700Bold',
-  },
-  helpAIStateDesc: {
-    flex: 1,
-    color: colors.textSec,
-    fontSize: fs(12),
-    fontFamily: 'Sora_400Regular',
-    lineHeight: fs(12) * 1.55,
-  },
-  helpTabRow: {
-    flexDirection: 'row',
-    backgroundColor: colors.bgCard,
-    borderRadius: rs(10),
-    padding: rs(3),
-    marginBottom: rs(16),
-  },
-  helpTabBtn: {
-    flex: 1,
-    paddingVertical: rs(7),
-    borderRadius: rs(8),
-    alignItems: 'center',
-  },
-  helpTabBtnActive: {
-    backgroundColor: colors.card,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: rs(4),
-    elevation: 2,
-  },
-  helpTabText: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(12),
-    color: colors.textDim,
-  },
-  helpTabTextActive: {
-    color: colors.text,
-  },
-
-  // Text step
-  textContainer: {
-    flex: 1, padding: rs(spacing.md), gap: rs(spacing.md),
-  },
-  textLabel: {
-    color: colors.textSec, fontSize: fs(13),
-    fontFamily: 'Sora_600SemiBold', letterSpacing: 0.4,
-  },
-  inputWrapper: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: rs(radii.xl),
-    borderWidth: 1.5, borderColor: colors.border,
-    padding: rs(spacing.md),
-    maxHeight: rs(300),
-  },
-  textInput: {
-    flex: 1, color: colors.text,
-    fontSize: fs(15),
-    lineHeight: fs(22), textAlignVertical: 'top',
-  },
-  inlineMic: {
-    alignSelf: 'flex-end',
-    width: rs(36), height: rs(36),
-    borderRadius: rs(radii.lg),
-    backgroundColor: colors.accentGlow,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  inlineMicActive: { backgroundColor: colors.accentMed },
-  interimText: {
-    color: colors.textDim, fontSize: fs(13),
-    fontFamily: 'Sora_400Regular',
-    fontStyle: 'italic', marginHorizontal: rs(4),
-  },
-  primaryBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(spacing.xs),
-    backgroundColor: colors.accent,
-    paddingVertical: rs(spacing.md),
-    borderRadius: rs(radii.xl),
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: rs(4) },
-    shadowOpacity: 0.3, shadowRadius: rs(12), elevation: 6,
-  },
-  primaryBtnDisabled: { opacity: 0.4 },
-  attachRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: rs(spacing.xs),
-  },
-  attachBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(4),
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.lg),
-    paddingVertical: rs(8),
-    paddingHorizontal: rs(12),
-  },
-  attachLabel: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(11),
-    color: colors.textSec,
-  },
-  primaryBtnText: {
-    color: '#fff', fontSize: fs(15),
-    fontFamily: 'Sora_700Bold',
-  },
-
-  // Mic / unified entry step
-  micContent: {
-    padding: rs(spacing.md),
-    gap: rs(spacing.md),
-  },
-  waveCard: {
-    backgroundColor: colors.card,
-    borderRadius: rs(radii.xxl),
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: rs(20),
-    paddingHorizontal: rs(16),
-    justifyContent: 'center',
-  },
-  waveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: rs(52),
-  },
-  waveBar: {
-    width: rs(4),
-    height: rs(40),
-    borderRadius: rs(3),
-    backgroundColor: colors.accent,
-  },
-  transcriptionCard: {
-    backgroundColor: colors.card,
-    borderRadius: rs(radii.xl),
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    minHeight: rs(100),
-    padding: rs(spacing.md),
-  },
-  transcriptionInput: {
-    color: colors.text,
-    fontSize: fs(15),
-    lineHeight: fs(22),
-    textAlignVertical: 'top',
-    minHeight: rs(80),
-  },
-  attachThumb: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: rs(6),
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.lg),
-    paddingVertical: rs(12),
-  },
-  aiHint: {
-    fontFamily: 'Caveat_400Regular',
-    fontSize: fs(15),
-    color: colors.accent,
-    textAlign: 'center',
-    fontStyle: 'italic',
-    paddingHorizontal: rs(16),
-  },
-  aiToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(spacing.sm),
-    marginHorizontal: rs(spacing.sm),
-    marginTop: rs(spacing.sm),
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: rs(radii.lg),
-    paddingVertical: rs(12),
-    paddingHorizontal: rs(spacing.md),
-  },
-  aiToggleLabel: {
-    fontFamily: 'Sora_600SemiBold',
-    fontSize: fs(13),
-    color: colors.text,
-  },
-  aiToggleDesc: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(11),
-    color: colors.textSec,
-    marginTop: rs(2),
-  },
-  micBottomBar: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: rs(spacing.sm),
-    paddingHorizontal: rs(spacing.md),
-    paddingTop: rs(spacing.md),
-    backgroundColor: colors.bg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  micBtn: {
-    width: rs(56),
-    height: rs(56),
-    borderRadius: rs(28),
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  micBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accentDark,
-  },
-  recordBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: rs(spacing.xs),
-    backgroundColor: colors.accent,
-    paddingVertical: rs(spacing.md),
-    borderRadius: rs(radii.xl),
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: rs(4) },
-    shadowOpacity: 0.3,
-    shadowRadius: rs(12),
-    elevation: 6,
-  },
-  recordBtnDisabled: { opacity: 0.4 },
-  recordBtnText: {
-    color: '#fff',
-    fontSize: fs(15),
-    fontFamily: 'Sora_700Bold',
-  },
-
-  // Analyzing overlay
-  analyzingOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(11,18,25,0.92)',
-    alignItems: 'center', justifyContent: 'center',
-    gap: rs(20), zIndex: 999,
-  },
-  analyzingCenter: {
-    width: rs(140), height: rs(140),
-    alignItems: 'center', justifyContent: 'center',
-  },
-  analyzingRing: {
-    position: 'absolute',
-    width: rs(140), height: rs(140),
-    borderRadius: rs(70),
-    borderWidth: 2, borderColor: colors.accent,
-  },
-  analyzingPawContainer: {
-    width: rs(96), height: rs(96),
-    borderRadius: rs(48),
-    backgroundColor: colors.accentGlow,
-    borderWidth: 1.5, borderColor: colors.accent + '40',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4, shadowRadius: rs(20),
-    elevation: 8,
-  },
-  analyzingTitle: {
-    fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text,
-    letterSpacing: 0.5,
-  },
-  analyzingSubtitle: {
-    fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec,
-    textAlign: 'center', maxWidth: rs(260), lineHeight: fs(20),
-  },
-  analyzerDisclaimer: {
-    fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textGhost,
-    textAlign: 'center', paddingHorizontal: rs(24), marginTop: rs(8),
-  },
-  mediaDisclaimer: {
-    fontFamily: 'Sora_400Regular', fontSize: fs(10), color: '#FFFFFF',
-    textAlign: 'center', paddingHorizontal: rs(20), paddingVertical: rs(4),
-    fontStyle: 'italic',
-  },
-  mediaHint: {
-    fontFamily: 'Sora_400Regular', fontSize: fs(9), color: colors.textGhost,
-    textAlign: 'center', marginTop: rs(2),
-  },
-
-});

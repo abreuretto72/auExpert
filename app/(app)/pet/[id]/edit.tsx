@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {
-  ChevronLeft, Camera, Dog, Cat, QrCode,
+  ChevronLeft, Camera, Dog, Cat, QrCode, FileText,
 } from 'lucide-react-native';
 import { colors } from '../../../../constants/colors';
 import { rs, fs } from '../../../../hooks/useResponsive';
@@ -18,6 +18,7 @@ import { usePet, usePets } from '../../../../hooks/usePets';
 import { useAuthStore } from '../../../../stores/authStore';
 import { useToast } from '../../../../components/Toast';
 import { supabase } from '../../../../lib/supabase';
+import { withTimeout } from '../../../../lib/withTimeout';
 import { getErrorMessage } from '../../../../utils/errorMessages';
 import { formatDateInput, parseDateInput, getDatePlaceholder, isoToDateInput, calcAgeMonths } from '../../../../utils/format';
 import { Skeleton } from '../../../../components/Skeleton';
@@ -70,7 +71,11 @@ export default function EditPetScreen() {
       const bytes = new Uint8Array(binaryStr.length);
       for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
       const fileName = `${user?.id}/${id}/${Date.now()}_avatar.jpg`;
-      const { data: upData, error } = await supabase.storage.from('pets').upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
+      const { data: upData, error } = await withTimeout(
+        supabase.storage.from('pets').upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true }),
+        30_000,
+        'storage.upload:pet-avatar',
+      );
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('pets').getPublicUrl(upData.path);
       const publicUrl = urlData.publicUrl;
@@ -252,7 +257,14 @@ export default function EditPetScreen() {
             <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={S.headerTitle}>{t('editPet.title')}</Text>
-          <View style={S.headerBtn} />
+          <TouchableOpacity
+            style={S.headerBtn}
+            onPress={() => router.push(`/pet/${id}/id-card-pdf` as never)}
+            activeOpacity={0.7}
+            accessibilityLabel={t('pdfCommon.printOrSave')}
+          >
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
         <View style={{ alignItems: 'center', paddingTop: rs(40) }}>
           <Skeleton width={rs(100)} height={rs(100)} radius={rs(32)} />
@@ -276,7 +288,14 @@ export default function EditPetScreen() {
             <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={S.headerTitle}>{t('editPet.title')}</Text>
-          <View style={S.headerBtn} />
+          <TouchableOpacity
+            style={S.headerBtn}
+            onPress={() => router.push(`/pet/${id}/id-card-pdf` as never)}
+            activeOpacity={0.7}
+            accessibilityLabel={t('pdfCommon.printOrSave')}
+          >
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView style={S.flex} contentContainerStyle={S.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -337,7 +356,7 @@ export default function EditPetScreen() {
             <View style={S.halfField}>
               <Text style={S.label}>{t('pets.weight')}</Text>
               <View style={S.inputWrap}>
-                <TextInput style={S.input} value={weight} onChangeText={setWeight} onBlur={doSave} placeholder="kg" placeholderTextColor={colors.placeholder} keyboardType="decimal-pad" />
+                <TextInput style={S.input} value={weight} onChangeText={setWeight} onBlur={doSave} placeholder={t('pets.weightPlaceholder')} placeholderTextColor={colors.placeholder} keyboardType="decimal-pad" />
               </View>
             </View>
           </View>

@@ -1,5 +1,19 @@
 import { supabase } from './supabase';
 import type { Pet, DiaryEntry, Vaccine, Allergy, MoodLog } from '../types/database';
+import {
+  PetSchema,
+  DiaryEntrySchema,
+  VaccineSchema,
+  AllergySchema,
+  ScheduledEventSchema,
+  type ScheduledEvent,
+} from './schemas';
+import { safeArray, safeOne } from './validate';
+import { withTimeout, DEFAULT_TIMEOUT_MS } from './withTimeout';
+
+// Re-export ScheduledEvent para manter compatibilidade com callers existentes
+// que importam de `lib/api` (a interface agora mora em lib/schemas).
+export type { ScheduledEvent };
 
 // ══════════════════════════════════════
 // PETS
@@ -7,30 +21,50 @@ import type { Pet, DiaryEntry, Vaccine, Allergy, MoodLog } from '../types/databa
 
 export async function fetchPets(): Promise<Pet[]> {
   // 1. Pets que sou dono (RLS filtra por user_id automaticamente)
-  const { data: ownedPets, error: ownedError } = await supabase
-    .from('pets')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+  const { data: ownedPets, error: ownedError } = await withTimeout(
+    supabase
+      .from('pets')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }),
+    DEFAULT_TIMEOUT_MS,
+    'fetchPets:owned',
+  );
 
   if (ownedError) throw ownedError;
 
   // 2. Pets onde sou co-tutor/cuidador/visualizador ativo
-  const { data: memberRows, error: memberError } = await supabase
-    .from('pet_members')
-    .select('pets(*), role')
-    .eq('is_active', true)
-    .not('accepted_at', 'is', null);
+  const { data: memberRows, error: memberError } = await withTimeout(
+    supabase
+      .from('pet_members')
+      .select('pets(*), role')
+      .eq('is_active', true)
+      .not('accepted_at', 'is', null),
+    DEFAULT_TIMEOUT_MS,
+    'fetchPets:members',
+  );
 
   if (memberError) throw memberError;
 
-  // Combinar e deduplicar
-  const ownedIds = new Set((ownedPets ?? []).map((p) => p.id));
-  const sharedPets = (memberRows ?? [])
-    .map((m) => ({ ...(m.pets as unknown as Pet), _role: m.role }))
-    .filter((p) => p?.id && !ownedIds.has(p.id));
+  // Valida pets próprios (passthrough tolera colunas novas do banco).
+  const owned = safeArray(ownedPets, PetSchema, 'fetchPets:owned');
 
-  return [...(ownedPets as Pet[] ?? []), ...sharedPets];
+  // Pets compartilhados vêm com nested join — validar o pet embutido e
+  // mesclar com o role do membership. safeOne retorna null se inválido;
+  // filter(Boolean) descarta.
+  const ownedIds = new Set(owned.map((p) => p.id));
+  const shared: Pet[] = [];
+  for (const m of memberRows ?? []) {
+    const raw = (m as { pets?: unknown }).pets;
+    if (!raw) continue;
+    const pet = safeOne(raw, PetSchema, 'fetchPets:shared');
+    if (!pet || ownedIds.has(pet.id)) continue;
+    // Anexa _role como metadado extra — passthrough garante que está no objeto
+    // mesmo que não apareça no type inferido.
+    shared.push(Object.assign(pet, { _role: (m as { role?: unknown }).role }));
+  }
+
+  return [...owned, ...shared];
 }
 
 export async function fetchPetById(id: string): Promise<Pet> {
@@ -88,37 +122,21 @@ export async function deletePet(id: string): Promise<void> {
 // DIARY
 // ══════════════════════════════════════
 
-export interface ScheduledEvent {
-  id: string;
-  pet_id: string;
-  user_id: string;
-  diary_entry_id: string | null;
-  event_type: string;
-  title: string;
-  description: string | null;
-  professional: string | null;
-  location: string | null;
-  scheduled_for: string;
-  all_day: boolean;
-  status: 'scheduled' | 'confirmed' | 'done' | 'cancelled' | 'missed';
-  is_recurring: boolean;
-  recurrence_rule: string | null;
-  source: 'manual' | 'ai' | 'system';
-  is_active: boolean;
-  created_at: string;
-}
-
 export async function fetchScheduledEvents(petId: string): Promise<ScheduledEvent[]> {
-  const { data, error } = await supabase
-    .from('scheduled_events')
-    .select('*')
-    .eq('pet_id', petId)
-    .eq('is_active', true)
-    .in('status', ['scheduled', 'confirmed'])
-    .order('scheduled_for', { ascending: true });
+  const { data, error } = await withTimeout(
+    supabase
+      .from('scheduled_events')
+      .select('*')
+      .eq('pet_id', petId)
+      .eq('is_active', true)
+      .in('status', ['scheduled', 'confirmed'])
+      .order('scheduled_for', { ascending: true }),
+    DEFAULT_TIMEOUT_MS,
+    `fetchScheduledEvents:${petId.slice(-8)}`,
+  );
 
   if (error) throw error;
-  return (data as ScheduledEvent[]) ?? [];
+  return safeArray(data, ScheduledEventSchema, `fetchScheduledEvents:${petId.slice(-8)}`);
 }
 
 export async function fetchDiaryEntries(
@@ -127,14 +145,18 @@ export async function fetchDiaryEntries(
   const from = (page - 1) * perPage;
   const to   = page * perPage - 1;
 
-  const { data, error } = await supabase
-    .from('diary_entries')
-    .select('*, registered_by_user:users!user_id(full_name,email)')
-    .eq('pet_id', petId)
-    .eq('is_active', true)
-    .order('entry_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const { data, error } = await withTimeout(
+    supabase
+      .from('diary_entries')
+      .select('*, registered_by_user:users!user_id(full_name,email)')
+      .eq('pet_id', petId)
+      .eq('is_active', true)
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range(from, to),
+    DEFAULT_TIMEOUT_MS,
+    `fetchDiaryEntries:${petId.slice(-8)}`,
+  );
 
   console.log('[API] fetchDiaryEntries petId:', petId.slice(-8));
   console.log('[API] total:', data?.length ?? 0, '| erro:', error ? `${error.message} (code=${error.code} details=${error.details})` : 'ok');
@@ -151,7 +173,7 @@ export async function fetchDiaryEntries(
   }
 
   if (error) throw error;
-  return (data as DiaryEntry[]) ?? [];
+  return safeArray(data, DiaryEntrySchema, `fetchDiaryEntries:${petId.slice(-8)}`);
 }
 
 export interface CreateDiaryParams {
@@ -299,15 +321,19 @@ export async function deleteDiaryEntry(id: string): Promise<void> {
 // ══════════════════════════════════════
 
 export async function fetchVaccines(petId: string): Promise<Vaccine[]> {
-  const { data, error } = await supabase
-    .from('vaccines')
-    .select('*')
-    .eq('pet_id', petId)
-    .eq('is_active', true)
-    .order('next_due_date', { ascending: true });
+  const { data, error } = await withTimeout(
+    supabase
+      .from('vaccines')
+      .select('*')
+      .eq('pet_id', petId)
+      .eq('is_active', true)
+      .order('next_due_date', { ascending: true }),
+    DEFAULT_TIMEOUT_MS,
+    `fetchVaccines:${petId.slice(-8)}`,
+  );
 
   if (error) throw error;
-  return (data as Vaccine[]) ?? [];
+  return safeArray(data, VaccineSchema, `fetchVaccines:${petId.slice(-8)}`);
 }
 
 export async function createVaccine(
@@ -416,14 +442,18 @@ export async function createSurgery(surgery: Record<string, unknown>) {
 // ══════════════════════════════════════
 
 export async function fetchAllergies(petId: string): Promise<Allergy[]> {
-  const { data, error } = await supabase
-    .from('allergies')
-    .select('*')
-    .eq('pet_id', petId)
-    .eq('is_active', true);
+  const { data, error } = await withTimeout(
+    supabase
+      .from('allergies')
+      .select('*')
+      .eq('pet_id', petId)
+      .eq('is_active', true),
+    DEFAULT_TIMEOUT_MS,
+    `fetchAllergies:${petId.slice(-8)}`,
+  );
 
   if (error) throw error;
-  return (data as Allergy[]) ?? [];
+  return safeArray(data, AllergySchema, `fetchAllergies:${petId.slice(-8)}`);
 }
 
 export async function createAllergy(
@@ -467,4 +497,144 @@ export async function createMoodLog(
 
   if (error) throw error;
   return data as MoodLog;
+}
+
+// ══════════════════════════════════════
+// SCHEDULED EVENTS (mutations)
+// ══════════════════════════════════════
+
+export async function createScheduledEvent(payload: Record<string, unknown>): Promise<ScheduledEvent> {
+  const { data, error } = await supabase
+    .from('scheduled_events')
+    .insert(payload)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ScheduledEvent;
+}
+
+export async function updateScheduledEvent(
+  id: string,
+  updates: Record<string, unknown>,
+): Promise<ScheduledEvent> {
+  const { data, error } = await supabase
+    .from('scheduled_events')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as ScheduledEvent;
+}
+
+// ══════════════════════════════════════
+// NUTRITION
+// ══════════════════════════════════════
+
+/**
+ * Upsert nutrition_profiles for a pet.
+ * Checks for existing active row; UPDATEs or INSERTs accordingly.
+ * (There is no unique constraint on pet_id + is_active, so we can't use real upsert.)
+ */
+export async function upsertNutritionProfile(params: {
+  pet_id: string;
+  user_id: string;
+  modalidade: string;
+  natural_pct?: number;
+}): Promise<void> {
+  const { pet_id, user_id, modalidade, natural_pct = 0 } = params;
+
+  const { data: existing, error: selectErr } = await supabase
+    .from('nutrition_profiles')
+    .select('id')
+    .eq('pet_id', pet_id)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (selectErr) throw selectErr;
+
+  if (existing) {
+    const { error } = await supabase
+      .from('nutrition_profiles')
+      .update({ modalidade, natural_pct })
+      .eq('id', existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('nutrition_profiles')
+      .insert({ pet_id, user_id, modalidade, natural_pct });
+    if (error) throw error;
+  }
+}
+
+export async function createNutritionRecord(record: Record<string, unknown>): Promise<void> {
+  const { error } = await supabase.from('nutrition_records').insert(record);
+  if (error) throw error;
+}
+
+/** Soft delete — is_active = false (CLAUDE.md rule #4). */
+export async function deleteNutritionRecord(id: string, petId: string): Promise<void> {
+  const { error } = await supabase
+    .from('nutrition_records')
+    .update({ is_active: false })
+    .eq('id', id)
+    .eq('pet_id', petId);
+  if (error) throw error;
+}
+
+// ══════════════════════════════════════
+// CONSENT
+// ══════════════════════════════════════
+
+export async function upsertUserConsent(params: {
+  user_id: string;
+  consent_type: string;
+  granted: boolean;
+  document_version?: string;
+}): Promise<void> {
+  const { user_id, consent_type, granted, document_version = '1.0' } = params;
+  const now = new Date().toISOString();
+  const { error } = await supabase.from('user_consents').upsert(
+    {
+      user_id,
+      consent_type,
+      granted,
+      granted_at: granted ? now : null,
+      revoked_at: granted ? null : now,
+      document_version,
+    },
+    { onConflict: 'user_id,consent_type' },
+  );
+  if (error) throw error;
+}
+
+// ══════════════════════════════════════
+// DELETED RECORDS (restore)
+// ══════════════════════════════════════
+
+export async function restoreDiaryEntry(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('diary_entries')
+    .update({ is_active: true })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+// ══════════════════════════════════════
+// INSIGHTS
+// ══════════════════════════════════════
+
+export async function markInsightRead(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('pet_insights')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function dismissInsight(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('pet_insights')
+    .update({ is_active: false })
+    .eq('id', id);
+  if (error) throw error;
 }

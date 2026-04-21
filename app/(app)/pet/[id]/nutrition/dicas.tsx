@@ -6,7 +6,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, Sparkles, ThumbsUp, TrendingUp, AlertTriangle, RefreshCw } from 'lucide-react-native';
+import { ChevronLeft, Sparkles, ThumbsUp, TrendingUp, AlertTriangle, RefreshCw, FileText } from 'lucide-react-native';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { colors } from '../../../../../constants/colors';
 import { useNutricao } from '../../../../../hooks/useNutricao';
@@ -22,10 +22,12 @@ export default function DicasScreen() {
 
   const eval_ = nutricao?.ai_evaluation;
 
+  const goToPdf = () => router.push(`/pet/${petId}/nutrition-pdf` as never);
+
   if (isLoadingNutricao) {
     return (
       <SafeAreaView style={s.safeArea}>
-        <Header onBack={() => router.back()} title={t('nutrition.dicasTitle')} />
+        <Header onBack={() => router.back()} title={t('nutrition.dicasTitle')} onPdf={goToPdf} pdfLabel={t('nutritionPdf.icon')} />
         <View style={s.centered}>
           <ActivityIndicator color={colors.accent} size="large" />
           <Text style={s.loadingText}>{t('nutrition.dicasLoading')}</Text>
@@ -36,7 +38,7 @@ export default function DicasScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      <Header onBack={() => router.back()} title={t('nutrition.dicasTitle')} />
+      <Header onBack={() => router.back()} title={t('nutrition.dicasTitle')} onPdf={goToPdf} pdfLabel={t('nutritionPdf.icon')} />
 
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Score hero */}
@@ -119,14 +121,30 @@ export default function DicasScreen() {
   );
 }
 
-function Header({ onBack, title }: { onBack: () => void; title: string }) {
+function Header({
+  onBack,
+  title,
+  onPdf,
+  pdfLabel,
+}: {
+  onBack: () => void;
+  title: string;
+  onPdf?: () => void;
+  pdfLabel?: string;
+}) {
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={onBack} style={s.backBtn}>
         <ChevronLeft size={rs(22)} color={colors.accent} />
       </TouchableOpacity>
       <Text style={s.headerTitle}>{title}</Text>
-      <View style={s.backBtn} />
+      {onPdf ? (
+        <TouchableOpacity onPress={onPdf} style={s.backBtn} accessibilityLabel={pdfLabel}>
+          <FileText size={rs(20)} color={colors.accent} />
+        </TouchableOpacity>
+      ) : (
+        <View style={s.backBtn} />
+      )}
     </View>
   );
 }

@@ -23,6 +23,7 @@ import { useAuthStore, getSecureStore, BIO_EMAIL_KEY, BIO_PASS_KEY } from '../st
 import { isFirstRun, markAsLaunched } from '../lib/firstRun';
 import { useTranslation } from 'react-i18next';
 import InviteModal, { type InviteInfo, type InviteMemberRole } from '../components/InviteModal';
+import { PetAgeSync } from '../components/PetAgeSync';
 import '../i18n';
 
 // Activates the SQLite sync queue inside the QueryClientProvider context
@@ -380,6 +381,7 @@ export default function RootLayout() {
         <SyncQueueActivator />
         <ToastProvider>
           <InviteLinkHandler />
+          <PetAgeSync />
           <NetworkGuard>
             <Stack
               screenOptions={{

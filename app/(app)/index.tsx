@@ -18,6 +18,7 @@ import {
   Dog,
   Cat,
   ChevronRight,
+  FileText,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -35,10 +36,12 @@ import AddPetModal from '../../components/AddPetModal';
 import type { AddPetData } from '../../components/AddPetModal';
 import { useToast } from '../../components/Toast';
 import { usePets } from '../../hooks/usePets';
+import { useBackfillRAG } from '../../hooks/useBackfillRAG';
 import { useAuth } from '../../hooks/useAuth';
 import { useAuthStore } from '../../stores/authStore';
 import { getErrorMessage } from '../../utils/errorMessages';
 import { supabase } from '../../lib/supabase';
+import { withTimeout } from '../../lib/withTimeout';
 
 interface TutorProfile {
   full_name: string | null;
@@ -58,6 +61,10 @@ export default function HubScreen() {
   const { pets, isLoading, refetch, addPet, isAdding } = usePets();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Fire-and-forget RAG backfill for pre-existing pets (runs once per install
+  // per pet; no UI effect — see hooks/useBackfillRAG.ts for rationale).
+  useBackfillRAG(pets);
 
   // LOG TEMPORÁRIO — remover após diagnóstico
   console.log('[Hub] pets:', pets.length, '| isLoading:', isLoading, '| user:', user?.id ?? 'NULL');
@@ -261,15 +268,19 @@ export default function HubScreen() {
             // Gera narração em 3ª pessoa via Edge Function
             let narration: string | null = null;
             try {
-              const { data: narData } = await supabase.functions.invoke('generate-diary-narration', {
-                body: {
-                  pet_id: newPet.id,
-                  content: analysisSummary,
-                  mood_id: mood ?? 'happy',
-                  language: i18n.language,
-                  context: 'pet_registration',
-                },
-              });
+              const { data: narData } = await withTimeout(
+                supabase.functions.invoke('generate-diary-narration', {
+                  body: {
+                    pet_id: newPet.id,
+                    content: analysisSummary,
+                    mood_id: mood ?? 'happy',
+                    language: i18n.language,
+                    context: 'pet_registration',
+                  },
+                }),
+                30_000,
+                'generate-diary-narration:registration',
+              );
               narration = narData?.narration ?? null;
             } catch (e) {
               console.warn('[Hub] registration narration failed (non-blocking):', e);
@@ -511,10 +522,22 @@ export default function HubScreen() {
             <Menu size={rs(24)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <AuExpertLogo size="normal" showIcon={false} />
-          <TouchableOpacity style={styles.headerBtn}>
-            <Bell size={rs(24)} color={colors.accent} strokeWidth={1.8} />
-            <View style={styles.bellDot} />
-          </TouchableOpacity>
+          <View style={styles.headerRightGroup}>
+            <TouchableOpacity
+              onPress={() => router.push('/profile-pdf' as never)}
+              style={styles.headerBtnCompact}
+              accessibilityLabel={t('hubPdf.icon')}
+            >
+              <FileText size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push('/notifications' as never)}
+              style={styles.headerBtnCompact}
+            >
+              <Bell size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <View style={styles.bellDot} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Pet list */}
@@ -593,10 +616,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerRightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(2),
+  },
+  headerBtnCompact: {
+    width: rs(40),
+    height: rs(44),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bellDot: {
     position: 'absolute',
     top: rs(10),
-    right: rs(10),
+    right: rs(8),
     width: rs(8),
     height: rs(8),
     borderRadius: rs(4),

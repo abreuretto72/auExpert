@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
-  ChevronLeft, ChevronRight, History, Utensils, Download, RefreshCw,
+  ChevronLeft, ChevronRight, History, Utensils, FileText, RefreshCw,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { colors } from '../../../../../constants/colors';
@@ -119,7 +119,7 @@ export default function CardapioHistoryScreen() {
             >
               {isExporting
                 ? <ActivityIndicator size="small" color={colors.accent} />
-                : <Download size={rs(16)} color={colors.accent} />}
+                : <FileText size={rs(16)} color={colors.accent} />}
             </TouchableOpacity>
             <ChevronRight size={rs(16)} color={colors.textDim} />
           </View>

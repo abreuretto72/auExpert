@@ -7,6 +7,7 @@ import { radii, spacing } from '../constants/spacing';
 import { rs, fs } from '../hooks/useResponsive';
 import { Button } from './ui/Button';
 import i18n from '../i18n';
+import { reportError } from '../lib/errorReporter';
 
 interface Props {
   children: ReactNode;
@@ -29,7 +30,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
+    // Fachada única — lib/errorReporter.ts decide pra onde vai (console em
+    // dev, Sentry/etc em prod quando integrado). Nunca lança.
+    reportError(error, {
+      boundary: 'global',
+      componentStack: info.componentStack,
+    });
   }
 
   private handleReset = () => {

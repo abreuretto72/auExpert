@@ -10,7 +10,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft, ChevronRight, Sparkles, RefreshCw, AlertTriangle,
-  Utensils, Download, History,
+  Utensils, FileText, History,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { colors } from '../../../../../constants/colors';
@@ -229,7 +229,7 @@ function Header({
           disabled={!canExport}
           activeOpacity={0.7}
         >
-          <Download size={rs(20)} color={canExport ? colors.accent : colors.textGhost} />
+          <FileText size={rs(20)} color={canExport ? colors.accent : colors.textGhost} />
         </TouchableOpacity>
       </View>
     </View>

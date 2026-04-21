@@ -5,7 +5,7 @@
  * allergies, chronic conditions, last consultation.
  * Actions: Share PDF, view QR emergency card, regenerate.
  */
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,10 +21,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft,
-  Download,
+  FileText,
   QrCode,
   RefreshCw,
   ShieldCheck,
+  ShieldAlert,
   Stethoscope,
   Syringe,
   Pill,
@@ -33,20 +34,35 @@ import {
   CheckCircle,
   XCircle,
   Info,
-  Heart,
   Dog,
   Cat,
+  Scissors,
+  Droplet,
+  Calendar,
+  CalendarClock,
+  Activity,
+  FlaskConical,
+  Phone,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../hooks/useResponsive';
 import { colors } from '../../../../constants/colors';
 import { radii, spacing } from '../../../../constants/spacing';
 import { usePet } from '../../../../hooks/usePets';
-import { useProntuario, type ProntuarioAlert, type ProntuarioVaccine } from '../../../../hooks/useProntuario';
+import {
+  useProntuario,
+  type ProntuarioAlert,
+  type ProntuarioVaccine,
+  type ProntuarioSurgery,
+  type ProntuarioBreedPredisposition,
+  type ProntuarioDrugInteraction,
+  type ProntuarioPreventiveCalendarItem,
+  type ProntuarioBodySystemReview,
+  type ProntuarioExamAbnormalFlag,
+  type ProntuarioEmergencyCard,
+} from '../../../../hooks/useProntuario';
 import { useToast } from '../../../../components/Toast';
-import { Skeleton } from '../../../../components/Skeleton';
 import { getErrorMessage } from '../../../../utils/errorMessages';
-import { previewProntuarioPdf } from '../../../../lib/prontuarioPdf';
-import { formatDate, formatAge, formatWeight } from '../../../../utils/format';
+import { formatDate, formatWeight } from '../../../../utils/format';
 import { sexContext } from '../../../../utils/petGender';
 
 // ── Alert icon helper ─────────────────────────────────────────────────────────
@@ -69,6 +85,91 @@ function alertBorder(type: ProntuarioAlert['type']): string {
   return colors.petrol;
 }
 
+function surgeryStatusColor(status: NonNullable<ProntuarioSurgery['status']>): string {
+  if (status === 'scheduled') return colors.petrol;
+  if (status === 'recovering') return colors.warning;
+  if (status === 'recovered') return colors.success;
+  return colors.danger; // complications
+}
+
+function surgeryStatusBg(status: NonNullable<ProntuarioSurgery['status']>): string {
+  if (status === 'scheduled') return colors.petrolSoft;
+  if (status === 'recovering') return colors.warningSoft;
+  if (status === 'recovered') return colors.successSoft;
+  return colors.dangerSoft; // complications
+}
+
+// ── Fase 2 — severity / status helpers ────────────────────────────────────────
+
+function breedSeverityColor(sev: ProntuarioBreedPredisposition['severity']): string {
+  if (sev === 'manage') return colors.danger;
+  if (sev === 'watch') return colors.warning;
+  return colors.petrol; // monitor
+}
+
+function breedSeverityBg(sev: ProntuarioBreedPredisposition['severity']): string {
+  if (sev === 'manage') return colors.dangerSoft;
+  if (sev === 'watch') return colors.warningSoft;
+  return colors.petrolSoft; // monitor
+}
+
+function drugSeverityColor(sev: ProntuarioDrugInteraction['severity']): string {
+  if (sev === 'severe') return colors.danger;
+  if (sev === 'moderate') return colors.warning;
+  return colors.petrol; // mild
+}
+
+function drugSeverityBg(sev: ProntuarioDrugInteraction['severity']): string {
+  if (sev === 'severe') return colors.dangerSoft;
+  if (sev === 'moderate') return colors.warningSoft;
+  return colors.petrolSoft; // mild
+}
+
+function calendarStatusColor(st: ProntuarioPreventiveCalendarItem['status']): string {
+  if (st === 'overdue') return colors.danger;
+  if (st === 'upcoming') return colors.warning;
+  if (st === 'scheduled') return colors.petrol;
+  return colors.success; // done
+}
+
+function calendarStatusBg(st: ProntuarioPreventiveCalendarItem['status']): string {
+  if (st === 'overdue') return colors.dangerSoft;
+  if (st === 'upcoming') return colors.warningSoft;
+  if (st === 'scheduled') return colors.petrolSoft;
+  return colors.successSoft; // done
+}
+
+function bodyStatusColor(st: ProntuarioBodySystemReview['status']): string {
+  if (st === 'abnormal') return colors.danger;
+  if (st === 'attention') return colors.warning;
+  if (st === 'normal') return colors.success;
+  return colors.textDim; // unknown
+}
+
+function bodyStatusBg(st: ProntuarioBodySystemReview['status']): string {
+  if (st === 'abnormal') return colors.dangerSoft;
+  if (st === 'attention') return colors.warningSoft;
+  if (st === 'normal') return colors.successSoft;
+  return colors.card; // unknown
+}
+
+function examFlagColor(f: ProntuarioExamAbnormalFlag['flag']): string {
+  if (f === 'high') return colors.danger;
+  if (f === 'low') return colors.petrol;
+  return colors.warning; // abnormal
+}
+
+function hasEmergencyContent(ec: ProntuarioEmergencyCard): boolean {
+  return !!(
+    (ec.critical_allergies?.length ?? 0) > 0 ||
+    (ec.active_meds_with_dose?.length ?? 0) > 0 ||
+    (ec.chronic_conditions_flagged?.length ?? 0) > 0 ||
+    ec.blood_type ||
+    ec.contact?.tutor_name ||
+    ec.contact?.vet_name
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProntuarioScreen() {
@@ -81,8 +182,6 @@ export default function ProntuarioScreen() {
 
   const { data: pet } = usePet(id!);
   const { prontuario, isLoading, isError, error, regenerate, isRegenerating, refetch } = useProntuario(id!);
-
-  const [isExporting, setIsExporting] = useState(false);
 
   const handleRefresh = useCallback(async () => {
     await refetch();
@@ -97,17 +196,9 @@ export default function ProntuarioScreen() {
     }
   }, [regenerate, toast, t]);
 
-  const handleSharePdf = useCallback(async () => {
-    if (!prontuario || !pet) return;
-    setIsExporting(true);
-    try {
-      await previewProntuarioPdf(prontuario, pet.name, pet.avatar_url);
-    } catch (err) {
-      toast(getErrorMessage(err), 'error');
-    } finally {
-      setIsExporting(false);
-    }
-  }, [prontuario, pet, toast]);
+  const handleOpenPdf = useCallback(() => {
+    router.push(`/pet/${id}/prontuario-pdf` as never);
+  }, [router, id]);
 
   const handleQrCode = useCallback(() => {
     router.push(`/pet/${id}/prontuario-qr` as never);
@@ -123,7 +214,9 @@ export default function ProntuarioScreen() {
             <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
-          <View style={s.headerBtn} />
+          <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
         <View style={s.loadingCenter}>
           <View style={s.aiSpinner}>
@@ -151,7 +244,9 @@ export default function ProntuarioScreen() {
             <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
-          <View style={s.headerBtn} />
+          <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
         </View>
         <View style={s.loadingCenter}>
           <XCircle size={rs(40)} color={colors.danger} strokeWidth={1.5} />
@@ -189,14 +284,19 @@ export default function ProntuarioScreen() {
           <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
-        <TouchableOpacity
-          onPress={handleRegenerate}
-          style={s.headerBtn}
-          activeOpacity={0.7}
-          disabled={isRegenerating}
-        >
-          <RefreshCw size={rs(18)} color={colors.accent} strokeWidth={1.8} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: rs(8) }}>
+          <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
+            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleRegenerate}
+            style={s.headerBtn}
+            activeOpacity={0.7}
+            disabled={isRegenerating}
+          >
+            <RefreshCw size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -234,10 +334,46 @@ export default function ProntuarioScreen() {
                 ].filter(Boolean).join(' · ')}
               </Text>
               {prontuario.microchip && (
-                <Text style={s.microchip}>Microchip: {prontuario.microchip}</Text>
+                <Text style={s.microchip}>{t('prontuario.microchipLabel', { value: prontuario.microchip })}</Text>
               )}
             </View>
           </View>
+
+          {/* Demographic details — Fase 1: surface existing DB fields */}
+          {(prontuario.sex || prontuario.birth_date || prontuario.size || prontuario.color || prontuario.blood_type) && (
+            <View style={s.demoGrid}>
+              {prontuario.sex && (
+                <View style={s.demoItem}>
+                  <Text style={s.demoLabel}>{t('prontuario.sexLabel')}</Text>
+                  <Text style={s.demoValue}>{t(`prontuario.sex.${prontuario.sex}`)}</Text>
+                </View>
+              )}
+              {prontuario.birth_date && (
+                <View style={s.demoItem}>
+                  <Text style={s.demoLabel}>{t('prontuario.birthDate')}</Text>
+                  <Text style={s.demoValue}>{formatDate(prontuario.birth_date)}</Text>
+                </View>
+              )}
+              {prontuario.size && (
+                <View style={s.demoItem}>
+                  <Text style={s.demoLabel}>{t('prontuario.sizeLabel')}</Text>
+                  <Text style={s.demoValue}>{t(`prontuario.size.${prontuario.size}`)}</Text>
+                </View>
+              )}
+              {prontuario.color && (
+                <View style={s.demoItem}>
+                  <Text style={s.demoLabel}>{t('prontuario.color')}</Text>
+                  <Text style={s.demoValue}>{prontuario.color}</Text>
+                </View>
+              )}
+              {prontuario.blood_type && (
+                <View style={s.demoItem}>
+                  <Text style={s.demoLabel}>{t('prontuario.bloodType')}</Text>
+                  <Text style={[s.demoValue, { color: colors.danger }]}>{prontuario.blood_type}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Status badges */}
           <View style={s.badgesRow}>
@@ -265,6 +401,80 @@ export default function ProntuarioScreen() {
             )}
           </View>
         </View>
+
+        {/* Emergency Card — Fase 2: critical info for first responders */}
+        {prontuario.emergency_card && hasEmergencyContent(prontuario.emergency_card) && (
+          <View style={s.emergencyCard}>
+            <View style={s.emergencyHeader}>
+              <ShieldAlert size={rs(18)} color={colors.danger} strokeWidth={2} />
+              <Text style={s.emergencyTitle}>{t('prontuario.emergencyCard.title').toUpperCase()}</Text>
+            </View>
+            <Text style={s.emergencySubtitle}>{t('prontuario.emergencyCard.subtitle')}</Text>
+
+            {prontuario.emergency_card.critical_allergies && prontuario.emergency_card.critical_allergies.length > 0 && (
+              <View style={s.emergencyRow}>
+                <Text style={s.emergencyLabel}>{t('prontuario.emergencyCard.allergies')}</Text>
+                <View style={s.emergencyChips}>
+                  {prontuario.emergency_card.critical_allergies.map((a, i) => (
+                    <View key={i} style={s.emergencyDangerChip}>
+                      <AlertTriangle size={rs(10)} color={colors.danger} strokeWidth={2.2} />
+                      <Text style={s.emergencyDangerChipText}>{a}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {prontuario.emergency_card.active_meds_with_dose && prontuario.emergency_card.active_meds_with_dose.length > 0 && (
+              <View style={s.emergencyRow}>
+                <Text style={s.emergencyLabel}>{t('prontuario.emergencyCard.activeMeds')}</Text>
+                {prontuario.emergency_card.active_meds_with_dose.map((m, i) => (
+                  <Text key={i} style={s.emergencyText}>
+                    <Text style={s.emergencyBold}>{m.name}</Text>
+                    {m.dose ? ` · ${m.dose}` : ''}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {prontuario.emergency_card.chronic_conditions_flagged && prontuario.emergency_card.chronic_conditions_flagged.length > 0 && (
+              <View style={s.emergencyRow}>
+                <Text style={s.emergencyLabel}>{t('prontuario.emergencyCard.chronic')}</Text>
+                <View style={s.emergencyChips}>
+                  {prontuario.emergency_card.chronic_conditions_flagged.map((c, i) => (
+                    <View key={i} style={s.emergencyWarningChip}>
+                      <Text style={s.emergencyWarningChipText}>{c}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={s.emergencyGrid}>
+              {prontuario.emergency_card.blood_type && (
+                <View style={s.emergencyGridItem}>
+                  <Droplet size={rs(11)} color={colors.danger} strokeWidth={2} />
+                  <Text style={s.emergencyGridLabel}>{t('prontuario.emergencyCard.bloodType')}</Text>
+                  <Text style={[s.emergencyGridValue, { color: colors.danger }]}>{prontuario.emergency_card.blood_type}</Text>
+                </View>
+              )}
+              {prontuario.emergency_card.contact?.tutor_name && (
+                <View style={s.emergencyGridItem}>
+                  <Phone size={rs(11)} color={colors.petrol} strokeWidth={2} />
+                  <Text style={s.emergencyGridLabel}>{t('prontuario.emergencyCard.tutor')}</Text>
+                  <Text style={s.emergencyGridValue}>{prontuario.emergency_card.contact.tutor_name}</Text>
+                </View>
+              )}
+              {prontuario.emergency_card.contact?.vet_name && (
+                <View style={s.emergencyGridItem}>
+                  <Stethoscope size={rs(11)} color={colors.petrol} strokeWidth={2} />
+                  <Text style={s.emergencyGridLabel}>{t('prontuario.emergencyCard.vet')}</Text>
+                  <Text style={s.emergencyGridValue}>{prontuario.emergency_card.contact.vet_name}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Alerts */}
         {prontuario.alerts.length > 0 && (
@@ -303,12 +513,67 @@ export default function ProntuarioScreen() {
           </View>
         )}
 
+        {/* Fase 2 — Breed predispositions (AI-derived) */}
+        {prontuario.breed_predispositions && prontuario.breed_predispositions.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.predispositions.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.predispositions.hint')}</Text>
+            {prontuario.breed_predispositions.map((bp: ProntuarioBreedPredisposition, i: number) => (
+              <View key={i} style={s.insightItem}>
+                <View style={[s.insightIconWrap, { backgroundColor: breedSeverityBg(bp.severity) }]}>
+                  <ShieldAlert size={rs(16)} color={breedSeverityColor(bp.severity)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.insightTitle}>{bp.condition}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: breedSeverityBg(bp.severity) }]}>
+                      <Text style={[s.confirmChipText, { color: breedSeverityColor(bp.severity) }]}>
+                        {t(`prontuario.predispositions.severity.${bp.severity}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.insightRationale}>{bp.rationale}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Vaccines */}
         {prontuario.vaccines.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('health.vaccines').toUpperCase()}</Text>
             {prontuario.vaccines.map((v) => (
               <VaccineRow key={v.id} vaccine={v} t={t} />
+            ))}
+          </View>
+        )}
+
+        {/* Fase 2 — Preventive calendar (AI-derived schedule of upcoming care) */}
+        {prontuario.preventive_calendar && prontuario.preventive_calendar.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.preventive.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.preventive.hint')}</Text>
+            {prontuario.preventive_calendar.map((pc: ProntuarioPreventiveCalendarItem, i: number) => (
+              <View key={i} style={s.preventiveItem}>
+                <View style={[s.preventiveIconWrap, { backgroundColor: calendarStatusBg(pc.status) }]}>
+                  <CalendarClock size={rs(14)} color={calendarStatusColor(pc.status)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.preventiveLabel}>{pc.label}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: calendarStatusBg(pc.status) }]}>
+                      <Text style={[s.confirmChipText, { color: calendarStatusColor(pc.status) }]}>
+                        {t(`prontuario.preventive.status.${pc.status}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.preventiveMeta}>
+                    <Text style={s.preventiveTypeTag}>{t(`prontuario.preventive.type.${pc.type}`)}</Text>
+                    {pc.due_date ? `  ·  ${formatDate(pc.due_date)}` : ''}
+                  </Text>
+                </View>
+              </View>
             ))}
           </View>
         )}
@@ -323,10 +588,29 @@ export default function ProntuarioScreen() {
                   <Pill size={rs(16)} color={colors.purple} strokeWidth={1.8} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={s.listItemTitle}>{m.name}</Text>
-                  <Text style={s.listItemSub}>
-                    {[m.dosage, m.frequency].filter(Boolean).join(' · ')}
-                  </Text>
+                  <View style={s.titleRow}>
+                    <Text style={s.listItemTitle}>{m.name}</Text>
+                    {m.type && (
+                      <View style={s.typeChip}>
+                        <Text style={s.typeChipText}>{t(`prontuario.medicationType.${m.type}`)}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {(m.dosage || m.frequency) && (
+                    <Text style={s.listItemSub}>
+                      {[m.dosage, m.frequency].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                  {m.reason && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.medicationReason')}: {m.reason}
+                    </Text>
+                  )}
+                  {m.prescribed_by && (
+                    <Text style={s.listItemSub}>
+                      {t('prontuario.prescribedBy')}: {m.prescribed_by}
+                    </Text>
+                  )}
                   {m.end_date ? (
                     <Text style={s.listItemDate}>
                       {t('health.to')}: {formatDate(m.end_date)}
@@ -336,6 +620,38 @@ export default function ProntuarioScreen() {
                       {t('prontuario.ongoing')}
                     </Text>
                   )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Fase 2 — Drug interactions (AI-derived, only when ≥2 active meds) */}
+        {prontuario.drug_interactions && prontuario.drug_interactions.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.drugInteractions.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.drugInteractions.hint')}</Text>
+            {prontuario.drug_interactions.map((di: ProntuarioDrugInteraction, i: number) => (
+              <View
+                key={i}
+                style={[
+                  s.insightItem,
+                  { borderLeftWidth: rs(3), borderLeftColor: drugSeverityColor(di.severity) },
+                ]}
+              >
+                <View style={[s.insightIconWrap, { backgroundColor: drugSeverityBg(di.severity) }]}>
+                  <FlaskConical size={rs(16)} color={drugSeverityColor(di.severity)} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.insightTitle}>{di.drugs.join(' + ')}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: drugSeverityBg(di.severity) }]}>
+                      <Text style={[s.confirmChipText, { color: drugSeverityColor(di.severity) }]}>
+                        {t(`prontuario.drugInteractions.severity.${di.severity}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.insightRationale}>{di.warning}</Text>
                 </View>
               </View>
             ))}
@@ -352,10 +668,25 @@ export default function ProntuarioScreen() {
                   <AlertTriangle size={rs(16)} color={colors.danger} strokeWidth={1.8} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[s.listItemTitle, { color: colors.danger }]}>{a.allergen}</Text>
+                  <View style={s.titleRow}>
+                    <Text style={[s.listItemTitle, { color: colors.danger }]}>{a.allergen}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: a.confirmed ? colors.dangerSoft : colors.warningSoft }]}>
+                      <Text style={[s.confirmChipText, { color: a.confirmed ? colors.danger : colors.warning }]}>
+                        {a.confirmed ? t('prontuario.allergyConfirmed') : t('prontuario.allergyUnconfirmed')}
+                      </Text>
+                    </View>
+                  </View>
                   {a.reaction ? (
                     <Text style={s.listItemSub}>{a.reaction}{a.severity ? ` · ${a.severity}` : ''}</Text>
                   ) : null}
+                  {(a.diagnosed_date || a.diagnosed_by) && (
+                    <Text style={s.listItemDate}>
+                      {[
+                        a.diagnosed_date ? `${t('prontuario.allergyDiagnosedDate')}: ${formatDate(a.diagnosed_date)}` : null,
+                        a.diagnosed_by ? `${t('prontuario.allergyDiagnosedBy')}: ${a.diagnosed_by}` : null,
+                      ].filter(Boolean).join('  ·  ')}
+                    </Text>
+                  )}
                 </View>
               </View>
             ))}
@@ -376,6 +707,76 @@ export default function ProntuarioScreen() {
           </View>
         )}
 
+        {/* Fase 2 — Body systems review (AI-derived clinical overview) */}
+        {prontuario.body_systems_review && prontuario.body_systems_review.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.bodySystems.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.bodySystems.hint')}</Text>
+            <View style={s.systemsGrid}>
+              {prontuario.body_systems_review.map((bs: ProntuarioBodySystemReview, i: number) => (
+                <View
+                  key={i}
+                  style={[
+                    s.systemCell,
+                    { backgroundColor: bodyStatusBg(bs.status), borderColor: bodyStatusColor(bs.status) + '30' },
+                  ]}
+                >
+                  <View style={s.systemHeader}>
+                    <Activity size={rs(12)} color={bodyStatusColor(bs.status)} strokeWidth={2} />
+                    <Text style={[s.systemStatus, { color: bodyStatusColor(bs.status) }]}>
+                      {t(`prontuario.bodySystems.status.${bs.status}`)}
+                    </Text>
+                  </View>
+                  <Text style={s.systemName}>{t(`prontuario.bodySystems.name.${bs.system}`)}</Text>
+                  {bs.notes && <Text style={s.systemNotes} numberOfLines={2}>{bs.notes}</Text>}
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Surgeries — Fase 1: nova seção */}
+        {prontuario.surgeries && prontuario.surgeries.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.surgeriesTitle').toUpperCase()}</Text>
+            {prontuario.surgeries.map((surg: ProntuarioSurgery) => (
+              <View key={surg.id} style={s.listItem}>
+                <View style={[s.listIconWrap, { backgroundColor: colors.purpleSoft }]}>
+                  <Scissors size={rs(16)} color={colors.purple} strokeWidth={1.8} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.listItemTitle}>{surg.name}</Text>
+                    {surg.status && (
+                      <View style={[s.confirmChip, { backgroundColor: surgeryStatusBg(surg.status) }]}>
+                        <Text style={[s.confirmChipText, { color: surgeryStatusColor(surg.status) }]}>
+                          {t(`prontuario.surgeryStatus.${surg.status}`)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {surg.date && (
+                    <Text style={s.listItemSub}>{formatDate(surg.date)}</Text>
+                  )}
+                  {(surg.veterinarian || surg.clinic) && (
+                    <Text style={s.listItemSub}>
+                      {[
+                        surg.veterinarian,
+                        surg.clinic ? `${t('prontuario.surgeryClinic')}: ${surg.clinic}` : null,
+                      ].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                  {surg.anesthesia && (
+                    <Text style={s.listItemDate}>
+                      {t('prontuario.surgeryAnesthesia')}: {surg.anesthesia}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Last consultation */}
         {prontuario.last_consultation && (
           <View style={s.section}>
@@ -385,7 +786,14 @@ export default function ProntuarioScreen() {
                 <Stethoscope size={rs(16)} color={colors.petrol} strokeWidth={1.8} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.listItemTitle}>{formatDate(prontuario.last_consultation.date)}</Text>
+                <View style={s.titleRow}>
+                  <Text style={s.listItemTitle}>{formatDate(prontuario.last_consultation.date)}</Text>
+                  {prontuario.last_consultation.type && (
+                    <View style={s.typeChip}>
+                      <Text style={s.typeChipText}>{t(`prontuario.consultationType.${prontuario.last_consultation.type}`)}</Text>
+                    </View>
+                  )}
+                </View>
                 {prontuario.last_consultation.veterinarian && (
                   <Text style={s.listItemSub}>
                     {prontuario.last_consultation.veterinarian}
@@ -395,9 +803,59 @@ export default function ProntuarioScreen() {
                 {prontuario.last_consultation.diagnosis && (
                   <Text style={s.listItemDate}>{prontuario.last_consultation.diagnosis}</Text>
                 )}
+                {prontuario.last_consultation.prescriptions && (
+                  <Text style={s.listItemDate}>
+                    {t('prontuario.consultationPrescriptions')}: {prontuario.last_consultation.prescriptions}
+                  </Text>
+                )}
+                {prontuario.last_consultation.follow_up_at && (
+                  <Text style={[s.listItemDate, { color: colors.petrol }]}>
+                    {t('prontuario.consultationFollowUp')}: {formatDate(prontuario.last_consultation.follow_up_at)}
+                  </Text>
+                )}
               </View>
             </View>
           </View>
+        )}
+
+        {/* Fase 2 — Exam abnormal flags (AI-surfaced out-of-range lab values) */}
+        {prontuario.exam_abnormal_flags && prontuario.exam_abnormal_flags.length > 0 ? (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('prontuario.examFlags.title').toUpperCase()}</Text>
+            <Text style={s.subSectionHint}>{t('prontuario.examFlags.hint')}</Text>
+            {prontuario.exam_abnormal_flags.map((ef: ProntuarioExamAbnormalFlag, i: number) => (
+              <View key={i} style={s.flagItem}>
+                <View style={[s.flagIconWrap, { backgroundColor: examFlagColor(ef.flag) + '15' }]}>
+                  <AlertTriangle size={rs(14)} color={examFlagColor(ef.flag)} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={s.titleRow}>
+                    <Text style={s.flagParam}>{ef.parameter}</Text>
+                    <View style={[s.confirmChip, { backgroundColor: examFlagColor(ef.flag) + '15' }]}>
+                      <Text style={[s.confirmChipText, { color: examFlagColor(ef.flag) }]}>
+                        {t(`prontuario.examFlags.flag.${ef.flag}`)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={s.flagValue}>
+                    <Text style={s.flagValueBold}>{ef.value}</Text>
+                    {ef.reference ? ` · ${t('prontuario.examFlags.ref')}: ${ef.reference}` : ''}
+                  </Text>
+                  <Text style={s.flagExam}>{ef.exam_name}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : (
+          /* Exam abnormal count — subtle info line (fallback when no detailed flags) */
+          prontuario.exam_abnormal_count > 0 && (
+            <View style={s.examAbnormalPill}>
+              <AlertTriangle size={rs(12)} color={colors.warning} strokeWidth={2} />
+              <Text style={s.examAbnormalText}>
+                {t('prontuario.examAbnormalCount', { n: prontuario.exam_abnormal_count })}
+              </Text>
+            </View>
+          )
         )}
 
         {/* Generated at */}
@@ -408,20 +866,6 @@ export default function ProntuarioScreen() {
 
         {/* Action buttons */}
         <View style={s.actionsRow}>
-          <TouchableOpacity
-            style={[s.actionBtn, { backgroundColor: colors.accent }]}
-            onPress={handleSharePdf}
-            activeOpacity={0.8}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Download size={rs(18)} color="#fff" strokeWidth={2} />
-            )}
-            <Text style={s.actionBtnText}>{t('prontuario.exportPdf')}</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={[s.actionBtn, { backgroundColor: colors.petrol }]}
             onPress={handleQrCode}
@@ -449,6 +893,7 @@ export default function ProntuarioScreen() {
 // ── Vaccine row sub-component ─────────────────────────────────────────────────
 
 function VaccineRow({ vaccine: v, t }: { vaccine: ProntuarioVaccine; t: (k: string) => string }) {
+  const hasExtra = v.laboratory || v.dose_number || v.clinic;
   return (
     <View style={[vr.item, v.is_overdue && vr.itemOverdue]}>
       <View style={[vr.iconWrap, { backgroundColor: v.is_overdue ? colors.dangerSoft : colors.successSoft }]}>
@@ -463,6 +908,15 @@ function VaccineRow({ vaccine: v, t }: { vaccine: ProntuarioVaccine; t: (k: stri
           {v.date_administered ? `${t('health.vaccineDate')}: ${formatDate(v.date_administered)}` : ''}
           {v.next_due_date ? `  ·  ${t('health.vaccineNext')}: ${formatDate(v.next_due_date)}` : ''}
         </Text>
+        {hasExtra && (
+          <Text style={vr.extra}>
+            {[
+              v.laboratory ? `${t('prontuario.vaccineLab')}: ${v.laboratory}` : null,
+              v.dose_number ? `${t('prontuario.vaccineDose')}: ${v.dose_number}` : null,
+              v.clinic ? `${t('prontuario.vaccineClinic')}: ${v.clinic}` : null,
+            ].filter(Boolean).join('  ·  ')}
+          </Text>
+        )}
       </View>
       {v.is_overdue && (
         <View style={vr.overdueTag}>
@@ -479,6 +933,7 @@ const vr = StyleSheet.create({
   iconWrap: { width: rs(34), height: rs(34), borderRadius: rs(10), alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text },
   meta: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: rs(2) },
+  extra: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.petrol, marginTop: rs(3) },
   overdueTag: { backgroundColor: colors.dangerSoft, borderRadius: rs(6), paddingHorizontal: rs(8), paddingVertical: rs(3) },
   overdueTagText: { fontFamily: 'Sora_700Bold', fontSize: fs(9), color: colors.danger },
 });
@@ -521,6 +976,45 @@ const s = StyleSheet.create({
   badge: { flexDirection: 'row', alignItems: 'center', gap: rs(4), borderRadius: rs(8), paddingHorizontal: rs(8), paddingVertical: rs(4) },
   badgeText: { fontFamily: 'Sora_700Bold', fontSize: fs(10) },
 
+  // Fase 2 — Emergency card (first-responder critical info)
+  emergencyCard: {
+    backgroundColor: colors.dangerSoft,
+    borderRadius: rs(16),
+    padding: rs(14),
+    marginBottom: rs(16),
+    borderWidth: 1.5,
+    borderColor: colors.danger + '40',
+  },
+  emergencyHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(4) },
+  emergencyTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.danger, letterSpacing: 1.5 },
+  emergencySubtitle: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginBottom: rs(10) },
+  emergencyRow: { marginTop: rs(8) },
+  emergencyLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.textDim, letterSpacing: 0.8, marginBottom: rs(6), textTransform: 'uppercase' },
+  emergencyChips: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(6) },
+  emergencyDangerChip: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(4),
+    backgroundColor: colors.card, borderRadius: rs(8),
+    paddingHorizontal: rs(8), paddingVertical: rs(4),
+    borderWidth: 1, borderColor: colors.danger + '40',
+  },
+  emergencyDangerChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.danger },
+  emergencyWarningChip: {
+    backgroundColor: colors.warningSoft, borderRadius: rs(8),
+    paddingHorizontal: rs(8), paddingVertical: rs(4),
+    borderWidth: 1, borderColor: colors.warning + '30',
+  },
+  emergencyWarningChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.warning },
+  emergencyText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.text, marginBottom: rs(2) },
+  emergencyBold: { fontFamily: 'Sora_700Bold', fontSize: fs(12), color: colors.text },
+  emergencyGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: rs(10),
+    marginTop: rs(12), paddingTop: rs(10),
+    borderTopWidth: 1, borderTopColor: colors.danger + '20',
+  },
+  emergencyGridItem: { flexDirection: 'row', alignItems: 'center', gap: rs(6), minWidth: rs(110) },
+  emergencyGridLabel: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, letterSpacing: 0.4, textTransform: 'uppercase' },
+  emergencyGridValue: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.text },
+
   section: { marginBottom: rs(20) },
   sectionTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.textDim, letterSpacing: 1.5, marginBottom: rs(10) },
 
@@ -539,6 +1033,156 @@ const s = StyleSheet.create({
   listItemTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text },
   listItemSub: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: rs(2) },
   listItemDate: { fontFamily: 'Sora_400Regular', fontSize: fs(10), color: colors.textDim, marginTop: rs(2) },
+
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: rs(6), flexWrap: 'wrap' },
+  typeChip: { backgroundColor: colors.purpleSoft, borderRadius: rs(6), paddingHorizontal: rs(6), paddingVertical: rs(2) },
+  typeChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(9), color: colors.purple, letterSpacing: 0.2 },
+  confirmChip: { borderRadius: rs(6), paddingHorizontal: rs(6), paddingVertical: rs(2) },
+  confirmChipText: { fontFamily: 'Sora_700Bold', fontSize: fs(9), letterSpacing: 0.2 },
+
+  demoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(10), marginTop: rs(4), marginBottom: rs(10), paddingTop: rs(10), borderTopWidth: 1, borderTopColor: colors.border },
+  demoItem: { minWidth: rs(90) },
+  demoLabel: { fontFamily: 'Sora_400Regular', fontSize: fs(9), color: colors.textDim, letterSpacing: 0.5, textTransform: 'uppercase' },
+  demoValue: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.text, marginTop: rs(2) },
+
+  examAbnormalPill: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6), backgroundColor: colors.warningSoft, borderRadius: rs(10), paddingVertical: rs(8), paddingHorizontal: rs(12), marginBottom: rs(16), borderWidth: 1, borderColor: colors.warning + '30' },
+  examAbnormalText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.warning },
+
+  // Fase 2 — Sub-section hint (explanatory caption under section title)
+  subSectionHint: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(11),
+    color: colors.textDim,
+    marginTop: rs(-4),
+    marginBottom: rs(10),
+    lineHeight: fs(11) * 1.5,
+  },
+
+  // Fase 2 — Insight item (predispositions + drug_interactions)
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.card,
+    borderRadius: rs(12),
+    padding: rs(12),
+    marginBottom: rs(8),
+    gap: rs(10),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  insightIconWrap: {
+    width: rs(34),
+    height: rs(34),
+    borderRadius: rs(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text, flex: 1 },
+  insightRationale: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(12),
+    color: colors.textSec,
+    marginTop: rs(4),
+    lineHeight: fs(12) * 1.5,
+  },
+
+  // Fase 2 — Preventive calendar items
+  preventiveItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: rs(10),
+    padding: rs(10),
+    marginBottom: rs(6),
+    gap: rs(10),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  preventiveIconWrap: {
+    width: rs(28),
+    height: rs(28),
+    borderRadius: rs(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  preventiveLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text, flex: 1 },
+  preventiveMeta: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(11),
+    color: colors.textDim,
+    marginTop: rs(2),
+  },
+  preventiveTypeTag: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: fs(10),
+    color: colors.purple,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  // Fase 2 — Body systems review grid
+  systemsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8) },
+  systemCell: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    minWidth: rs(140),
+    borderRadius: rs(10),
+    padding: rs(10),
+    borderWidth: 1,
+  },
+  systemHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(4), marginBottom: rs(4) },
+  systemStatus: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(9),
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  systemName: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.text },
+  systemNotes: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(10),
+    color: colors.textDim,
+    marginTop: rs(4),
+    lineHeight: fs(10) * 1.4,
+  },
+
+  // Fase 2 — Exam abnormal flags
+  flagItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.card,
+    borderRadius: rs(12),
+    padding: rs(12),
+    marginBottom: rs(8),
+    gap: rs(10),
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  flagIconWrap: {
+    width: rs(32),
+    height: rs(32),
+    borderRadius: rs(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flagParam: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.text, flex: 1 },
+  flagValue: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(12),
+    color: colors.textSec,
+    marginTop: rs(2),
+  },
+  flagValueBold: {
+    fontFamily: 'JetBrainsMono_700Bold',
+    fontSize: fs(13),
+    color: colors.text,
+  },
+  flagExam: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(10),
+    color: colors.textDim,
+    marginTop: rs(2),
+  },
 
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8) },
   conditionChip: { backgroundColor: colors.dangerSoft, borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(6) },

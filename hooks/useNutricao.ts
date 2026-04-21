@@ -5,9 +5,10 @@
  * - generate-cardapio: AI-generated weekly menu (3-day TTL).
  * - Mutations: set modalidade, register food change, add restriction, add supplement.
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, onlineManager } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
+import { addToQueue } from '../lib/offlineQueue';
 import i18n from '../i18n';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -204,6 +205,20 @@ export function useNutricao(petId: string) {
       const { data: { user }, error: authErr } = await supabase.auth.getUser();
       if (!user || authErr) throw new Error('not authenticated');
 
+      // Offline path: queue mutation, optimistic cache update runs in onSuccess
+      if (!onlineManager.isOnline()) {
+        await addToQueue({
+          type: 'upsertNutritionProfile',
+          payload: {
+            pet_id: petId,
+            user_id: user.id,
+            modalidade: params.modalidade,
+            natural_pct: params.natural_pct ?? 0,
+          },
+        });
+        return;
+      }
+
       // Check for existing active profile
       const { data: existing, error: selectErr } = await supabase
         .from('nutrition_profiles')
@@ -288,6 +303,13 @@ export function useNutricao(petId: string) {
         is_current: true,
         ...params,
       };
+
+      if (!onlineManager.isOnline()) {
+        console.log('[useNutricao] registrarRacao OFFLINE → queue');
+        await addToQueue({ type: 'createNutritionRecord', payload: insertPayload });
+        return;
+      }
+
       console.log('[useNutricao] registrarRacao INSERT payload:', JSON.stringify(insertPayload));
       const { error } = await supabase
         .from('nutrition_records')
@@ -315,13 +337,20 @@ export function useNutricao(petId: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('not authenticated');
 
+      const insertPayload = {
+        pet_id: petId,
+        user_id: user.id,
+        ...params,
+      };
+
+      if (!onlineManager.isOnline()) {
+        await addToQueue({ type: 'createNutritionRecord', payload: insertPayload });
+        return;
+      }
+
       const { error } = await supabase
         .from('nutrition_records')
-        .insert({
-          pet_id: petId,
-          user_id: user.id,
-          ...params,
-        });
+        .insert(insertPayload);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -332,6 +361,14 @@ export function useNutricao(petId: string) {
   // ── Mutation: remove restriction (soft delete) ────────────────────────────
   const removeRestricaoMutation = useMutation({
     mutationFn: async (recordId: string) => {
+      if (!onlineManager.isOnline()) {
+        await addToQueue({
+          type: 'deleteNutritionRecord',
+          payload: { id: recordId, petId, pet_id: petId },
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('nutrition_records')
         .update({ is_active: false })

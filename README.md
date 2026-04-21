@@ -7,6 +7,107 @@ App mobile AI-first para tutores de cães e gatos. Diário inteligente com narra
 **📖 Documentação:** Leia os [Codemaps](./docs/CODEMAPS/INDEX.md) para entender a arquitetura, i18n e responsividade.
 
 ---
+# auExpert — Atualização Design System (v9)
+
+Dois arquivos atualizados/gerados nesta entrega:
+
+## 1. `CLAUDE.md` (v9 atualizado)
+
+**Substitui o CLAUDE.md atual da raiz do projeto.**
+
+Mudanças aplicadas:
+- Versão bumped: v8 → v9 (data atualizada)
+- Adicionada **seção 2.8** — Hierarquia de Botões (tabela dos 5 tipos + regras invioláveis)
+- Adicionada **seção 2.9** — Proibição absoluta de cores hardcoded
+- **Seção 3 reforçada** — ícones decorativos NUNCA são laranja
+- Adicionada **seção 16** — Padrões técnicos de performance (compressão imagem, Promise.all, structured outputs, cache em memória, escolha de modelo, logs de timing, schema versioning)
+- Adicionada **seção 17** — Arquivos protegidos (não modificar)
+- Atualizadas as regras invioláveis do topo: adicionadas ⛔ 8 (cores hardcoded) e ⛔ 9 (arquivos protegidos)
+
+**Paleta não mudou.** Continua `#E8813A` como accent — as regras apenas ficaram mais explícitas e abrangentes.
+
+## 2. `claude-code-prompt-v2.md` (prompt revisado)
+
+**Substitui o prompt anterior.**
+
+Mudou de objetivo: antes era "redefinir paleta pra #FB923C". Agora é **auditoria e correção** — encontrar código que não segue as regras já estabelecidas no CLAUDE.md v9.
+
+O novo prompt:
+- Lê o CLAUDE.md como fonte de verdade (não redefine nada)
+- Roda auditoria completa (cores hardcoded, hierarquia de botões, ícones)
+- Categoriza desvios em 3 níveis de confiança
+- Pausa pra aprovação humana antes de aplicar
+- Respeita arquivos protegidos (seção 17)
+- Valida com TypeScript, ESLint e WCAG ao final
+
+## Como usar
+
+### Passo 1 — Substituir CLAUDE.md
+
+```bash
+# Fazer backup do atual (boa prática)
+cp CLAUDE.md CLAUDE.md.v8.backup
+
+# Substituir pelo novo
+cp /caminho/para/CLAUDE.md ./CLAUDE.md
+```
+
+### Passo 2 — Rodar o prompt no Claude Code
+
+Dentro do projeto auExpert:
+
+```bash
+# Opção segura — com Ultraplan
+claude
+/ultraplan
+# (cola o conteúdo do claude-code-prompt-v2.md)
+```
+
+Ou direto no terminal:
+
+```bash
+claude
+# (cola o conteúdo do claude-code-prompt-v2.md)
+```
+
+### Passo 3 — Revisar relatórios
+
+Claude Code vai gerar:
+- `audit-v9.md` — auditoria (leia antes de autorizar correções)
+- `plan-v9.md` — plano categorizado (aprove ou ajuste)
+- `compliance-v9.md` — relatório final após aplicação
+
+### Passo 4 — Validar em device real
+
+Depois das correções aplicadas, abrir o app em dispositivo real e verificar:
+- 4-5 telas principais (home, novo diário, troca de ração, cardápio, settings)
+- Botões primários estão laranja com texto branco
+- Botões secundários mantêm outline/cinza
+- Lixeira continua vermelha
+- Ícones decorativos não viraram laranja por engano
+
+## Rollback
+
+Se algo der errado:
+
+```bash
+# Restaurar CLAUDE.md antigo
+cp CLAUDE.md.v8.backup CLAUDE.md
+
+# Reverter correções aplicadas
+git diff --name-only HEAD  # ver o que mudou
+git checkout -- <arquivos>  # reverter
+```
+
+---
+
+## Próximas rotinas de performance pendentes
+
+Do backlog que conversamos:
+- [ ] Análise de áudio/vídeo (Gemini) — otimizar compressão e paralelização
+- [ ] OCR de documentos vet — aplicar `compressImageForAI` no scanner
+- [ ] Avaliação nutricional (evaluate-nutrition) — revisar se vale Haiku 4.5
+- [ ] Foto do diário (`diary/new.tsx`) — aplicar compressão (respeitando que é arquivo protegido — precisaria autorização)
 
 ## Status do Desenvolvimento
 
