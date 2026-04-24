@@ -212,7 +212,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
   if (hasPermission === null) {
     return (
       <View style={s.fullCenter}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.click} size="large" />
       </View>
     );
   }
@@ -231,7 +231,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
           <Text style={s.permBtnText}>{t('listen.grantPermissions')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.closeBtn} onPress={onClose}>
-          <X size={rs(20)} color={colors.accent} strokeWidth={2} />
+          <X size={rs(20)} color={colors.click} strokeWidth={2} />
         </TouchableOpacity>
       </View>
     );
@@ -253,7 +253,7 @@ export default function PetAudioRecorder({ petName, onCapture, onClose }: PetAud
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.closeBtn} onPress={onClose} disabled={isRecording}>
-          <X size={rs(20)} color={isRecording ? colors.textGhost : colors.accent} strokeWidth={2} />
+          <X size={rs(20)} color={isRecording ? colors.textGhost : colors.click} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('listen.title', { name: petName })}</Text>
         <View style={s.headerSpacer} />
@@ -425,7 +425,7 @@ const s = StyleSheet.create({
   },
   recordBtn: {
     width: rs(80), height: rs(80), borderRadius: rs(40),
-    backgroundColor: colors.roseSoft,
+    backgroundColor: colors.dangerSoft,
     borderWidth: rs(3), borderColor: colors.rose + '60',
     alignItems: 'center', justifyContent: 'center',
   },

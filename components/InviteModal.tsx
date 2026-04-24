@@ -43,7 +43,7 @@ export default function InviteModal({ invite, onAccept, onDecline }: Props) {
       <View style={s.backdrop}>
         <View style={s.card}>
           <View style={s.iconWrap}>
-            <PawIcon size={rs(32)} color={colors.accent} />
+            <PawIcon size={rs(32)} color={colors.click} />
           </View>
 
           <Text style={s.title}>{t('invite.title')}</Text>
@@ -106,9 +106,9 @@ const s = StyleSheet.create({
     width: rs(64),
     height: rs(64),
     borderRadius: rs(20),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     borderWidth: 1,
-    borderColor: colors.accent + '25',
+    borderColor: colors.click + '25',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(4),
@@ -159,9 +159,9 @@ const s = StyleSheet.create({
     flex: 1,
     paddingVertical: rs(14),
     borderRadius: rs(radii.xl),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     alignItems: 'center',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3,
     shadowRadius: rs(12),

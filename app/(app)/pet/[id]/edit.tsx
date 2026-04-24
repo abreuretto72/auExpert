@@ -21,6 +21,7 @@ import { supabase } from '../../../../lib/supabase';
 import { withTimeout } from '../../../../lib/withTimeout';
 import { getErrorMessage } from '../../../../utils/errorMessages';
 import { formatDateInput, parseDateInput, getDatePlaceholder, isoToDateInput, calcAgeMonths } from '../../../../utils/format';
+import { validatePetName } from '../../../../utils/validatePetName';
 import { Skeleton } from '../../../../components/Skeleton';
 
 export default function EditPetScreen() {
@@ -59,7 +60,7 @@ export default function EditPetScreen() {
   }
 
   const isDog = pet?.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
 
   // ── Photo upload + AI analysis ──
   const uploadPhoto = useCallback(async (uri: string) => {
@@ -180,8 +181,11 @@ export default function EditPetScreen() {
   const buildPayload = useCallback((data: typeof dataRef.current) => {
     const wNum = data.weight ? parseFloat(data.weight) : null;
     const birthIso = parseDateInput(data.birthDate, i18n.language);
+    // Use normalized name when valid; fallback to trimmed raw to preserve
+    // legacy behavior — actual save-time validation happens in doSave.
+    const nameCheck = validatePetName(data.name);
     return {
-      name: data.name.trim(),
+      name: nameCheck.ok ? nameCheck.normalized : data.name.trim(),
       breed: data.breed.trim() || null,
       birth_date: birthIso,
       estimated_age_months: birthIso ? calcAgeMonths(birthIso) : null,
@@ -196,7 +200,13 @@ export default function EditPetScreen() {
 
   const doSave = useCallback(async () => {
     const data = dataRef.current;
-    if (!data.name.trim() || !initialized || isSaving.current) return;
+    if (!initialized || isSaving.current) return;
+    // Pet name defensive validation (added 2026-04-23). Silently block save
+    // when the current name is invalid (e.g., user deleted everything and
+    // typed "&&&"). The last-valid-name stays in the DB. No toast — this is
+    // an auto-save flow and toasting on every keystroke would be noise.
+    const nameCheck = validatePetName(data.name);
+    if (!nameCheck.ok) return;
     const payload = buildPayload(data);
     const snap = JSON.stringify(payload);
     if (snap === lastSavedSnap.current) return;
@@ -235,7 +245,8 @@ export default function EditPetScreen() {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       const data = dataRef.current;
-      if (!data.name.trim()) return;
+      // Same guard as doSave — don't persist invalid names on unmount either.
+      if (!validatePetName(data.name).ok) return;
       const payload = buildPayload(data);
       const snap = JSON.stringify(payload);
       if (snap === lastSavedSnap.current) return;
@@ -254,7 +265,7 @@ export default function EditPetScreen() {
       <View style={S.container}>
         <View style={S.header}>
           <TouchableOpacity onPress={() => router.back()} style={S.headerBtn}>
-            <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={S.headerTitle}>{t('editPet.title')}</Text>
           <TouchableOpacity
@@ -263,7 +274,7 @@ export default function EditPetScreen() {
             activeOpacity={0.7}
             accessibilityLabel={t('pdfCommon.printOrSave')}
           >
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
         <View style={{ alignItems: 'center', paddingTop: rs(40) }}>
@@ -285,7 +296,7 @@ export default function EditPetScreen() {
         {/* Header */}
         <View style={S.header}>
           <TouchableOpacity onPress={() => router.back()} style={S.headerBtn}>
-            <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={S.headerTitle}>{t('editPet.title')}</Text>
           <TouchableOpacity
@@ -294,7 +305,7 @@ export default function EditPetScreen() {
             activeOpacity={0.7}
             accessibilityLabel={t('pdfCommon.printOrSave')}
           >
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
 
@@ -310,11 +321,11 @@ export default function EditPetScreen() {
             </View>
             <View style={S.photoButtons}>
               <TouchableOpacity style={S.photoBtn} onPress={handleTakePhoto} activeOpacity={0.7}>
-                <Camera size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+                <Camera size={rs(16)} color={colors.click} strokeWidth={1.8} />
                 <Text style={S.photoBtnText}>{t('addPet.takePhoto')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={S.photoBtn} onPress={handlePickPhoto} activeOpacity={0.7}>
-                <Dog size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+                <Dog size={rs(16)} color={colors.click} strokeWidth={1.8} />
                 <Text style={S.photoBtnText}>{t('addPet.pickFromGallery')}</Text>
               </TouchableOpacity>
             </View>
@@ -406,21 +417,21 @@ export default function EditPetScreen() {
                 onPress={() => router.push(`/pet/${id}/id-card` as never)}
                 activeOpacity={0.7}
               >
-                <QrCode size={rs(13)} color={colors.accent} strokeWidth={1.8} />
+                <QrCode size={rs(13)} color={colors.click} strokeWidth={1.8} />
                 <Text style={S.microchipQrText}>{t('pet.qrCode')}</Text>
               </TouchableOpacity>
             )}
           </View>
 
           <Text style={S.label}>{t('health.bloodType')}</Text>
-          <View style={S.sizeRow}>
+          <View style={S.bloodRow}>
             {(isDog
               ? ['DEA 1.1+', 'DEA 1.1-', 'DEA 1.2', 'DEA 3', 'DEA 4', 'DEA 5', 'DEA 7']
               : ['A', 'B', 'AB']
             ).map((bt) => (
               <TouchableOpacity
                 key={bt}
-                style={[S.sizeBtn, bloodType === bt && S.sizeBtnActive]}
+                style={[S.bloodBtn, bloodType === bt && S.sizeBtnActive]}
                 onPress={() => { setBloodType(bloodType === bt ? '' : bt); setTimeout(doSave, 50); }}
                 activeOpacity={0.7}
               >
@@ -449,25 +460,28 @@ const S = StyleSheet.create({
   avatarWrap: { width: rs(100), height: rs(100), borderRadius: rs(32), backgroundColor: colors.bgCard, borderWidth: 3, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: '100%', height: '100%', borderRadius: rs(30) },
   photoButtons: { flexDirection: 'row', gap: rs(10) },
-  photoBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent + '30', borderRadius: rs(12), paddingHorizontal: rs(14), paddingVertical: rs(10) },
-  photoBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+  photoBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.click + '30', borderRadius: rs(12), paddingHorizontal: rs(14), paddingVertical: rs(10) },
+  photoBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.click },
 
   label: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textDim, letterSpacing: 1, marginBottom: rs(6), marginTop: rs(16) },
   inputWrap: { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, borderRadius: rs(14), overflow: 'hidden' },
   input: { fontSize: fs(15), color: colors.text, paddingHorizontal: rs(16), paddingVertical: rs(14) },
   microchipWrap: { flexDirection: 'row', alignItems: 'center' },
   microchipInput: { flex: 1 },
-  microchipQrBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.accentGlow, borderLeftWidth: 1, borderLeftColor: colors.accent + '25', paddingHorizontal: rs(12), paddingVertical: rs(14) },
-  microchipQrText: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.accent },
+  microchipQrBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.clickSoft, borderLeftWidth: 1, borderLeftColor: colors.click + '25', paddingHorizontal: rs(12), paddingVertical: rs(14) },
+  microchipQrText: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.click },
 
   row: { flexDirection: 'row', gap: rs(12) },
   halfField: { flex: 1 },
 
   sizeRow: { flexDirection: 'row', gap: rs(8) },
   sizeBtn: { flex: 1, paddingVertical: rs(12), borderRadius: rs(12), backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
-  sizeBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  sizeBtnActive: { backgroundColor: colors.click, borderColor: colors.click },
   sizeBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.textDim },
   sizeBtnTextActive: { color: '#fff' },
+  // Blood types: 7 opções pra cão não cabem numa linha só. Wrap + largura mínima pra cada chip.
+  bloodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8) },
+  bloodBtn: { minWidth: rs(72), paddingVertical: rs(10), paddingHorizontal: rs(12), borderRadius: rs(12), backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
 
   analyzingBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.purple + '10', borderWidth: 1, borderColor: colors.purple + '20', borderRadius: rs(14), paddingVertical: rs(12), marginBottom: rs(4) },
   analyzingText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.purple },

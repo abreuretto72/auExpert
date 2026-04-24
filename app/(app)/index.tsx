@@ -269,6 +269,7 @@ export default function HubScreen() {
           weight_kg: data.weight_kg ?? null,
           size: data.size ?? null,
           color: data.color ?? null,
+          blood_type: data.blood_type ?? null,
           current_mood: data.mood ?? null,
           avatar_url: avatarUrl,
           user_id: user?.id ?? '',
@@ -292,73 +293,89 @@ export default function HubScreen() {
           }
         }
 
-        // Gravar entrada no diário de registro se houver foto + análise
-        if (data.full_analysis && newPet?.id && user?.id && avatarUrl) {
+        // Gravar entrada no diário de registro — sempre, independente de ter análise de foto
+        console.log('[REG-DIARY] iniciando | newPet:', newPet?.id?.slice(-8), '| user:', user?.id?.slice(-8), '| avatarUrl:', !!avatarUrl, '| full_analysis:', !!data.full_analysis);
+        if (newPet?.id && user?.id) {
           try {
-            const fa = data.full_analysis;
-            const breedName = fa.breed?.name ?? fa.identification?.breed?.primary ?? null;
-            const mood = fa.mood?.primary ?? null;
-            const ageMonths = fa.estimated_age_months ?? fa.identification?.estimated_age_months ?? null;
-            const weight = fa.estimated_weight_kg ?? fa.identification?.estimated_weight_kg ?? null;
-            const color = fa.color ?? fa.identification?.coat?.color ?? null;
-            const size = fa.size ?? fa.identification?.size ?? null;
+            const fa = data.full_analysis ?? null;
+            const breedName = fa?.breed?.name ?? fa?.identification?.breed?.primary ?? null;
+            const mood = fa?.mood?.primary ?? null;
+            const ageMonths = fa?.estimated_age_months ?? fa?.identification?.estimated_age_months ?? null;
+            const weight = fa?.estimated_weight_kg ?? fa?.identification?.estimated_weight_kg ?? null;
+            const color = fa?.color ?? fa?.identification?.coat?.color ?? null;
+            const size = fa?.size ?? fa?.identification?.size ?? null;
 
-            // Monta resumo da análise para a narração
+            console.log('[REG-DIARY] fa:', !!fa, '| breed:', breedName, '| mood:', mood, '| ageMonths:', ageMonths);
+
+            // Resumo estruturado passado como contexto para a narração (nunca exibido diretamente)
             const parts: string[] = [];
-            if (breedName) parts.push(`Breed: ${breedName}`);
-            if (ageMonths != null) parts.push(`Age: ~${ageMonths} months`);
-            if (weight != null) parts.push(`Weight: ~${weight} kg`);
-            if (size) parts.push(`Size: ${size}`);
-            if (color) parts.push(`Coat: ${color}`);
-            if (mood) parts.push(`Mood: ${mood}`);
-            const analysisSummary = parts.join(', ');
+            if (breedName) parts.push(`breed:${breedName}`);
+            if (ageMonths != null) parts.push(`age_months:${ageMonths}`);
+            if (weight != null) parts.push(`weight_kg:${weight}`);
+            if (size) parts.push(`size:${size}`);
+            if (color) parts.push(`color:${color}`);
+            if (mood) parts.push(`mood:${mood}`);
+            const analysisContext = parts.join(',');
+
+            // Content visível ao tutor — sempre legível, mesmo sem narração
+            const visibleContent = i18n.t('addPet.registrationDayContent', { name: data.name });
+            console.log('[REG-DIARY] visibleContent:', visibleContent?.slice(0, 60));
 
             // Gera narração em 3ª pessoa via Edge Function
             let narration: string | null = null;
             try {
+              console.log('[REG-DIARY] chamando generate-diary-narration...');
               const { data: narData } = await withTimeout(
                 supabase.functions.invoke('generate-diary-narration', {
                   body: {
                     pet_id: newPet.id,
-                    content: analysisSummary,
+                    content: analysisContext || data.name,
                     mood_id: mood ?? 'happy',
                     language: i18n.language,
                     context: 'pet_registration',
                   },
                 }),
-                30_000,
+                45_000,
                 'generate-diary-narration:registration',
               );
               narration = narData?.narration ?? null;
+              console.log('[REG-DIARY] narration OK:', narration?.slice(0, 60) ?? 'null');
             } catch (e) {
-              console.warn('[Hub] registration narration failed (non-blocking):', e);
+              console.warn('[REG-DIARY] narration falhou (não bloqueante):', e);
             }
 
-            // Só insere se tiver narração
-            if (narration) {
-              await supabase.from('diary_entries').insert({
-                pet_id: newPet.id,
-                user_id: user.id,
-                content: analysisSummary,
-                input_type: 'photo',
-                input_method: 'photo',
-                primary_type: 'moment',
-                entry_type: 'photo_analysis',
-                narration,
-                mood_id: mood ?? 'happy',
-                mood_score: 80,
-                mood_source: 'ai_suggested',
-                photos: [avatarUrl],
-                tags: ['registration'],
-                is_special: true,
-                is_registration_entry: true,
-                is_active: true,
-                entry_date: new Date().toISOString().split('T')[0],
-              });
+            // Cria a entrada sempre — narração e foto são opcionais
+            console.log('[REG-DIARY] inserindo entry | entry_type:', fa ? 'photo_analysis' : 'manual', '| hasPhotos:', !!avatarUrl, '| hasAnalysis:', !!fa, '| hasNarration:', !!narration);
+            const { error: insertErr } = await supabase.from('diary_entries').insert({
+              pet_id: newPet.id,
+              user_id: user.id,
+              content: visibleContent,
+              input_type: 'text',
+              input_method: 'text',
+              primary_type: 'moment',
+              entry_type: fa ? 'photo_analysis' : 'manual',
+              ...(fa ? { photo_analysis_data: fa } : {}),
+              ...(narration ? { narration } : {}),
+              mood_id: mood ?? 'happy',
+              mood_score: 80,
+              mood_source: 'ai_suggested',
+              ...(avatarUrl ? { photos: [avatarUrl] } : {}),
+              tags: ['registration'],
+              is_special: true,
+              is_registration_entry: true,
+              is_active: true,
+              entry_date: new Date().toISOString().split('T')[0],
+            });
+            if (insertErr) {
+              console.error('[REG-DIARY] INSERT FALHOU:', insertErr.message, '| code:', insertErr.code, '| details:', insertErr.details);
+            } else {
+              console.log('[REG-DIARY] INSERT OK');
             }
           } catch (e) {
-            console.warn('[Hub] registration diary_entry failed (non-blocking):', e);
+            console.warn('[REG-DIARY] erro geral (não bloqueante):', e);
           }
+        } else {
+          console.warn('[REG-DIARY] pulando — newPet.id:', newPet?.id, '| user.id:', user?.id);
         }
 
         setAddPetVisible(false);
@@ -501,7 +518,7 @@ export default function HubScreen() {
               onPress={() => setQuery('')}
               activeOpacity={0.7}
             >
-              <Text style={[styles.emptyBtnText, { color: colors.accent }]}>
+              <Text style={[styles.emptyBtnText, { color: colors.click }]}>
                 {t('common.cancel')}
               </Text>
             </TouchableOpacity>
@@ -512,7 +529,7 @@ export default function HubScreen() {
         return (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconRow}>
-              <Dog size={rs(40)} color={colors.accent + '50'} strokeWidth={1.5} />
+              <Dog size={rs(40)} color={colors.click + '50'} strokeWidth={1.5} />
               <Cat size={rs(40)} color={colors.purple + '50'} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>{t('pets.noPets')}</Text>
@@ -523,7 +540,7 @@ export default function HubScreen() {
               onPress={handleAddPet}
             >
               <LinearGradient
-                colors={[colors.accent, colors.accentDark]}
+                colors={[colors.click, colors.clickDark]}
                 style={styles.emptyBtnGradient}
               >
                 <Plus size={rs(20)} color="#fff" strokeWidth={2} />
@@ -546,7 +563,7 @@ export default function HubScreen() {
         <View style={styles.container}>
           {/* Ambient glow */}
           <LinearGradient
-            colors={[colors.accent + '08', 'transparent']}
+            colors={[colors.click + '08', 'transparent']}
             style={styles.ambientGlow}
           />
           <View style={styles.header}>
@@ -567,7 +584,7 @@ export default function HubScreen() {
       <View style={styles.container}>
         {/* Ambient glow */}
         <LinearGradient
-          colors={[colors.accent + '08', 'transparent']}
+          colors={[colors.click + '08', 'transparent']}
           style={styles.ambientGlow}
         />
 
@@ -577,7 +594,7 @@ export default function HubScreen() {
             onPress={() => setDrawerVisible(true)}
             style={styles.headerBtn}
           >
-            <Menu size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+            <Menu size={rs(24)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <AuExpertLogo size="normal" showIcon={false} />
           <View style={styles.headerRightGroup}>
@@ -586,13 +603,13 @@ export default function HubScreen() {
               style={styles.headerBtnCompact}
               accessibilityLabel={t('hubPdf.icon')}
             >
-              <FileText size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <FileText size={rs(22)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push('/notifications' as never)}
               style={styles.headerBtnCompact}
             >
-              <Bell size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <Bell size={rs(22)} color={colors.click} strokeWidth={1.8} />
               <View style={styles.bellDot} />
             </TouchableOpacity>
           </View>
@@ -615,8 +632,8 @@ export default function HubScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={colors.click}
+              colors={[colors.click]}
               progressBackgroundColor={colors.card}
             />
           }
@@ -628,6 +645,7 @@ export default function HubScreen() {
           onClose={() => setDrawerVisible(false)}
           userName={userName}
           userEmail={userEmail}
+          userAvatarUrl={tutorProfile?.avatar_url}
         />
 
         {/* Add Pet modal */}
@@ -736,12 +754,12 @@ const styles = StyleSheet.create({
   newPetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: radii.md,
     paddingHorizontal: rs(12),
     paddingVertical: rs(8),
     gap: rs(6),
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.25,
     shadowRadius: rs(12),
@@ -821,7 +839,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: rs(52),
     gap: rs(8),
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
     shadowRadius: rs(20),

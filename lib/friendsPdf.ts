@@ -85,7 +85,7 @@ function buildBody(rows: FriendRow[], lang: string): string {
               ${ownerLine}
             </div>
             <div style="text-align:right;">
-              <div style="font-size:11px;font-weight:700;color:${colors.accent};">${escHtml(meetLabel)}</div>
+              <div style="font-size:11px;font-weight:700;color:${colors.click};">${escHtml(meetLabel)}</div>
             </div>
           </div>
           <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:#666;">

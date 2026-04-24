@@ -7,6 +7,14 @@ import * as Linking from 'expo-linking';
 import { useFonts, Sora_300Light, Sora_400Regular, Sora_500Medium, Sora_600SemiBold, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import { Caveat_400Regular, Caveat_600SemiBold, Caveat_700Bold } from '@expo-google-fonts/caveat';
 import { JetBrainsMono_400Regular, JetBrainsMono_500Medium, JetBrainsMono_600SemiBold, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
+// Elite typography (Ametista & Jade) — added 2026-04-23.
+// Inter cobre todo texto verbal (body, labels, narração IA, quotes).
+// Playfair Display cobre logo + títulos literários curtos.
+// Sora + Caveat continuam carregadas pra backward compat com StyleSheets
+// que ainda referenciam 'Sora_*' / 'Caveat_*' hardcoded. Wave 2 da migração
+// Elite substitui essas strings por `fonts.body` / `fonts.display`.
+import { Inter_300Light, Inter_400Regular, Inter_500Medium } from '@expo-google-fonts/inter';
+import { PlayfairDisplay_500Medium, PlayfairDisplay_500Medium_Italic } from '@expo-google-fonts/playfair-display';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import { colors } from '../constants/colors';
@@ -249,6 +257,19 @@ export default function RootLayout() {
   const router = useRouter();
 
   const [fontsLoaded] = useFonts({
+    // Elite Typography — primárias
+    Inter_300Light,
+    Inter_400Regular,
+    Inter_500Medium,
+    PlayfairDisplay_500Medium,
+    PlayfairDisplay_500Medium_Italic,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_600SemiBold,
+    JetBrainsMono_700Bold,
+    // Legacy — backward compat enquanto Wave 2 migra StyleSheets que
+    // ainda usam 'Sora_*' e 'Caveat_*' hardcoded. Remover quando
+    // nenhum arquivo de código referenciar mais.
     Sora_300Light,
     Sora_400Regular,
     Sora_500Medium,
@@ -258,10 +279,6 @@ export default function RootLayout() {
     Caveat_400Regular,
     Caveat_600SemiBold,
     Caveat_700Bold,
-    JetBrainsMono_400Regular,
-    JetBrainsMono_500Medium,
-    JetBrainsMono_600SemiBold,
-    JetBrainsMono_700Bold,
   });
 
   // Sincronizar authStore com a sessão Supabase real.

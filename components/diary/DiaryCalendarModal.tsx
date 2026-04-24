@@ -112,11 +112,11 @@ export default function DiaryCalendarModal({
           {/* Month navigation */}
           <View style={styles.nav}>
             <TouchableOpacity onPress={prevMonth} style={styles.navBtn} activeOpacity={0.7}>
-              <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
             <Text style={styles.monthLabel}>{monthLabel}</Text>
             <TouchableOpacity onPress={nextMonth} style={styles.navBtn} activeOpacity={0.7}>
-              <ChevronRight size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <ChevronRight size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
     borderRadius: rs(radii.lg),
   },
   cellSelected: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   cellToday: {
     borderWidth: 1.5,
-    borderColor: colors.accent,
+    borderColor: colors.click,
   },
   dayNum: {
     fontFamily: 'Sora_600SemiBold',
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   dayNumToday: {
-    color: colors.accent,
+    color: colors.click,
   },
   dayNumFaded: {
     color: colors.textGhost,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     width: rs(5),
     height: rs(5),
     borderRadius: rs(3),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     marginTop: rs(2),
   },
   dotOnSelected: {

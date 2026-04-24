@@ -21,10 +21,10 @@ import { useLensMoodTrend, type MoodDay } from '../../hooks/useLens';
 // ── Mood config ───────────────────────────────────────────────────────────────
 
 const MOOD_CONFIG: Record<string, { icon: React.ElementType; color: string; labelKey: string }> = {
-  ecstatic: { icon: SmilePlus,   color: colors.gold,    labelKey: 'happiness.moodEcstatic' },
+  ecstatic: { icon: SmilePlus,   color: colors.warning,    labelKey: 'happiness.moodEcstatic' },
   happy:    { icon: Smile,       color: colors.success,  labelKey: 'happiness.moodHappy' },
   calm:     { icon: Meh,         color: colors.petrol,   labelKey: 'happiness.moodCalm' },
-  playful:  { icon: Dumbbell,    color: colors.accent,   labelKey: 'happiness.moodPlayful' },
+  playful:  { icon: Dumbbell,    color: colors.click,   labelKey: 'happiness.moodPlayful' },
   tired:    { icon: BatteryLow,  color: colors.warning,  labelKey: 'happiness.moodTired' },
   anxious:  { icon: AlertCircle, color: colors.warning,  labelKey: 'happiness.moodAnxious' },
   sad:      { icon: Frown,       color: colors.danger,   labelKey: 'happiness.moodSad' },
@@ -33,7 +33,7 @@ const MOOD_CONFIG: Record<string, { icon: React.ElementType; color: string; labe
 
 function scoreColor(score: number): string {
   if (score >= 80) return colors.success;
-  if (score >= 60) return colors.accent;
+  if (score >= 60) return colors.click;
   if (score >= 40) return colors.warning;
   return colors.danger;
 }
@@ -91,7 +91,7 @@ function ScoreCard({
       {/* Streak */}
       {streakDays > 0 && (
         <View style={styles.streakRow}>
-          <Flame size={rs(13)} color={colors.accent} strokeWidth={2} />
+          <Flame size={rs(13)} color={colors.click} strokeWidth={2} />
           <Text style={styles.streakText}>
             {t('happiness.streak', { days: streakDays })}
           </Text>
@@ -136,7 +136,7 @@ function MoodChart({ days }: { days: MoodDay[] }) {
       <View style={styles.chartLegend}>
         {([
           { color: colors.success, key: 'happiness.legendGood' },
-          { color: colors.accent,  key: 'happiness.legendOk' },
+          { color: colors.click,  key: 'happiness.legendOk' },
           { color: colors.warning, key: 'happiness.legendLow' },
           { color: colors.danger,  key: 'happiness.legendBad' },
         ] as const).map((item) => (
@@ -194,7 +194,7 @@ function EmptyState() {
   const { t } = useTranslation();
   return (
     <View style={styles.emptyCard}>
-      <Star size={rs(28)} color={colors.gold} strokeWidth={1.5} />
+      <Star size={rs(28)} color={colors.warning} strokeWidth={1.5} />
       <Text style={styles.emptyTitle}>{t('happiness.emptyTitle')}</Text>
       <Text style={styles.emptyHint}>{t('happiness.emptyHint')}</Text>
     </View>

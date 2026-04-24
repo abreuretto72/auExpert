@@ -170,7 +170,7 @@ export default function ProOnboardingScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-            <ChevronLeft size={rs(26)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(26)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('onboarding.pro.title')}</Text>
           <View style={{ width: rs(26) }} />
@@ -183,7 +183,7 @@ export default function ProOnboardingScreen() {
         >
           <View style={styles.hero}>
             <View style={styles.heroIcon}>
-              <Briefcase size={rs(28)} color={colors.accent} strokeWidth={1.6} />
+              <Briefcase size={rs(28)} color={colors.click} strokeWidth={1.6} />
             </View>
             <Text style={styles.subtitle}>{t('onboarding.pro.subtitle')}</Text>
           </View>
@@ -294,7 +294,7 @@ export default function ProOnboardingScreen() {
               activeOpacity={0.7}
               style={styles.specialtyAddBtn}
             >
-              <Plus size={rs(18)} color={colors.accent} strokeWidth={2} />
+              <Plus size={rs(18)} color={colors.click} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           {specialties.length > 0 && (
@@ -307,7 +307,7 @@ export default function ProOnboardingScreen() {
                   style={styles.tagChip}
                 >
                   <Text style={styles.tagChipText}>{s}</Text>
-                  <X size={rs(12)} color={colors.accent} strokeWidth={2} />
+                  <X size={rs(12)} color={colors.click} strokeWidth={2} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
   hero:    { alignItems: 'center', marginBottom: spacing.lg },
   heroIcon: {
     width: rs(60), height: rs(60), borderRadius: rs(30),
-    backgroundColor: colors.accentGlow, alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.sm, borderWidth: 1.5, borderColor: colors.accentMed,
+    backgroundColor: colors.clickSoft, alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm, borderWidth: 1.5, borderColor: colors.clickRing,
   },
   subtitle: { color: colors.textSec, fontSize: fs(13), textAlign: 'center', lineHeight: fs(19) },
   sectionLabel: {
@@ -366,15 +366,15 @@ const styles = StyleSheet.create({
   sectionHint: {
     color: colors.textDim, fontSize: fs(11), marginBottom: spacing.sm, lineHeight: fs(16),
   },
-  required: { color: colors.accent },
+  required: { color: colors.click },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8), marginBottom: spacing.sm },
   chip: {
     paddingHorizontal: rs(12), paddingVertical: rs(8),
     borderRadius: radii.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  chipSelected: { backgroundColor: colors.accentGlow, borderColor: colors.accent },
+  chipSelected: { backgroundColor: colors.clickSoft, borderColor: colors.click },
   chipText: { color: colors.textSec, fontSize: fs(12), fontWeight: '600' },
-  chipTextSelected: { color: colors.accent },
+  chipTextSelected: { color: colors.click },
   field: { marginBottom: spacing.sm },
   row2: { flexDirection: 'row', gap: rs(10) },
   rowItem: { flex: 1 },
@@ -388,10 +388,10 @@ const styles = StyleSheet.create({
   tagChip: {
     flexDirection: 'row', alignItems: 'center', gap: rs(6),
     paddingHorizontal: rs(10), paddingVertical: rs(6),
-    borderRadius: radii.sm, backgroundColor: colors.accentGlow,
-    borderWidth: 1, borderColor: colors.accentMed,
+    borderRadius: radii.sm, backgroundColor: colors.clickSoft,
+    borderWidth: 1, borderColor: colors.clickRing,
   },
-  tagChipText: { color: colors.accent, fontSize: fs(12), fontWeight: '700' },
+  tagChipText: { color: colors.click, fontSize: fs(12), fontWeight: '700' },
   submitWrap: { marginTop: spacing.lg },
   disclaimer: {
     color: colors.textDim, fontSize: fs(11), textAlign: 'center',

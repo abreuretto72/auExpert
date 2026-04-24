@@ -40,7 +40,7 @@ export default function PetHeader({ pet, onSettings }: PetHeaderProps) {
   const { i18n } = useTranslation();
   const isEnglish = i18n.language === 'en-US' || i18n.language === 'en';
   const isDog = pet.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
 
   const moodData = pet.current_mood
     ? moods.find((m) => m.id === pet.current_mood)
@@ -48,7 +48,7 @@ export default function PetHeader({ pet, onSettings }: PetHeaderProps) {
 
   const subParts: string[] = [];
   if (pet.breed) subParts.push(pet.breed);
-  if (pet.estimated_age_months) subParts.push(formatAge(pet.estimated_age_months));
+  if (pet.estimated_age_months) subParts.push(formatAge(pet.estimated_age_months, i18n.language));
   if (moodData) subParts.push(isEnglish ? moodData.label_en : moodData.label);
 
   return (
@@ -81,7 +81,7 @@ export default function PetHeader({ pet, onSettings }: PetHeaderProps) {
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Settings size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <Settings size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
     </View>
   );

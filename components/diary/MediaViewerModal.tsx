@@ -266,7 +266,7 @@ const s = StyleSheet.create({
     width: rs(80),
     height: rs(80),
     borderRadius: rs(40),
-    backgroundColor: `${colors.accent}CC`,
+    backgroundColor: `${colors.click}CC`,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -307,12 +307,12 @@ const ap = StyleSheet.create({
     width: rs(72),
     height: rs(72),
     borderRadius: rs(36),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(24),
     // Shadow
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 12,
@@ -338,7 +338,7 @@ const ap = StyleSheet.create({
   },
   fill: {
     height: '100%',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(2),
   },
 });

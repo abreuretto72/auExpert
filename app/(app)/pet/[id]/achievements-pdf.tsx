@@ -32,7 +32,7 @@ export default function AchievementsPdfScreen() {
       readySubtitleKey="achievementsPdf.readySubtitle"
       readySubtitleParams={{ name: petName }}
       icon={Trophy}
-      iconColor={colors.gold}
+      iconColor={colors.warning}
       isReady={!isLoading && !!pet}
       onPreview={handlePreview}
       onShare={handleShare}

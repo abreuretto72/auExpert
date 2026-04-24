@@ -76,17 +76,17 @@ export default function CapsulesScreen() {
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} progressBackgroundColor={colors.card} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.click} colors={[colors.click]} progressBackgroundColor={colors.card} />}
       >
         {/* ── Stats Hero ── */}
         <View style={s.heroCard}>
           <View style={s.heroIconWrap}>
-            <Hourglass size={rs(28)} color={colors.gold} strokeWidth={1.8} />
+            <Hourglass size={rs(28)} color={colors.warning} strokeWidth={1.8} />
           </View>
           <Text style={s.heroLabel}>{t('capsules.created')}</Text>
           <View style={s.heroStatsRow}>
             <View style={s.heroStat}>
-              <Text style={[s.heroStatVal, { color: colors.gold }]}>{mockCapsules.length}</Text>
+              <Text style={[s.heroStatVal, { color: colors.warning }]}>{mockCapsules.length}</Text>
               <Text style={s.heroStatLabel}>{t('capsules.total')}</Text>
             </View>
             <View style={s.heroStatDivider} />
@@ -102,7 +102,7 @@ export default function CapsulesScreen() {
           </View>
           {locked.length > 0 && (
             <View style={s.nextUnlock}>
-              <Clock size={rs(12)} color={colors.gold} strokeWidth={1.8} />
+              <Clock size={rs(12)} color={colors.warning} strokeWidth={1.8} />
               <Text style={s.nextUnlockText}>
                 {t('capsules.nextIn', { days: Math.min(...locked.map((c) => c.daysUntil ?? 999)) })}
               </Text>
@@ -127,7 +127,7 @@ export default function CapsulesScreen() {
         {/* ── Capsules List ── */}
         {filtered.map((capsule) => {
           const isLocked = capsule.status === 'locked';
-          const tintColor = isLocked ? colors.purple : colors.gold;
+          const tintColor = isLocked ? colors.purple : colors.warning;
           return (
             <View key={capsule.id} style={s.capsuleCard}>
               <View style={s.capsuleHeader}>
@@ -189,19 +189,19 @@ const s = StyleSheet.create({
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   heroCard: { backgroundColor: colors.card, borderRadius: rs(22), padding: rs(20), marginTop: rs(8), marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  heroIconWrap: { width: rs(56), height: rs(56), borderRadius: rs(18), backgroundColor: colors.gold + '12', alignItems: 'center', justifyContent: 'center', marginBottom: rs(12) },
+  heroIconWrap: { width: rs(56), height: rs(56), borderRadius: rs(18), backgroundColor: colors.warning + '12', alignItems: 'center', justifyContent: 'center', marginBottom: rs(12) },
   heroLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textGhost, letterSpacing: 2, marginBottom: rs(14) },
   heroStatsRow: { flexDirection: 'row', alignItems: 'center', gap: rs(16) },
   heroStat: { alignItems: 'center' },
   heroStatVal: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(24) },
   heroStatLabel: { fontFamily: 'Sora_600SemiBold', fontSize: fs(10), color: colors.textDim, marginTop: rs(2) },
   heroStatDivider: { width: 1, height: rs(28), backgroundColor: colors.border },
-  nextUnlock: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(14), backgroundColor: colors.gold + '10', paddingHorizontal: rs(14), paddingVertical: rs(6), borderRadius: rs(10) },
-  nextUnlockText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.gold },
+  nextUnlock: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(14), backgroundColor: colors.warning + '10', paddingHorizontal: rs(14), paddingVertical: rs(6), borderRadius: rs(10) },
+  nextUnlockText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.warning },
 
   filterRow: { flexDirection: 'row', gap: rs(8), marginBottom: spacing.md },
   filterPill: { flex: 1, paddingVertical: rs(10), borderRadius: rs(12), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  filterPillActive: { backgroundColor: colors.gold, borderColor: colors.gold },
+  filterPillActive: { backgroundColor: colors.warning, borderColor: colors.warning },
   filterText: { fontFamily: 'Sora_700Bold', fontSize: fs(12), color: colors.textDim },
   filterTextActive: { color: '#fff' },
 
@@ -214,7 +214,7 @@ const s = StyleSheet.create({
   statusText: { fontFamily: 'Sora_700Bold', fontSize: fs(10) },
   conditionBox: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(12), backgroundColor: colors.bgCard, borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(8) },
   conditionText: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textSec, flex: 1 },
-  conditionDays: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(12), color: colors.gold },
+  conditionDays: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(12), color: colors.warning },
   progressTrack: { height: rs(4), backgroundColor: colors.border, borderRadius: rs(2), marginTop: rs(10), overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: rs(2) },
   previewText: { fontFamily: 'Sora_400Regular', fontSize: fs(14), color: colors.textSec, lineHeight: fs(22), marginTop: rs(12) },

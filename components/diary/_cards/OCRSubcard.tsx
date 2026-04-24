@@ -265,7 +265,7 @@ export function OCRSubcard({
         </>
       ) : (
         <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.ocrEditBar}>
-          <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+          <Pencil size={rs(14)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.ocrEditBarText}>{t('diary.ocrEditHint')}</Text>
         </TouchableOpacity>
       )}
@@ -334,7 +334,7 @@ export function OCRSubcard({
         .filter((f) => isEditing || (f.value != null && String(f.value).trim() !== '' && !isIllegibleDescription(f.value)))
         .map((field, i) => (
           <View key={i} style={styles.ocrField}>
-            <Text style={[styles.ocrKey, isMonetaryKey(field.key) && isFinancial && { color: colors.accent }]}>
+            <Text style={[styles.ocrKey, isMonetaryKey(field.key) && isFinancial && { color: colors.click }]}>
               {field.key}
             </Text>
             {isEditing ? (
@@ -353,7 +353,7 @@ export function OCRSubcard({
                 style={[
                   styles.ocrValue,
                   field.confidence != null && field.confidence < 0.5 && styles.ocrValueLow,
-                  isMonetaryKey(field.key) && isFinancial && { color: colors.accent, fontFamily: 'JetBrainsMono_700Bold' },
+                  isMonetaryKey(field.key) && isFinancial && { color: colors.click, fontFamily: 'JetBrainsMono_700Bold' },
                 ]}
               >
                 {isMonetaryKey(field.key) && isFinancial ? formatBRCurrency(field.value) : field.value}

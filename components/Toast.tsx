@@ -6,9 +6,16 @@ import React, {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Animated, StyleSheet, Text, View, Pressable, TouchableOpacity, Image } from 'react-native';
-import type { ImageSourcePropType } from 'react-native';
-import { X, Check } from 'lucide-react-native';
+import { Animated, StyleSheet, Text, View, Pressable, TouchableOpacity } from 'react-native';
+import {
+  X,
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  HelpCircle,
+} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
@@ -54,20 +61,25 @@ export function useToast() {
 const TOAST_DURATION = 4000;
 const ANIM_DURATION = 300;
 
-/* eslint-disable @typescript-eslint/no-var-requires */
-const pawImageMap: Record<ToastType, ImageSourcePropType> = {
-  success: require('../assets/images/m_sucesso_icon.png'),
-  error: require('../assets/images/m_erro_icon.png'),
-  warning: require('../assets/images/m_aviso_icon.png'),
-  info: require('../assets/images/m_info_icon.png'),
-};
+// ─── Icon + cor por tipo (Elite palette) ──────────────────────────────────
+// Substitui as patinhas cartoon do branding antigo. Cada tipo usa um ícone
+// Lucide sobre um círculo da cor semântica com 15% de opacidade — padrão
+// de design Elite, consistente com as sem outras superfícies do app.
 
-const confirmImage: ImageSourcePropType = require('../assets/images/m_confirma_icon.png');
+type IconComp = React.ComponentType<{ size: number; color: string; strokeWidth: number }>;
 
-// ─── Balao de mensagem simples ───
+function iconAndColor(type: ToastType): { Icon: IconComp; color: string } {
+  switch (type) {
+    case 'success': return { Icon: CheckCircle2,  color: colors.success };
+    case 'error':   return { Icon: AlertCircle,   color: colors.danger  };
+    case 'warning': return { Icon: AlertTriangle, color: colors.warning };
+    case 'info':    return { Icon: Info,          color: colors.click   };
+  }
+}
+
+// ─── Balão de mensagem simples ────────────────────────────────────────────
 
 function ToastItem({ message, onDone }: { message: ToastMessage; onDone: () => void }) {
-  const { t } = useTranslation();
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
 
@@ -87,23 +99,26 @@ function ToastItem({ message, onDone }: { message: ToastMessage; onDone: () => v
     return () => clearTimeout(timer);
   }, []);
 
+  const { Icon, color } = iconAndColor(message.type);
+
   return (
     <Animated.View style={[styles.bubble, { opacity, transform: [{ scale }] }]}>
       <TouchableOpacity onPress={onDone} style={styles.closeBtn} activeOpacity={0.7}>
         <View style={styles.closeBtnCircle}>
-          <X size={rs(14)} color={colors.danger} strokeWidth={2.5} />
+          <X size={rs(14)} color={colors.textSec} strokeWidth={2} />
         </View>
       </TouchableOpacity>
 
-      <Image source={pawImageMap[message.type]} style={styles.pawImage} resizeMode="contain" />
+      <View style={[styles.iconCircle, { backgroundColor: color + '20', borderColor: color + '40' }]}>
+        <Icon size={rs(32)} color={color} strokeWidth={1.8} />
+      </View>
 
       <Text style={styles.bubbleText}>{message.text}</Text>
-      <Text style={styles.bubbleSignature}>{t('toast.petSignature')}</Text>
     </Animated.View>
   );
 }
 
-// ─── Balao de confirmacao (sim / nao) ───
+// ─── Balão de confirmação (sim / não) ─────────────────────────────────────
 
 function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () => void }) {
   const { t } = useTranslation();
@@ -127,14 +142,23 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
     });
   };
 
+  // Confirm usa HelpCircle em ametista por default — cor que indica "pergunta"
+  // sem ser alarmante. Se o caller passa type='warning', respeita.
+  const { Icon, color } =
+    message.type === 'info' || message.type === undefined
+      ? { Icon: HelpCircle, color: colors.click }
+      : iconAndColor(message.type);
+
   return (
     <Animated.View style={[styles.bubble, { opacity, transform: [{ scale }] }]}>
-      <Image source={confirmImage} style={styles.pawImage} resizeMode="contain" />
+      <View style={[styles.iconCircle, { backgroundColor: color + '20', borderColor: color + '40' }]}>
+        <Icon size={rs(32)} color={color} strokeWidth={1.8} />
+      </View>
 
       <Text style={styles.bubbleText}>{message.text}</Text>
 
       <View style={styles.confirmRow}>
-        {/* Nao */}
+        {/* Não */}
         <TouchableOpacity
           style={styles.confirmBtnNo}
           onPress={() => dismiss(message.onNo)}
@@ -158,13 +182,11 @@ function ConfirmItem({ message, onDone }: { message: ConfirmMessage; onDone: () 
           </Text>
         </TouchableOpacity>
       </View>
-
-      <Text style={styles.bubbleSignature}>{t('toast.petSignature')}</Text>
     </Animated.View>
   );
 }
 
-// ─── Provider ───
+// ─── Provider ─────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ToastMessage[]>([]);
@@ -215,7 +237,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           onPress={confirmMsg ? undefined : dismissAll}
         >
           <View style={styles.center}>
-            {/* Mensagens simples */}
             {messages.map((msg) => (
               <ToastItem
                 key={msg.id}
@@ -224,7 +245,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               />
             ))}
 
-            {/* Confirmacao */}
             {confirmMsg && (
               <ConfirmItem
                 message={confirmMsg}
@@ -242,7 +262,9 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,
-    backgroundColor: 'rgba(11, 18, 25, 0.6)',
+    // Backdrop em ametista-muito-escuro, mantém a coerência Elite em vez do
+    // preto azulado antigo. Ainda assim bem transparente pra ver contexto.
+    backgroundColor: 'rgba(13, 14, 22, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: rs(spacing.xl),
@@ -262,7 +284,7 @@ const styles = StyleSheet.create({
     paddingBottom: rs(spacing.lg),
     alignItems: 'center',
     width: '100%',
-    maxWidth: rs(300),
+    maxWidth: rs(320),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: rs(16) },
     shadowOpacity: 0.5,
@@ -279,36 +301,38 @@ const styles = StyleSheet.create({
     width: rs(28),
     height: rs(28),
     borderRadius: rs(14),
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.danger + '30',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pawImage: {
-    width: rs(72),
-    height: rs(61),
+
+  // Ícone circular com a cor semântica suave (padrão Elite)
+  iconCircle: {
+    width: rs(64),
+    height: rs(64),
+    borderRadius: rs(32),
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: rs(spacing.md),
   },
+
   bubbleText: {
     fontFamily: 'Sora_500Medium',
     fontSize: fs(15),
     color: colors.text,
     textAlign: 'center',
-    lineHeight: fs(24),
-    marginBottom: rs(spacing.md),
-  },
-  bubbleSignature: {
-    fontFamily: 'Sora_400Regular',
-    fontSize: fs(13),
-    color: colors.textDim,
+    lineHeight: fs(23),
+    paddingHorizontal: rs(spacing.sm),
   },
 
-  // Confirmacao
+  // Confirmação
   confirmRow: {
     flexDirection: 'row',
     gap: rs(spacing.sm),
-    marginBottom: rs(spacing.md),
+    marginTop: rs(spacing.lg),
     width: '100%',
   },
   confirmBtnNo: {
@@ -334,7 +358,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(6),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(radii.lg),
     paddingVertical: rs(12),
   },

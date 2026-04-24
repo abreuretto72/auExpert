@@ -137,7 +137,7 @@ function BackupGuardian({ t }: { t: TFunction }) {
           <Text style={styles.guardianName}>{t('testament.guardianName')}</Text>
           <Text style={styles.guardianRelation}>{t('testament.guardianRelation')}</Text>
           <View style={styles.guardianStats}>
-            <Star size={rs(12)} color={colors.gold} strokeWidth={2} />
+            <Star size={rs(12)} color={colors.warning} strokeWidth={2} />
             <Text style={styles.guardianStatText}>4.9</Text>
             <Text style={styles.guardianStatDim}>{t('testament.guardianActivities', { count: 45 })}</Text>
           </View>
@@ -181,7 +181,7 @@ function PersonalLetter({ t }: { t: TFunction }) {
       </View>
       <Text style={styles.letterExcerpt}>{t('testament.letterExcerpt')}</Text>
       <TouchableOpacity style={styles.editBtn} activeOpacity={0.7}>
-        <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+        <Pencil size={rs(14)} color={colors.click} strokeWidth={1.8} />
         <Text style={styles.editBtnText}>{t('common.edit')}</Text>
       </TouchableOpacity>
     </View>
@@ -242,8 +242,8 @@ export default function TestamentScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.accent}
-          colors={[colors.accent]}
+          tintColor={colors.click}
+          colors={[colors.click]}
         />
       }
     >
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   guardianStatText: {
     fontFamily: 'JetBrainsMono_700Bold',
     fontSize: fs(12),
-    color: colors.gold,
+    color: colors.warning,
   },
   guardianStatDim: {
     fontFamily: 'Sora_400Regular',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   editBtnText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(13),
-    color: colors.accent,
+    color: colors.click,
   },
 
   // Verification

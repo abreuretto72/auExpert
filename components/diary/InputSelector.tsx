@@ -195,7 +195,7 @@ function HelpModal({
               </Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <X size={rs(20)} color={colors.accent} strokeWidth={2} />
+              <X size={rs(20)} color={colors.click} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -288,7 +288,7 @@ export default function InputSelector({
       icon: Mic,
       labelKey: 'diary.inputVoice',
       subKey: 'diary.inputVoiceSub',
-      gradient: [colors.accent, colors.accentDark] as const,
+      gradient: [colors.click, colors.clickDark] as const,
       large: true,
       phase1: true,
       onPress: onSelectVoice,
@@ -298,7 +298,7 @@ export default function InputSelector({
       icon: Camera,
       labelKey: 'diary.inputPhoto',
       subKey: 'diary.inputPhotoSub',
-      gradient: [colors.petrol, colors.petrolDark] as const,
+      gradient: [colors.petrol, colors.textSec] as const,
       large: true,
       phase1: true,
       onPress: onSelectPhoto,
@@ -318,7 +318,7 @@ export default function InputSelector({
       icon: FileText,
       labelKey: 'diary.inputDocument',
       subKey: 'diary.inputDocumentSub',
-      gradient: [colors.gold, '#D68910'] as const,
+      gradient: [colors.warning, '#D68910'] as const,
       large: false,
       phase1: true,
       onPress: onSelectDocument,
@@ -412,14 +412,14 @@ export default function InputSelector({
                     onPress={() => setHelpVisible(true)}
                     activeOpacity={0.7}
                   >
-                    <HelpCircle size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+                    <HelpCircle size={rs(20)} color={colors.click} strokeWidth={1.8} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.closeBtn}
                     onPress={onClose}
                     activeOpacity={0.7}
                   >
-                    <X size={rs(20)} color={colors.accent} strokeWidth={2} />
+                    <X size={rs(20)} color={colors.click} strokeWidth={2} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -531,9 +531,9 @@ const styles = StyleSheet.create({
     width: rs(36),
     height: rs(36),
     borderRadius: rs(18),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderWidth: 1,
-    borderColor: colors.accent + '30',
+    borderColor: colors.click + '30',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -628,15 +628,15 @@ const styles = StyleSheet.create({
     marginBottom: rs(12),
     paddingVertical: rs(10),
     paddingHorizontal: rs(14),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderRadius: rs(12),
     borderWidth: 1,
-    borderColor: colors.accent + '25',
+    borderColor: colors.click + '25',
   },
   helpPanelNoteText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(12),
-    color: colors.accentLight,
+    color: colors.clickLight,
     textAlign: 'center',
     lineHeight: fs(18),
   },

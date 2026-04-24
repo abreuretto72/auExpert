@@ -64,7 +64,7 @@ const TutorCard: React.FC<TutorCardProps> = ({
       {avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
       ) : (
-        <LinearGradient colors={[colors.accent, colors.accentDark]} style={styles.avatar}>
+        <LinearGradient colors={[colors.click, colors.clickDark]} style={styles.avatar}>
           <User size={rs(28)} color="#fff" strokeWidth={1.8} />
         </LinearGradient>
       )}
@@ -74,7 +74,7 @@ const TutorCard: React.FC<TutorCardProps> = ({
         {/* Nome + seta */}
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
-          <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={2} />
+          <ChevronRight size={rs(14)} color={colors.click} strokeWidth={2} />
         </View>
 
         {/* Localização + membro desde */}
@@ -97,7 +97,7 @@ const TutorCard: React.FC<TutorCardProps> = ({
         {/* Partnership icon */}
         <View style={styles.xpRow}>
           <TouchableOpacity onPress={onPressPartnership} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-            <Handshake size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <Handshake size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
       </View>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderWidth: rs(1),
-    borderColor: colors.accent + '15',
+    borderColor: colors.click + '15',
     borderRadius: rs(radii.card),
     padding: rs(20),
     gap: rs(16),
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     width: rs(100),
     height: rs(100),
     borderRadius: rs(50),
-    backgroundColor: colors.accent + '06',
+    backgroundColor: colors.click + '06',
   },
   avatar: {
     width: rs(60),
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: rs(20),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.25,
     shadowRadius: rs(16),
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   xpLevel: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(11),
-    color: colors.gold,
+    color: colors.warning,
   },
   xpTrack: {
     flex: 1,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   xpFill: {
     height: '100%',
     borderRadius: rs(2),
-    backgroundColor: colors.gold,
+    backgroundColor: colors.warning,
   },
   xpText: {
     fontFamily: 'JetBrainsMono_400Regular',

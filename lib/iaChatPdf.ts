@@ -38,8 +38,8 @@ function buildBody(messages: ChatMessage[], petName: string): string {
 
   const rows = messages.map((m) => {
     const isUser = m.role === 'user';
-    const accentColor = isUser ? colors.accent : colors.purple;
-    const labelColor  = isUser ? colors.accentDark : '#6c3483';
+    const accentColor = isUser ? colors.click : colors.purple;
+    const labelColor  = isUser ? colors.clickDark : '#6c3483';
     const label       = isUser
       ? escHtml(t('ia.pdfYou'))
       : escHtml(t('ia.pdfAI', { name: petName }));

@@ -121,7 +121,7 @@ export default function PhotoAnalysisPdfScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('photoAnalysis.pdfTitle', { name: pet?.name ?? '' })}</Text>
           <View style={s.headerBtn} />
@@ -141,7 +141,7 @@ export default function PhotoAnalysisPdfScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('photoAnalysis.pdfTitle', { name: pet.name })}</Text>
         <View style={s.headerBtn} />
@@ -161,15 +161,15 @@ export default function PhotoAnalysisPdfScreen() {
         <View style={s.actions}>
           {/* Print / Preview */}
           <TouchableOpacity
-            style={[s.actionRow, { borderColor: colors.accent + '40' }]}
+            style={[s.actionRow, { borderColor: colors.click + '40' }]}
             onPress={handlePreview}
             activeOpacity={0.8}
             disabled={isGenerating}
           >
-            <View style={[s.actionIcon, { backgroundColor: colors.accentGlow }]}>
+            <View style={[s.actionIcon, { backgroundColor: colors.clickSoft }]}>
               {isGenerating
-                ? <ActivityIndicator color={colors.accent} size="small" />
-                : <Download size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+                ? <ActivityIndicator color={colors.click} size="small" />
+                : <Download size={rs(22)} color={colors.click} strokeWidth={1.8} />
               }
             </View>
             <View style={{ flex: 1 }}>

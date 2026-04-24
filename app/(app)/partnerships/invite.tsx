@@ -98,7 +98,7 @@ function roleColor(role: AccessRole): string {
     case 'ong_member':
       return colors.rose;
     default:
-      return colors.accent;
+      return colors.click;
   }
 }
 
@@ -212,10 +212,10 @@ export default function PartnershipInviteScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
           >
-            <ChevronLeft size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(24)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
-            <Send size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <Send size={rs(18)} color={colors.click} strokeWidth={1.8} />
             <Text style={styles.headerTitle}>{t('partnerships.invite.title')}</Text>
           </View>
           <View style={{ width: rs(24) }} />
@@ -243,7 +243,7 @@ export default function PartnershipInviteScreen() {
               {pets.map((p) => {
                 const selected = petId === p.id;
                 const isDog = p.species === 'dog';
-                const petColor = isDog ? colors.accent : colors.purple;
+                const petColor = isDog ? colors.click : colors.purple;
                 return (
                   <TouchableOpacity
                     key={p.id}
@@ -342,7 +342,7 @@ export default function PartnershipInviteScreen() {
             <View style={styles.toggleIconWrap}>
               <Wallet
                 size={rs(18)}
-                color={financeEnabled ? colors.accent : colors.textDim}
+                color={financeEnabled ? colors.click : colors.textDim}
                 strokeWidth={1.8}
               />
             </View>
@@ -363,8 +363,8 @@ export default function PartnershipInviteScreen() {
               value={canSeeFinances && financeEnabled}
               onValueChange={setCanSeeFinances}
               disabled={!financeEnabled}
-              trackColor={{ false: colors.border, true: colors.accent + '66' }}
-              thumbColor={canSeeFinances && financeEnabled ? colors.accent : colors.textDim}
+              trackColor={{ false: colors.border, true: colors.click + '66' }}
+              thumbColor={canSeeFinances && financeEnabled ? colors.click : colors.textDim}
             />
           </View>
 
@@ -397,13 +397,13 @@ export default function PartnershipInviteScreen() {
                 >
                   <Clock
                     size={rs(12)}
-                    color={selected ? colors.accent : colors.textDim}
+                    color={selected ? colors.click : colors.textDim}
                     strokeWidth={2}
                   />
                   <Text
                     style={[
                       styles.expiresChipText,
-                      selected && { color: colors.accent },
+                      selected && { color: colors.click },
                     ]}
                   >
                     {n === 1
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     marginBottom: rs(4),
     letterSpacing: rs(0.3),
   },
-  required: { color: colors.accent },
+  required: { color: colors.click },
   hint: {
     fontFamily: 'Sora_400Regular',
     fontSize: fs(11),
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     width: rs(32),
     height: rs(32),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -645,8 +645,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
   },
   expiresChipSelected: {
-    backgroundColor: colors.accent + '14',
-    borderColor: colors.accent,
+    backgroundColor: colors.click + '14',
+    borderColor: colors.click,
   },
   expiresChipText: {
     fontFamily: 'JetBrainsMono_500Medium',

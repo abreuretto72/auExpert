@@ -42,7 +42,7 @@ const PetSearchBar: React.FC<PetSearchBarProps> = ({ value, onChangeText, style 
         autoCorrect={false}
         returnKeyType="search"
         autoCapitalize="none"
-        selectionColor={colors.accent}
+        selectionColor={colors.click}
       />
 
       {value.length > 0 ? (
@@ -51,10 +51,10 @@ const PetSearchBar: React.FC<PetSearchBarProps> = ({ value, onChangeText, style 
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <X size={rs(16)} color={colors.accent} strokeWidth={2} />
+          <X size={rs(16)} color={colors.click} strokeWidth={2} />
         </TouchableOpacity>
       ) : (
-        <Mic size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+        <Mic size={rs(16)} color={colors.click} strokeWidth={1.8} />
       )}
     </View>
   );

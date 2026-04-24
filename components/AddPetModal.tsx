@@ -41,6 +41,7 @@ import { Input } from './ui/Input';
 import { useToast } from './Toast';
 import { getErrorMessage } from '../utils/errorMessages';
 import { formatDateInput, parseDateInput, getDatePlaceholder, calcAgeMonths } from '../utils/format';
+import { validatePetName, petNameErrorI18nKey } from '../utils/validatePetName';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/withTimeout';
 import { compressImageForAI } from '../lib/imageCompression';
@@ -60,6 +61,7 @@ export interface AddPetData {
   weight_kg?: number | null;
   size?: 'small' | 'medium' | 'large' | null;
   color?: string | null;
+  blood_type?: string | null;
   mood?: string | null;
   health_observations?: string[] | null;
   photoUri?: string | null;
@@ -92,10 +94,15 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   const [editWeight, setEditWeight] = useState('');
   const [editSize, setEditSize] = useState<'small' | 'medium' | 'large' | ''>('');
   const [editColor, setEditColor] = useState('');
+  const [editBloodType, setEditBloodType] = useState('');
   const [editSex, setEditSex] = useState<'male' | 'female' | ''>('');
   const [editNeutered, setEditNeutered] = useState(false);
   const [editMood, setEditMood] = useState('');
   const [editHealth, setEditHealth] = useState('');
+  // mediaPickerOpen: true enquanto o picker nativo (câmera/galeria/cropper) está aberto.
+  // Usado SÓ pra renderizar a tela "Analisando..." durante esse intervalo, sem
+  // colidir com o guard do useEffect de análise (que checa `analyzing`).
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
@@ -103,6 +110,10 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const submitGuard = useRef(false);
+  // Ref (não state) pra guardar "fetch em vôo". Usar state `analyzing` como
+  // guard cria deadlock quando setamos analyzing=true otimisticamente em
+  // handlePhotoTaken — o effect veria true e sairia sem fazer fetch.
+  const fetchInFlightRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
@@ -142,11 +153,14 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
     setPhotoUri(null);
     setAnalysis(null);
     setAnalyzing(false);
+    setMediaPickerOpen(false);
+    fetchInFlightRef.current = false;
     setEditBreed('');
     setEditBirthDate('');
     setEditWeight('');
     setEditSize('');
     setEditColor('');
+    setEditBloodType('');
     setEditSex('');
     setEditNeutered(false);
     setEditMood('');
@@ -158,8 +172,11 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   const handlePhotoTaken = useCallback((uri: string) => {
     setPhotoUri(uri);
     setAnalysis(null);
+    // setAnalyzing(true) aqui é otimista: garante que entre este handler
+    // completar e o useEffect disparar, a UI continue mostrando "Analisando..."
+    // sem piscar a tela de entrada manual. O fetch real só inicia no effect.
+    setAnalyzing(true);
     setStep(2);
-    // Análise dispara no useEffect abaixo
   }, []);
 
   const handleTakePhoto = useCallback(async () => {
@@ -169,6 +186,14 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
         toast(t('toast.cameraPermission'), 'warning');
         return;
       }
+      // Avança pra step 2 + marca mediaPickerOpen ANTES do picker nativo abrir.
+      // O mediaPickerOpen faz a UI mostrar a tela "Analisando..." (sem spinner
+      // de fetch ainda) enquanto o cropper nativo roda, evitando o flash da
+      // tela anterior quando o cropper fecha. IMPORTANTE: NÃO setar `analyzing`
+      // aqui — o useEffect da análise tem guard `if (analyzing) return`, e
+      // setar prematuramente bloqueia o fetch real quando a foto chegar.
+      setStep(2);
+      setMediaPickerOpen(true);
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -176,10 +201,16 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
         quality: 0.4,
         allowsMultipleSelection: false,
       });
+      setMediaPickerOpen(false);
       if (!result.canceled && result.assets[0]) {
         handlePhotoTaken(result.assets[0].uri);
+      } else {
+        // Cancelou → volta pra step 1
+        setStep(1);
       }
     } catch (err) {
+      setMediaPickerOpen(false);
+      setStep(1);
       toast(getErrorMessage(err), 'error');
     }
   }, [toast, t, handlePhotoTaken]);
@@ -191,6 +222,10 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
         toast(t('toast.galleryPermission'), 'warning');
         return;
       }
+      // Mesma razão do handleTakePhoto — mediaPickerOpen cobre o intervalo
+      // do picker nativo sem bloquear o useEffect de análise.
+      setStep(2);
+      setMediaPickerOpen(true);
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -198,10 +233,15 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
         quality: 0.4,
         allowsMultipleSelection: false,
       });
+      setMediaPickerOpen(false);
       if (!result.canceled && result.assets[0]) {
         handlePhotoTaken(result.assets[0].uri);
+      } else {
+        setStep(1);
       }
     } catch (err) {
+      setMediaPickerOpen(false);
+      setStep(1);
       toast(getErrorMessage(err), 'error');
     }
   }, [toast, t, handlePhotoTaken]);
@@ -215,6 +255,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
     if (step === 2) {
       setAnalysis(null);
       setAnalyzing(false);
+      fetchInFlightRef.current = false;
       setStep(1);
     } else if (step === 1) {
       setSpecies(null);
@@ -223,9 +264,13 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
     }
   }, [step]);
 
-  // Análise automática quando entra no Step 2 com foto
+  // Análise automática quando entra no Step 2 com foto.
+  // Guard via ref (fetchInFlightRef) porque `analyzing` é setado otimisticamente
+  // em handlePhotoTaken pra evitar flash visual; usar o state como guard
+  // criaria deadlock (effect sai logo no início sem fazer fetch).
   useEffect(() => {
-    if (step !== 2 || !photoUri || !species || analyzing || analysis) return;
+    if (step !== 2 || !photoUri || !species || fetchInFlightRef.current || analysis) return;
+    fetchInFlightRef.current = true;
 
     let cancelled = false;
     (async () => {
@@ -253,10 +298,25 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
 
         if (error) {
           console.error('[AddPet] Supabase error:', error.message ?? error);
+          // supabase-js wraps 5xx as FunctionsHttpError — mas o body da EF
+          // (com trace, parsed, details) ainda está acessível via error.context.
+          // Tentar ler pra expor o erro real da Anthropic no Metro log.
+          const ctx = (error as unknown as { context?: { response?: Response } }).context;
+          if (ctx?.response) {
+            try {
+              const body = await ctx.response.clone().text();
+              console.error('[AddPet] EF body:', body);
+            } catch (readErr) {
+              console.error('[AddPet] failed to read EF body:', readErr);
+            }
+          }
           throw error;
         }
         if (data?.error) {
-          console.error('[AddPet] Function error:', data.error, data.details);
+          console.error('[AddPet] Function error:', data.error);
+          if (data.trace) console.error('[AddPet] trace:', JSON.stringify(data.trace));
+          if (data.parsed) console.error('[AddPet] Anthropic parsed error:', JSON.stringify(data.parsed));
+          else if (data.details) console.error('[AddPet] Anthropic raw error:', data.details);
           throw new Error(data.error);
         }
 
@@ -305,6 +365,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
         setAnalysis(null);
       } finally {
         if (!cancelled) setAnalyzing(false);
+        fetchInFlightRef.current = false;
       }
     })();
 
@@ -337,8 +398,14 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
   };
 
   const handleSubmit = useCallback(() => {
-    if (!species || !petName.trim()) return;
+    if (!species) return;
     if (submitGuard.current) return;
+    // Defensive pet-name validation (rejects "&&&&&", "123", emoji, etc).
+    const nameCheck = validatePetName(petName);
+    if (!nameCheck.ok) {
+      toast(t(petNameErrorI18nKey(nameCheck.error)), 'warning');
+      return;
+    }
     // Validate required fields
     if (!editSex) {
       toast(t('addPet.sexRequired'), 'warning');
@@ -356,7 +423,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
       ? editHealth.trim().split('\n').filter(Boolean)
       : null;
     const submitData = {
-      name: petName.trim(),
+      name: nameCheck.normalized,
       species,
       sex: editSex as 'male' | 'female',
       neutered: editNeutered,
@@ -366,18 +433,19 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
       weight_kg: weightNum && !isNaN(weightNum) ? weightNum : null,
       size: (editSize as 'small' | 'medium' | 'large') || null,
       color: editColor.trim() || null,
+      blood_type: editBloodType.trim() || null,
       mood: editMood.trim() || null,
       health_observations: healthObs,
       photoUri,
       full_analysis: analysis,
     };
     onSubmit(submitData);
-  }, [species, petName, editSex, editNeutered, editBirthDate, editBreed, editWeight, editSize, editColor, editMood, editHealth, photoUri, onSubmit, toast, t]);
+  }, [species, petName, editSex, editNeutered, editBirthDate, editBreed, editWeight, editSize, editColor, editBloodType, editMood, editHealth, photoUri, analysis, onSubmit, toast, t, i18n.language]);
 
   if (!visible) return null;
 
   const isDog = species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
 
   const formatAge = (months: number) => {
     if (months >= 12) {
@@ -417,7 +485,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
           <View style={styles.sheetHeader}>
             {step > 0 && !analyzing ? (
               <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
-                <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+                <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
               </TouchableOpacity>
             ) : (
               <View style={styles.backBtn} />
@@ -427,7 +495,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
             </Text>
             {!analyzing ? (
               <TouchableOpacity onPress={handleClose} style={styles.backBtn}>
-                <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+                <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
               </TouchableOpacity>
             ) : (
               <View style={styles.backBtn} />
@@ -445,18 +513,18 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                 <Text style={styles.question}>{t('addPet.speciesQuestion')}</Text>
 
                 <TouchableOpacity
-                  style={[styles.speciesBtn, { borderColor: colors.accent + '30' }]}
+                  style={[styles.speciesBtn, { borderColor: colors.click + '30' }]}
                   activeOpacity={0.7}
                   onPress={() => handleSelectSpecies('dog')}
                 >
-                  <View style={[styles.speciesIcon, { backgroundColor: colors.accent + '12' }]}>
-                    <Dog size={rs(40)} color={colors.accent} strokeWidth={1.5} />
+                  <View style={[styles.speciesIcon, { backgroundColor: colors.click + '12' }]}>
+                    <Dog size={rs(40)} color={colors.click} strokeWidth={1.5} />
                   </View>
                   <View style={styles.speciesInfo}>
                     <Text style={styles.speciesLabel}>{t('pets.dog')}</Text>
                     <Text style={styles.speciesSub}>{t('addPet.allBreeds')}</Text>
                   </View>
-                  <ArrowRight size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+                  <ArrowRight size={rs(20)} color={colors.click} strokeWidth={1.8} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -504,7 +572,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.galleryBtn} activeOpacity={0.7} onPress={handlePickFromGallery}>
-                  <ImageIcon size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                  <ImageIcon size={rs(18)} color={colors.click} strokeWidth={1.8} />
                   <Text style={styles.galleryBtnText}>{t('addPet.pickFromGallery')}</Text>
                 </TouchableOpacity>
 
@@ -517,8 +585,8 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
             {/* ─── Step 2: AI Results + Name + Confirm ─── */}
             {step === 2 && species && (
               <>
-                {/* ── Analyzing state ── */}
-                {analyzing && (
+                {/* ── Analyzing state (também mostra durante mediaPickerOpen) ── */}
+                {(analyzing || mediaPickerOpen) && (
                   <View style={styles.analyzingContainer}>
                     {photoUri && (
                       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
@@ -534,7 +602,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                 )}
 
                 {/* ── AI Results (editáveis) ou Manual entry ── */}
-                {!analyzing && (
+                {!(analyzing || mediaPickerOpen) && (
                   <>
                     {analysis && (
                       <View style={styles.aiResultsHeader}>
@@ -604,7 +672,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
 
                     {/* Nome */}
                     <Input
-                      label={t('addPet.whatIsName', { pronoun: isDog ? t('common.he') : t('common.she') })}
+                      label={t('addPet.whatIsName')}
                       placeholder={t('addPet.petNamePlaceholder', { pet: isDog ? t('pets.dog').toLowerCase() : t('pets.cat').toLowerCase() })}
                       value={petName}
                       onChangeText={setPetName}
@@ -671,13 +739,33 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       icon={<Palette size={rs(20)} color={colors.petrol} strokeWidth={1.8} />}
                     />
 
+                    {/* Tipo Sanguíneo (opcional) — 7 opções para cão, 3 para gato */}
+                    <Text style={styles.fieldLabel}>{t('health.bloodType')}</Text>
+                    <View style={styles.bloodRow}>
+                      {(isDog
+                        ? ['DEA 1.1+', 'DEA 1.1-', 'DEA 1.2', 'DEA 3', 'DEA 4', 'DEA 5', 'DEA 7']
+                        : ['A', 'B', 'AB']
+                      ).map((bt) => (
+                        <TouchableOpacity
+                          key={bt}
+                          style={[styles.bloodBtn, editBloodType === bt && { backgroundColor: petColor + '20', borderColor: petColor }]}
+                          onPress={() => setEditBloodType(editBloodType === bt ? '' : bt)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[styles.bloodBtnText, editBloodType === bt && { color: petColor }]}>
+                            {bt}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
                     {/* Humor */}
                     {editMood ? (
                       <View style={styles.moodRow}>
-                        <SmilePlus size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                        <SmilePlus size={rs(18)} color={colors.click} strokeWidth={1.8} />
                         <Text style={styles.moodLabel}>{t('diary.mood')}</Text>
-                        <View style={[styles.moodChip, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '40' }]}>
-                          <Text style={[styles.moodChipText, { color: colors.accent }]}>{editMood}</Text>
+                        <View style={[styles.moodChip, { backgroundColor: colors.click + '15', borderColor: colors.click + '40' }]}>
+                          <Text style={[styles.moodChipText, { color: colors.click }]}>{editMood}</Text>
                         </View>
                         {analysis?.mood?.confidence != null && (
                           <View style={styles.confidenceBadge}>
@@ -727,22 +815,25 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
 
                     {/* Condição corporal */}
                     {analysis?.health?.body_condition_score != null && (
-                      <View style={styles.bcsRow}>
-                        <Text style={styles.bcsLabel}>{t('health.bcsLabel')}</Text>
-                        <View style={styles.bcsBar}>
-                          {[1,2,3,4,5,6,7,8,9].map((n) => (
-                            <View key={n} style={[
-                              styles.bcsSegment,
-                              n <= (analysis.health?.body_condition_score ?? 0) && {
-                                backgroundColor: n <= 3 ? colors.warning : n <= 6 ? colors.success : colors.danger,
-                              },
-                            ]} />
-                          ))}
+                      <View style={styles.bcsContainer}>
+                        <View style={styles.bcsRow}>
+                          <Text style={styles.bcsLabel}>{t('health.bcsLabel')}</Text>
+                          <View style={styles.bcsBar}>
+                            {[1,2,3,4,5,6,7,8,9].map((n) => (
+                              <View key={n} style={[
+                                styles.bcsSegment,
+                                n <= (analysis.health?.body_condition_score ?? 0) && {
+                                  backgroundColor: n <= 3 ? colors.warning : n <= 6 ? colors.success : colors.danger,
+                                },
+                              ]} />
+                            ))}
+                          </View>
+                          <Text style={styles.bcsValue}>
+                            {analysis.health.body_condition_score}/9
+                            {analysis.health.body_condition ? ` (${analysis.health.body_condition})` : ''}
+                          </Text>
                         </View>
-                        <Text style={styles.bcsValue}>
-                          {analysis.health.body_condition_score}/9
-                          {analysis.health.body_condition ? ` (${analysis.health.body_condition})` : ''}
-                        </Text>
+                        <Text style={styles.bcsHint}>{t('addPet.bcsHint')}</Text>
                       </View>
                     )}
 
@@ -759,7 +850,7 @@ const AddPetModal: React.FC<AddPetModalProps> = ({
                       disabled={!petName.trim() || isSubmitting}
                     >
                       <LinearGradient
-                        colors={petName.trim() ? [petColor, isDog ? colors.accentDark : '#7D3C98'] : [colors.card, colors.card]}
+                        colors={petName.trim() ? [petColor, isDog ? colors.clickDark : '#7D3C98'] : [colors.card, colors.card]}
                         style={styles.submitBtnGradient}
                       >
                         {isDog ? <Dog size={rs(18)} color="#fff" strokeWidth={2} /> : <Cat size={rs(18)} color="#fff" strokeWidth={2} />}
@@ -824,14 +915,14 @@ const styles = StyleSheet.create({
   cameraCircle: { width: rs(72), height: rs(72), borderRadius: rs(36), alignItems: 'center', justifyContent: 'center', marginBottom: rs(4) },
   cameraBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(16) },
   galleryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.xl, paddingVertical: rs(14), marginBottom: spacing.md },
-  galleryBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.accent },
+  galleryBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.click },
   skipPhotoBtn: { alignItems: 'center', paddingVertical: spacing.sm },
   skipPhotoText: { fontFamily: 'Sora_500Medium', fontSize: fs(13), color: colors.textDim, textDecorationLine: 'underline' },
   photoPreview: { alignItems: 'center', marginBottom: spacing.lg },
   photoImage: { width: rs(200), height: rs(200), borderRadius: radii.card, borderWidth: rs(3), marginBottom: spacing.md },
   photoActions: { flexDirection: 'row', gap: spacing.md },
   photoActionBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg, paddingHorizontal: rs(16), paddingVertical: rs(10) },
-  photoActionText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.accent },
+  photoActionText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.click },
   confirmPhotoBtn: { borderRadius: radii.xl, overflow: 'hidden' },
   confirmPhotoBtnGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: rs(52), gap: spacing.sm },
   confirmPhotoBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: '#fff' },
@@ -862,11 +953,13 @@ const styles = StyleSheet.create({
   alertItem: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(8), marginBottom: rs(6) },
   alertDot: { width: rs(8), height: rs(8), borderRadius: rs(4), marginTop: rs(5) },
   alertText: { fontFamily: 'Sora_500Medium', fontSize: fs(13), flex: 1, lineHeight: rs(20) },
-  bcsRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: spacing.md, paddingHorizontal: rs(4) },
+  bcsContainer: { marginBottom: spacing.md },
+  bcsRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), paddingHorizontal: rs(4) },
   bcsLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(11), color: colors.textDim, width: rs(30) },
   bcsBar: { flex: 1, flexDirection: 'row', gap: rs(2), height: rs(8) },
   bcsSegment: { flex: 1, borderRadius: rs(2), backgroundColor: colors.border },
   bcsValue: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(11), color: colors.textSec, width: rs(80), textAlign: 'right' },
+  bcsHint: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: rs(6), paddingHorizontal: rs(4), lineHeight: fs(15) },
 
   // Mood + Health
   moodRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: spacing.md, paddingVertical: rs(8) },
@@ -887,6 +980,10 @@ const styles = StyleSheet.create({
   sizeChips: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   sizeChip: { flex: 1, alignItems: 'center', paddingVertical: rs(12), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
   sizeChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.textSec },
+  // Blood type: 7 opções pra cão exigem wrap + largura mínima por chip pro texto não cortar.
+  bloodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  bloodBtn: { minWidth: rs(72), paddingVertical: rs(10), paddingHorizontal: rs(12), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  bloodBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.textSec },
 
   // Preview + Submit
   previewCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderWidth: 1, borderRadius: radii.xxl, padding: spacing.md, gap: spacing.md, marginBottom: spacing.lg },

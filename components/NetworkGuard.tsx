@@ -178,7 +178,7 @@ export function NetworkGuard({ children }: NetworkGuardProps) {
             </Text>
 
             <TouchableOpacity onPress={handleRetry} style={styles.retryRow} activeOpacity={0.7}>
-              <RefreshCw size={rs(16)} color={colors.accent} strokeWidth={2} />
+              <RefreshCw size={rs(16)} color={colors.click} strokeWidth={2} />
               <Text style={styles.retryText}>{t('common.retry')}</Text>
             </TouchableOpacity>
 
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(13),
-    color: colors.accent,
+    color: colors.click,
   },
   bubbleSignature: {
     fontFamily: 'Caveat_400Regular',

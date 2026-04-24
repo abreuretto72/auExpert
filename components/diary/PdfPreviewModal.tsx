@@ -50,7 +50,7 @@ export default function PdfPreviewModal({
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>{fileName}</Text>
           <TouchableOpacity style={styles.headerBtn} onPress={handleShare} disabled={!pdfUri}>
-            <Share2 size={rs(20)} color={colors.accent} strokeWidth={2} />
+            <Share2 size={rs(20)} color={colors.click} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
@@ -58,7 +58,7 @@ export default function PdfPreviewModal({
           {pdfUri ? (
             <>
               <View style={styles.iconWrap}>
-                <FileText size={rs(56)} color={colors.accent} strokeWidth={1.4} />
+                <FileText size={rs(56)} color={colors.click} strokeWidth={1.4} />
               </View>
               <Text style={styles.readyTitle}>{t('diary.pdfReady')}</Text>
               <Text style={styles.readyDesc}>{t('diary.pdfReadyDesc')}</Text>
@@ -68,7 +68,7 @@ export default function PdfPreviewModal({
               </TouchableOpacity>
             </>
           ) : (
-            <ActivityIndicator size="large" color={colors.accent} />
+            <ActivityIndicator size="large" color={colors.click} />
           )}
         </View>
       </View>
@@ -121,9 +121,9 @@ const styles = StyleSheet.create({
     width: rs(100),
     height: rs(100),
     borderRadius: rs(22),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderWidth: 1.5,
-    borderColor: colors.accent + '30',
+    borderColor: colors.click + '30',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(8),
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(8),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(14),
     paddingVertical: rs(14),
     paddingHorizontal: rs(28),

@@ -19,7 +19,7 @@ import { usePets } from '../../../../../hooks/usePets';
 import type { CardapioDia } from '../../../../../hooks/useNutricao';
 
 const WEEKDAY_COLORS = [
-  colors.accent, colors.petrol, colors.purple, colors.success,
+  colors.click, colors.petrol, colors.purple, colors.success,
   colors.warning, colors.rose, colors.sky,
 ];
 
@@ -95,7 +95,7 @@ export default function CardapioScreen() {
           <AlertTriangle size={rs(40)} color={colors.warning} />
           <Text style={s.errorText}>{t('nutrition.cardapioError')}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => regenerarCardapio()} activeOpacity={0.8}>
-            <RefreshCw size={rs(16)} color={colors.accent} />
+            <RefreshCw size={rs(16)} color={colors.click} />
             <Text style={s.retryBtnText}>{t('nutrition.btnRegenerateMenu')}</Text>
           </TouchableOpacity>
         </View>
@@ -216,12 +216,12 @@ function Header({
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={onBack} style={s.iconBtn}>
-        <ChevronLeft size={rs(22)} color={colors.accent} />
+        <ChevronLeft size={rs(22)} color={colors.click} />
       </TouchableOpacity>
       <Text style={s.headerTitle}>{title}</Text>
       <View style={s.headerActions}>
         <TouchableOpacity onPress={onHistory} style={s.iconBtn} activeOpacity={0.7}>
-          <History size={rs(20)} color={colors.accent} />
+          <History size={rs(20)} color={colors.click} />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onPdf}
@@ -229,7 +229,7 @@ function Header({
           disabled={!canExport}
           activeOpacity={0.7}
         >
-          <FileText size={rs(20)} color={canExport ? colors.accent : colors.textGhost} />
+          <FileText size={rs(20)} color={canExport ? colors.click : colors.textGhost} />
         </TouchableOpacity>
       </View>
     </View>
@@ -253,10 +253,10 @@ const s = StyleSheet.create({
   errorText: { fontSize: fs(14), color: colors.textSec, textAlign: 'center' },
   retryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(8),
-    backgroundColor: colors.accentGlow, borderRadius: rs(12), padding: rs(14),
-    borderWidth: 1, borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft, borderRadius: rs(12), padding: rs(14),
+    borderWidth: 1, borderColor: colors.click + '40',
   },
-  retryBtnText: { fontSize: fs(14), color: colors.accent, fontWeight: '600' },
+  retryBtnText: { fontSize: fs(14), color: colors.click, fontWeight: '600' },
   metaRow: { gap: rs(4) },
   sparkleWrap: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
   metaText: { fontSize: fs(13), color: colors.textSec, flex: 1 },
@@ -294,7 +294,7 @@ const s = StyleSheet.create({
   recipeMeta: { fontSize: fs(11), color: colors.textDim },
   regenBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: colors.accent, borderRadius: rs(14), padding: rs(14),
+    gap: rs(8), backgroundColor: colors.click, borderRadius: rs(14), padding: rs(14),
     marginTop: rs(4),
   },
   regenBtnText: { fontSize: fs(14), color: '#FFFFFF', fontWeight: '700' },

@@ -441,7 +441,7 @@ export default function TrocarRacaoScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.trocarTitle')}</Text>
         <View style={s.backBtn} />
@@ -466,10 +466,10 @@ export default function TrocarRacaoScreen() {
             onPress={handleMicToggle}
             activeOpacity={0.8}
           >
-            <View style={[s.inputBtnIcon, { backgroundColor: isListening ? colors.dangerSoft : colors.accentSoft }]}>
+            <View style={[s.inputBtnIcon, { backgroundColor: isListening ? colors.dangerSoft : colors.clickSoft }]}>
               {isListening
                 ? <MicOff size={rs(24)} color={colors.danger} strokeWidth={2} />
-                : <Mic size={rs(24)} color={colors.accent} strokeWidth={2} />}
+                : <Mic size={rs(24)} color={colors.click} strokeWidth={2} />}
             </View>
             <Text style={s.inputBtnLabel}>
               {isListening ? t('nutrition.trocarMicStop') : t('nutrition.trocarMicLabel')}
@@ -489,11 +489,11 @@ export default function TrocarRacaoScreen() {
           >
             <View style={[s.inputBtnIcon, {
               backgroundColor: scanStep === 'front' && scanSourceRef.current === 'camera'
-                ? colors.limeSoft : colors.accentSoft,
+                ? colors.successSoft : colors.clickSoft,
             }]}>
               {(isCapturingImage && scanSourceRef.current === 'camera') || (scanStep === 'processing' && scanSourceRef.current === 'camera')
-                ? <ActivityIndicator size="small" color={colors.accent} />
-                : <Camera size={rs(24)} color={scanStep === 'front' && scanSourceRef.current === 'camera' ? colors.lime : colors.accent} strokeWidth={2} />}
+                ? <ActivityIndicator size="small" color={colors.click} />
+                : <Camera size={rs(24)} color={scanStep === 'front' && scanSourceRef.current === 'camera' ? colors.success : colors.click} strokeWidth={2} />}
             </View>
             <Text style={s.inputBtnLabel}>
               {scanStep === 'front' && scanSourceRef.current === 'camera' ? t('nutrition.trocarScanBack') : t('nutrition.trocarScanLabel')}
@@ -516,11 +516,11 @@ export default function TrocarRacaoScreen() {
         >
           <View style={[s.galleryBtnIcon, {
             backgroundColor: scanStep === 'front' && scanSourceRef.current === 'gallery'
-              ? colors.limeSoft : colors.accentSoft,
+              ? colors.successSoft : colors.clickSoft,
           }]}>
             {(scanStep === 'processing' && scanSourceRef.current === 'gallery')
-              ? <ActivityIndicator size="small" color={colors.accent} />
-              : <Images size={rs(22)} color={scanStep === 'front' && scanSourceRef.current === 'gallery' ? colors.lime : colors.accent} strokeWidth={2} />}
+              ? <ActivityIndicator size="small" color={colors.click} />
+              : <Images size={rs(22)} color={scanStep === 'front' && scanSourceRef.current === 'gallery' ? colors.success : colors.click} strokeWidth={2} />}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.galleryBtnLabel}>
@@ -597,7 +597,7 @@ export default function TrocarRacaoScreen() {
               onPress={() => extractFromText(transcription)}
               activeOpacity={0.8}
             >
-              <Sparkles size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <Sparkles size={rs(14)} color={colors.click} strokeWidth={1.8} />
               <Text style={s.extractBtnText}>{t('nutrition.trocarExtractBtn')}</Text>
             </TouchableOpacity>
           )}
@@ -606,7 +606,7 @@ export default function TrocarRacaoScreen() {
         {/* Extracting loader */}
         {isExtracting && (
           <View style={s.loadingCard}>
-            <ActivityIndicator size="small" color={colors.accent} />
+            <ActivityIndicator size="small" color={colors.click} />
             <Text style={s.loadingText}>{t('nutrition.trocarExtracting')}</Text>
           </View>
         )}
@@ -685,8 +685,8 @@ export default function TrocarRacaoScreen() {
             <Switch
               value={gradualTransition}
               onValueChange={setGradualTransition}
-              trackColor={{ false: colors.border, true: colors.lime + '80' }}
-              thumbColor={gradualTransition ? colors.lime : colors.textDim}
+              trackColor={{ false: colors.border, true: colors.success + '80' }}
+              thumbColor={gradualTransition ? colors.success : colors.textDim}
             />
           </View>
         )}
@@ -738,7 +738,7 @@ const s = StyleSheet.create({
     padding: rs(16), alignItems: 'center', gap: rs(6),
   },
   inputBtnMicActive: { borderColor: colors.danger, borderWidth: 1.5 },
-  inputBtnCamActive: { borderColor: colors.accent, borderWidth: 1.5 },
+  inputBtnCamActive: { borderColor: colors.click, borderWidth: 1.5 },
   inputBtnIcon: {
     width: rs(52), height: rs(52), borderRadius: rs(26),
     alignItems: 'center', justifyContent: 'center',
@@ -751,7 +751,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.card, borderRadius: rs(14),
     borderWidth: 1, borderColor: colors.border, padding: rs(14),
   },
-  galleryBtnActive: { borderColor: colors.lime, borderWidth: 1.5 },
+  galleryBtnActive: { borderColor: colors.success, borderWidth: 1.5 },
   galleryBtnDisabled: { opacity: 0.4 },
   galleryBtnIcon: {
     width: rs(44), height: rs(44), borderRadius: rs(22),
@@ -762,22 +762,22 @@ const s = StyleSheet.create({
 
   scanStepCard: {
     flexDirection: 'row', alignItems: 'center', gap: rs(8),
-    backgroundColor: colors.limeSoft, borderRadius: rs(12),
-    borderWidth: 1, borderColor: colors.lime + '40', padding: rs(12),
+    backgroundColor: colors.successSoft, borderRadius: rs(12),
+    borderWidth: 1, borderColor: colors.success + '40', padding: rs(12),
   },
   scanDot: {
     width: rs(8), height: rs(8), borderRadius: rs(4),
-    backgroundColor: colors.lime,
+    backgroundColor: colors.success,
   },
-  scanStepText: { flex: 1, fontFamily: 'Sora_500Medium', fontSize: fs(12), color: colors.lime },
+  scanStepText: { flex: 1, fontFamily: 'Sora_500Medium', fontSize: fs(12), color: colors.success },
   wavesCard: {
     backgroundColor: colors.card, borderRadius: rs(12),
-    borderWidth: 1, borderColor: colors.accent + '40',
+    borderWidth: 1, borderColor: colors.click + '40',
     padding: rs(14), alignItems: 'center', gap: rs(10),
   },
   waves: { flexDirection: 'row', alignItems: 'center', gap: rs(4), height: rs(32) },
   waveBar: {
-    width: rs(4), height: rs(28), backgroundColor: colors.accent,
+    width: rs(4), height: rs(28), backgroundColor: colors.click,
     borderRadius: rs(2),
   },
   wavesText: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textSec },
@@ -798,10 +798,10 @@ const s = StyleSheet.create({
   },
   extractBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6),
-    backgroundColor: colors.accentSoft, borderRadius: rs(10),
-    paddingVertical: rs(10), borderWidth: 1, borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft, borderRadius: rs(10),
+    paddingVertical: rs(10), borderWidth: 1, borderColor: colors.click + '40',
   },
-  extractBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+  extractBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.click },
 
   loadingCard: {
     flexDirection: 'row', alignItems: 'center', gap: rs(10),
@@ -857,7 +857,7 @@ const s = StyleSheet.create({
 
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: colors.lime, borderRadius: rs(14), padding: rs(16),
+    gap: rs(8), backgroundColor: colors.success, borderRadius: rs(14), padding: rs(16),
   },
   saveBtnDisabled: { opacity: 0.4 },
   saveBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: '#fff' },

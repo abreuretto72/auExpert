@@ -54,7 +54,7 @@ const PetRowCompact: React.FC<PetRowCompactProps> = ({ pet, onPress }) => {
         ) : (
           <View style={styles.avatarPlaceholder}>
             {isDog ? (
-              <Dog size={rs(18)} color={isDog ? colors.accent : colors.purple} strokeWidth={1.8} />
+              <Dog size={rs(18)} color={isDog ? colors.click : colors.purple} strokeWidth={1.8} />
             ) : (
               <Cat size={rs(18)} color={colors.purple} strokeWidth={1.8} />
             )}

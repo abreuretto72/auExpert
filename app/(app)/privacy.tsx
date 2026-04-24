@@ -23,7 +23,7 @@ export default function PrivacyScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('legal.privacyTitle')}</Text>
         <View style={styles.backBtn} />

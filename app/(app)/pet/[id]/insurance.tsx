@@ -96,7 +96,7 @@ function OverviewCard({ t }: { t: (k: string, o?: Record<string, unknown>) => st
   return (
     <View style={s.overviewCard}>
       <View style={s.overviewTop}>
-        <View style={[s.iconCircle, { backgroundColor: colors.petrolGlow }]}>
+        <View style={[s.iconCircle, { backgroundColor: colors.textSec }]}>
           <Shield size={rs(24)} color={colors.petrol} strokeWidth={1.8} />
         </View>
         <View style={{ flex: 1 }}>
@@ -125,7 +125,7 @@ function PaymentAlert({ t }: { t: (k: string) => string }) {
   return (
     <View style={s.paymentCard}>
       <View style={[s.iconCircle, { backgroundColor: colors.warningSoft }]}>
-        <Calendar size={rs(20)} color={colors.gold} strokeWidth={1.8} />
+        <Calendar size={rs(20)} color={colors.warning} strokeWidth={1.8} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={s.paymentTitle}>{t('insurance.nextPayment')}</Text>
@@ -297,7 +297,7 @@ export default function InsuranceScreen() {
       style={s.container}
       contentContainerStyle={s.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.click} colors={[colors.click]} />}
     >
       {/* Overview */}
       <OverviewCard t={t} />
@@ -355,8 +355,8 @@ const s = StyleSheet.create({
   statValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(15), color: colors.text },
 
   // Payment
-  paymentCard: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: radii.xxl, padding: spacing.md, borderWidth: 1, borderColor: `${colors.gold}30`, marginTop: spacing.md },
-  paymentTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.gold },
+  paymentCard: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: radii.xxl, padding: spacing.md, borderWidth: 1, borderColor: `${colors.warning}30`, marginTop: spacing.md },
+  paymentTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.warning },
   paymentSub: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, marginTop: rs(2) },
 
   // Icon Circle
@@ -382,7 +382,7 @@ const s = StyleSheet.create({
   suggestedBadge: { backgroundColor: colors.skySoft, paddingHorizontal: rs(10), paddingVertical: rs(4), borderRadius: radii.sm },
   suggestedBadgeText: { fontFamily: 'Sora_700Bold', fontSize: fs(10), color: colors.sky, textTransform: 'uppercase' },
   suggestedBottom: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md },
-  knowBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.accent, paddingHorizontal: rs(16), paddingVertical: rs(8), borderRadius: radii.xl, marginLeft: 'auto' },
+  knowBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(4), backgroundColor: colors.click, paddingHorizontal: rs(16), paddingVertical: rs(8), borderRadius: radii.xl, marginLeft: 'auto' },
   knowBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: '#fff' },
 
   // Cost
@@ -394,7 +394,7 @@ const s = StyleSheet.create({
   costBarFill: { height: rs(4), borderRadius: rs(2) },
   costTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm, marginTop: spacing.sm },
   costTotalLabel: { fontFamily: 'Sora_700Bold', fontSize: fs(14), color: colors.text },
-  costTotalValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(16), color: colors.accent },
+  costTotalValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(16), color: colors.click },
   annualCard: { flexDirection: 'row', alignItems: 'center', gap: rs(8), backgroundColor: colors.bgCard, borderRadius: radii.xxl, padding: spacing.sm, marginTop: spacing.sm },
   annualText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, flex: 1 },
   annualValue: { fontFamily: 'JetBrainsMono_700Bold', fontSize: fs(13), color: colors.petrol },

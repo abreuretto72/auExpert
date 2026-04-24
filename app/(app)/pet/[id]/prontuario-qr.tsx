@@ -81,7 +81,7 @@ export default function ProntuarioQrScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('prontuario.emergencyQr')}</Text>
           <View style={s.headerBtn} />
@@ -105,11 +105,11 @@ export default function ProntuarioQrScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('prontuario.emergencyQr')}</Text>
         <TouchableOpacity style={s.headerBtn} onPress={handleShare} activeOpacity={0.7}>
-          <Share2 size={rs(18)} color={qrUrl ? colors.accent : colors.textDim} strokeWidth={1.8} />
+          <Share2 size={rs(18)} color={qrUrl ? colors.click : colors.textDim} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -234,7 +234,7 @@ export default function ProntuarioQrScreen() {
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('prontuario.usualVet').toUpperCase()}</Text>
             <View style={s.infoRow}>
-              <Heart size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <Heart size={rs(14)} color={colors.click} strokeWidth={1.8} />
               <Text style={s.infoTitle}>{prontuario.usual_vet}</Text>
             </View>
           </View>

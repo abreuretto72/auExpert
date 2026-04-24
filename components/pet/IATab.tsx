@@ -471,7 +471,7 @@ function ChatView({ petName, messages, isLoading, error, sendMessage }: ChatView
           >
             {isListening
               ? <Square size={rs(16)} color="#fff" strokeWidth={2} fill="#fff" />
-              : <Mic size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+              : <Mic size={rs(18)} color={colors.click} strokeWidth={1.8} />
             }
           </TouchableOpacity>
         </Animated.View>
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: rs(4),
   },
   msgBubbleUser: {
-    backgroundColor: colors.accent, borderBottomRightRadius: rs(4),
+    backgroundColor: colors.click, borderBottomRightRadius: rs(4),
   },
   msgText: {
     fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.text, lineHeight: fs(20),
@@ -745,13 +745,13 @@ const styles = StyleSheet.create({
   },
   micBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(21),
-    backgroundColor: colors.accentGlow,
-    borderWidth: 1.5, borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft,
+    borderWidth: 1.5, borderColor: colors.click + '40',
     alignItems: 'center', justifyContent: 'center',
   },
   micBtnActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.click,
+    borderColor: colors.click,
   },
   interimRow: {
     paddingHorizontal: rs(spacing.md),
@@ -764,8 +764,8 @@ const styles = StyleSheet.create({
   },
   sendBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(21),
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.accent, shadowOffset: { width: 0, height: rs(4) },
+    backgroundColor: colors.click, alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.click, shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3, shadowRadius: rs(8), elevation: 4,
   },
   sendBtnDisabled: { opacity: 0.4 },

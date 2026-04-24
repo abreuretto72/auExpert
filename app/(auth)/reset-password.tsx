@@ -85,7 +85,7 @@ export default function ResetPasswordScreen() {
             style={styles.btnWrap}
           >
             <LinearGradient
-              colors={[colors.accent, colors.accentDark]}
+              colors={[colors.click, colors.clickDark]}
               style={styles.btn}
             >
               <Text style={styles.btnText}>{t('auth.goToLogin')}</Text>
@@ -129,7 +129,7 @@ export default function ResetPasswordScreen() {
           }}
           type="password"
           showMic={false}
-          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.click} strokeWidth={1.8} />}
         />
 
         {password.length > 0 && <PasswordMeter password={password} />}
@@ -146,7 +146,7 @@ export default function ResetPasswordScreen() {
           type="password"
           showMic={false}
           error={error}
-          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.click} strokeWidth={1.8} />}
         />
 
         {/* Submit */}
@@ -157,7 +157,7 @@ export default function ResetPasswordScreen() {
           style={styles.btnWrap}
         >
           <LinearGradient
-            colors={[colors.accent, colors.accentDark]}
+            colors={[colors.click, colors.clickDark]}
             style={styles.btn}
           >
             {loading ? (
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   btnWrap: {
     borderRadius: rs(radii.xl),
     overflow: 'hidden',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
     shadowRadius: rs(30),

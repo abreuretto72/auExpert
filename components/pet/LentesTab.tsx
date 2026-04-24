@@ -154,31 +154,31 @@ export default function LentesTab({ petId, petName, overdueVaccines }: LentesTab
       <View style={styles.grid}>
         {/* Row 1: Prontuário · Nutrição */}
         <LensCard
-          icon={ClipboardList} color={colors.accent}
+          icon={ClipboardList} color={colors.click}
           label={t('lenses.prontuario')} badge={healthBadge} badgeColor={healthBadgeColor}
           onPress={() => { console.warn('>>> PRONTUARIO CARD PRESSED petId:', petId?.slice(-8)); nav('prontuario'); }}
         />
         <LensCard
-          icon={UtensilsCrossed} color={colors.lime}
+          icon={UtensilsCrossed} color={colors.success}
           label={t('lenses.nutrition')} badge={nutritionBadge}
           onPress={() => nav('nutrition')}
         />
 
         {/* Row 2: Gastos · Amigos */}
         <LensCard
-          icon={Receipt} color={colors.gold}
+          icon={Receipt} color={colors.warning}
           label={t('lenses.expenses')} badge={expensesBadge}
           onPress={() => nav('expenses')}
         />
         <LensCard
-          icon={PawIcon as unknown as React.ElementType} isPaw color={colors.accent}
+          icon={PawIcon as unknown as React.ElementType} isPaw color={colors.click}
           label={t('lenses.friends')} badge={friendsBadge}
           onPress={() => nav('friends')}
         />
 
         {/* Row 3: Conquistas · Felicidade */}
         <LensCard
-          icon={Trophy} color={colors.gold}
+          icon={Trophy} color={colors.warning}
           label={t('lenses.achievements')} badge={achBadge}
           onPress={() => nav('achievements')}
         />

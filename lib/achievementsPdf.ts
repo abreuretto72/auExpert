@@ -69,7 +69,7 @@ function formatDate(value: string | null, lang: string): string {
 
 function rarityColor(rarity: AchievementRow['rarity']): string {
   switch (rarity) {
-    case 'legendary': return colors.gold;
+    case 'legendary': return colors.warning;
     case 'epic':      return colors.purple;
     case 'rare':      return colors.petrol;
     default:          return colors.textDim;
@@ -89,13 +89,13 @@ function buildBody(bundle: AchievementsBundle, lang: string): string {
   const summaryHtml = `
     <section style="margin-bottom:18px;page-break-inside:avoid;">
       <div style="display:flex;gap:12px;">
-        <div style="flex:1;padding:12px;border:1px solid ${colors.accent}30;border-radius:8px;background:${colors.accent}0a;">
+        <div style="flex:1;padding:12px;border:1px solid ${colors.click}30;border-radius:8px;background:${colors.click}0a;">
           <div style="font-size:10px;color:${colors.textDim};text-transform:uppercase;letter-spacing:0.8px;">${escHtml(t('achievementsPdf.level'))}</div>
-          <div style="font-size:22px;font-weight:800;color:${colors.accent};margin-top:4px;">${level}</div>
+          <div style="font-size:22px;font-weight:800;color:${colors.click};margin-top:4px;">${level}</div>
         </div>
-        <div style="flex:1;padding:12px;border:1px solid ${colors.gold}30;border-radius:8px;background:${colors.gold}0a;">
+        <div style="flex:1;padding:12px;border:1px solid ${colors.warning}30;border-radius:8px;background:${colors.warning}0a;">
           <div style="font-size:10px;color:${colors.textDim};text-transform:uppercase;letter-spacing:0.8px;">${escHtml(t('achievementsPdf.xp'))}</div>
-          <div style="font-size:22px;font-weight:800;color:${colors.gold};margin-top:4px;">${xpTotal}</div>
+          <div style="font-size:22px;font-weight:800;color:${colors.warning};margin-top:4px;">${xpTotal}</div>
         </div>
         <div style="flex:1;padding:12px;border:1px solid ${colors.purple}30;border-radius:8px;background:${colors.purple}0a;">
           <div style="font-size:10px;color:${colors.textDim};text-transform:uppercase;letter-spacing:0.8px;">Total</div>
@@ -116,7 +116,7 @@ function buildBody(bundle: AchievementsBundle, lang: string): string {
   const categoriesHtml = Object.entries(byCategory)
     .map(([cat, rows]) => `
       <section style="margin-bottom:16px;page-break-inside:auto;">
-        <h3 style="font-size:12px;color:${colors.accent};margin:0 0 8px;border-bottom:1px solid ${colors.accent}44;padding-bottom:2px;text-transform:uppercase;letter-spacing:1px;">
+        <h3 style="font-size:12px;color:${colors.click};margin:0 0 8px;border-bottom:1px solid ${colors.click}44;padding-bottom:2px;text-transform:uppercase;letter-spacing:1px;">
           ${escHtml(cat)} <span style="color:${colors.textDim};font-weight:400;">(${rows.length})</span>
         </h3>
         ${rows.map((a) => {
@@ -133,7 +133,7 @@ function buildBody(bundle: AchievementsBundle, lang: string): string {
                   <div style="display:inline-block;font-size:9px;font-weight:700;color:${rColor};background:${rColor}15;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:0.5px;">
                     ${escHtml(rarityLabel)}
                   </div>
-                  <div style="font-size:11px;font-weight:700;color:${colors.gold};margin-top:4px;">+${a.xp_reward} XP</div>
+                  <div style="font-size:11px;font-weight:700;color:${colors.warning};margin-top:4px;">+${a.xp_reward} XP</div>
                 </div>
               </div>
               <div style="font-size:9.5px;color:#888;margin-top:6px;padding-top:6px;border-top:1px dashed #eee;">

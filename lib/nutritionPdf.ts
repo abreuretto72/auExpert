@@ -110,11 +110,11 @@ function buildOverview(data: Nutricao): string {
 
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('nutritionPdf.sectionOverview'), colors.lime)}
+      ${sectionHeader(t('nutritionPdf.sectionOverview'), colors.success)}
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:150px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('nutritionPdf.modalidade'))}</div>
-          <div style="font-size:14px;font-weight:700;color:${colors.lime};margin-top:4px;">${escHtml(modalidadeLabel(data.modalidade))}</div>
+          <div style="font-size:14px;font-weight:700;color:${colors.success};margin-top:4px;">${escHtml(modalidadeLabel(data.modalidade))}</div>
           ${data.modalidade === 'racao_natural' ? `<div style="font-size:9px;color:#888;margin-top:2px;">${data.natural_pct}% ${escHtml(t('nutritionPdf.natural'))}</div>` : ''}
         </div>
         <div style="flex:1;min-width:150px;border:1px solid #e5e7eb;border-radius:8px;padding:10px;">
@@ -153,7 +153,7 @@ function buildCurrentFood(data: Nutricao, lang: string): string {
   if (!data.current_food) {
     return `
       <section style="margin-bottom:14px;page-break-inside:avoid;">
-        ${sectionHeader(t('nutritionPdf.sectionCurrentFood'), colors.lime)}
+        ${sectionHeader(t('nutritionPdf.sectionCurrentFood'), colors.success)}
         <div style="border:1px dashed #e5e7eb;border-radius:8px;padding:14px;text-align:center;font-size:11px;color:#888;">
           ${escHtml(t('nutritionPdf.noCurrentFood'))}
         </div>
@@ -170,8 +170,8 @@ function buildCurrentFood(data: Nutricao, lang: string): string {
 
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('nutritionPdf.sectionCurrentFood'), colors.lime)}
-      <div style="border:1px solid #e5e7eb;border-left:3px solid ${colors.lime};border-radius:8px;padding:12px 14px;">
+      ${sectionHeader(t('nutritionPdf.sectionCurrentFood'), colors.success)}
+      <div style="border:1px solid #e5e7eb;border-left:3px solid ${colors.success};border-radius:8px;padding:12px 14px;">
         <div style="font-size:14px;font-weight:700;color:#222;">${escHtml(f.product_name ?? '—')}</div>
         ${f.brand ? `<div style="font-size:11px;color:#666;margin-top:2px;">${escHtml(f.brand)}</div>` : ''}
         ${pills.length > 0 ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">${pills.map((p) => `<span style="background:#F1F5F9;color:#1A2B3D;font-size:10px;padding:3px 8px;border-radius:6px;">${escHtml(p)}</span>`).join('')}</div>` : ''}

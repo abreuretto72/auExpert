@@ -60,7 +60,7 @@ export default function IaPdfScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('ia.pdfTitle', { name: resolvedName })}</Text>
         <View style={s.headerCount}>
@@ -125,8 +125,8 @@ export default function IaPdfScreen() {
         >
           <View style={[s.shareIcon, s.printIcon]}>
             {isPrinting
-              ? <ActivityIndicator color={colors.accent} size="small" />
-              : <Printer size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              ? <ActivityIndicator color={colors.click} size="small" />
+              : <Printer size={rs(20)} color={colors.click} strokeWidth={1.8} />
             }
           </View>
           <View style={{ flex: 1 }}>
@@ -197,7 +197,7 @@ const s = StyleSheet.create({
     borderBottomLeftRadius: rs(4),
   },
   msgBubbleUser: {
-    backgroundColor: colors.accent, borderBottomRightRadius: rs(4),
+    backgroundColor: colors.click, borderBottomRightRadius: rs(4),
   },
   msgText: {
     fontFamily: 'Sora_400Regular', fontSize: fs(13),
@@ -220,8 +220,8 @@ const s = StyleSheet.create({
     backgroundColor: colors.petrolSoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  printBtn: { borderColor: colors.accent + '40' },
-  printIcon: { backgroundColor: colors.accentSoft },
+  printBtn: { borderColor: colors.click + '40' },
+  printIcon: { backgroundColor: colors.clickSoft },
   shareTitle: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.text },
   shareSubtitle: {
     fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim, marginTop: rs(2),

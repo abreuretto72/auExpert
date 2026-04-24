@@ -160,7 +160,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <ChevronLeft size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(18)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.createAccount')}</Text>
@@ -221,7 +221,7 @@ export default function RegisterScreen() {
           type="password"
           showMic={false}
           error={errors.password}
-          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.click} strokeWidth={1.8} />}
         />
 
         <PasswordMeter password={password} />
@@ -234,7 +234,7 @@ export default function RegisterScreen() {
           type="password"
           showMic={false}
           error={errors.confirm}
-          icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+          icon={<Lock size={rs(20)} color={colors.click} strokeWidth={1.8} />}
         />
 
         {/* Consent checkbox — LGPD art. 7º / GDPR art. 7 */}
@@ -291,7 +291,7 @@ export default function RegisterScreen() {
           style={[styles.btnWrap, !acceptedTerms && styles.btnDisabled]}
         >
           <LinearGradient
-            colors={[colors.accent, colors.accentDark]}
+            colors={[colors.click, colors.clickDark]}
             style={styles.btn}
           >
             {loading ? (
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   progressActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   generalError: {
     fontFamily: 'Sora_600SemiBold',
@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
     marginTop: rs(2),
   },
   checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.click,
+    borderColor: colors.click,
   },
   checkboxError: {
     borderColor: colors.danger,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   },
   consentLink: {
     fontFamily: 'Sora_700Bold',
-    color: colors.accent,
+    color: colors.click,
   },
   consentErrorText: {
     fontFamily: 'Sora_600SemiBold',
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   btnWrap: {
     borderRadius: rs(radii.xl),
     overflow: 'hidden',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
     shadowRadius: rs(30),
@@ -462,6 +462,6 @@ const styles = StyleSheet.create({
   loginLink: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(11),
-    color: colors.accent,
+    color: colors.click,
   },
 });

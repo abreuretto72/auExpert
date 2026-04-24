@@ -107,7 +107,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
   if (!camPermission || !micPermission) {
     return (
       <View style={s.fullCenter}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.click} size="large" />
       </View>
     );
   }
@@ -129,7 +129,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
           <Text style={s.permBtnText}>{t('video.grantPermissions')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.closeBtn} onPress={onClose}>
-          <X size={rs(20)} color={colors.accent} strokeWidth={2} />
+          <X size={rs(20)} color={colors.click} strokeWidth={2} />
         </TouchableOpacity>
       </View>
     );
@@ -140,7 +140,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
   if (isProcessing) {
     return (
       <View style={s.fullCenter}>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.click} size="large" />
         <Text style={s.processingText}>{t('video.processing')}</Text>
       </View>
     );
@@ -162,7 +162,7 @@ export default function VideoRecorder({ onCapture, onClose }: VideoRecorderProps
         {/* Top bar */}
         <View style={s.topBar}>
           <TouchableOpacity style={s.closeBtn} onPress={onClose} disabled={isRecording}>
-            <X size={rs(20)} color={isRecording ? colors.textGhost : colors.accent} strokeWidth={2} />
+            <X size={rs(20)} color={isRecording ? colors.textGhost : colors.click} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={s.petHint}>{t('video.recordingHint')}</Text>
           <TouchableOpacity
@@ -236,7 +236,7 @@ const s = StyleSheet.create({
   permTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text, textAlign: 'center' },
   permDesc: { fontFamily: 'Sora_400Regular', fontSize: fs(14), color: colors.textSec, textAlign: 'center', lineHeight: fs(22) },
   permBtn: {
-    backgroundColor: colors.accent, borderRadius: rs(14), paddingHorizontal: rs(32), paddingVertical: rs(14), marginTop: rs(8),
+    backgroundColor: colors.click, borderRadius: rs(14), paddingHorizontal: rs(32), paddingVertical: rs(14), marginTop: rs(8),
   },
   permBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(15), color: '#fff' },
 

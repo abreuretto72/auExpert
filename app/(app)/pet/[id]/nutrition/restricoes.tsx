@@ -62,7 +62,7 @@ export default function RestricoesScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.restricoesTitle')}</Text>
         <TouchableOpacity
@@ -70,7 +70,7 @@ export default function RestricoesScreen() {
           style={s.backBtn}
           accessibilityLabel={t('nutritionPdf.icon')}
         >
-          <FileText size={rs(20)} color={colors.accent} />
+          <FileText size={rs(20)} color={colors.click} />
         </TouchableOpacity>
       </View>
 
@@ -203,16 +203,16 @@ const s = StyleSheet.create({
     backgroundColor: colors.bgCard, alignItems: 'center',
     borderWidth: 1, borderColor: colors.border,
   },
-  typeChipActive: { backgroundColor: colors.accentGlow, borderColor: colors.accent },
+  typeChipActive: { backgroundColor: colors.clickSoft, borderColor: colors.click },
   typeChipText: { fontSize: fs(13), color: colors.textSec, fontWeight: '600' },
-  typeChipTextActive: { color: colors.accent },
+  typeChipTextActive: { color: colors.click },
   input: {
     backgroundColor: colors.bgCard, borderRadius: rs(12), padding: rs(14),
     fontSize: fs(14), color: colors.text, borderWidth: 1, borderColor: colors.border,
   },
   addBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: colors.accent, borderRadius: rs(12), padding: rs(14),
+    gap: rs(8), backgroundColor: colors.click, borderRadius: rs(12), padding: rs(14),
   },
   addBtnDisabled: { opacity: 0.4 },
   addBtnText: { fontSize: fs(14), fontWeight: '700', color: '#fff' },

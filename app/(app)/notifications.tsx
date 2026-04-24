@@ -55,7 +55,7 @@ const TYPE_META: Record<NotificationQueueType, {
   labelKey: string;
 }> = {
   vaccine_reminder: { Icon: Syringe,   color: colors.danger,  labelKey: 'notifications.typeVaccineReminder' },
-  diary_reminder:   { Icon: BookOpen,  color: colors.accent,  labelKey: 'notifications.typeDiaryReminder' },
+  diary_reminder:   { Icon: BookOpen,  color: colors.click,  labelKey: 'notifications.typeDiaryReminder' },
   ai_insight:       { Icon: Sparkles,  color: colors.purple,  labelKey: 'notifications.typeAiInsight' },
   welcome:          { Icon: Heart,     color: colors.rose,    labelKey: 'notifications.typeWelcome' },
 };
@@ -111,7 +111,7 @@ export default function NotificationsScreen() {
         <View style={s.cardBody}>
           <View style={s.cardHeaderRow}>
             <Text style={s.typeLabel} numberOfLines={1}>{t(meta.labelKey)}</Text>
-            {!item.is_read && <View style={[s.unreadDot, { backgroundColor: colors.accent }]} />}
+            {!item.is_read && <View style={[s.unreadDot, { backgroundColor: colors.click }]} />}
           </View>
           <Text style={s.title} numberOfLines={2}>{item.title}</Text>
           <Text style={s.body} numberOfLines={3}>{item.body}</Text>
@@ -150,7 +150,7 @@ export default function NotificationsScreen() {
           style={s.headerBtn}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <View style={s.headerTitleWrap}>
           <Text style={s.headerTitle}>{t('notifications.screenTitle')}</Text>
@@ -166,7 +166,7 @@ export default function NotificationsScreen() {
             style={s.headerBtn}
             activeOpacity={0.7}
           >
-            <CheckCheck size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <CheckCheck size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         ) : (
           <View style={s.headerBtn} />
@@ -175,7 +175,7 @@ export default function NotificationsScreen() {
 
       {isLoading && notifications.length === 0 ? (
         <View style={s.loadingWrap}>
-          <ActivityIndicator size="small" color={colors.accent} />
+          <ActivityIndicator size="small" color={colors.click} />
         </View>
       ) : (
         <FlatList
@@ -190,7 +190,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={isLoading}
               onRefresh={refetch}
-              tintColor={colors.accent}
+              tintColor={colors.click}
             />
           }
           ListEmptyComponent={renderEmpty}
@@ -235,7 +235,7 @@ const s = StyleSheet.create({
   headerSubtitle: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(11),
-    color: colors.accent,
+    color: colors.click,
     marginTop: rs(2),
   },
 
@@ -260,7 +260,7 @@ const s = StyleSheet.create({
     padding: rs(spacing.md),
   },
   cardUnread: {
-    borderColor: colors.accent + '45',
+    borderColor: colors.click + '45',
     backgroundColor: colors.cardGlow,
   },
   iconWrap: {

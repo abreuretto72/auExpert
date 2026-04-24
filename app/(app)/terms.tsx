@@ -13,7 +13,7 @@ export default function TermsScreen() {
   const router = useRouter();
 
   const items = [
-    { icon: <User size={rs(20)} color={colors.accent} strokeWidth={1.8} />, text: t('legal.termsUse'), color: colors.accent },
+    { icon: <User size={rs(20)} color={colors.click} strokeWidth={1.8} />, text: t('legal.termsUse'), color: colors.click },
     { icon: <Sparkles size={rs(20)} color={colors.purple} strokeWidth={1.8} />, text: t('legal.termsAi'), color: colors.purple },
     { icon: <FileText size={rs(20)} color={colors.petrol} strokeWidth={1.8} />, text: t('legal.termsContent'), color: colors.petrol },
     { icon: <Bell size={rs(20)} color={colors.warning} strokeWidth={1.8} />, text: t('legal.termsChanges'), color: colors.warning },
@@ -23,7 +23,7 @@ export default function TermsScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('legal.termsTitle')}</Text>
         <View style={styles.backBtn} />

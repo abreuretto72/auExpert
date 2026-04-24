@@ -175,7 +175,7 @@ export default function LoginScreen() {
             type="password"
             showMic={false}
             error={error}
-            icon={<Lock size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+            icon={<Lock size={rs(20)} color={colors.click} strokeWidth={1.8} />}
           />
 
           {/* Forgot password */}
@@ -194,7 +194,7 @@ export default function LoginScreen() {
             style={styles.loginBtnWrap}
           >
             <LinearGradient
-              colors={[colors.accent, colors.accentDark]}
+              colors={[colors.click, colors.clickDark]}
               style={styles.loginBtn}
             >
               {loading ? (
@@ -226,11 +226,11 @@ export default function LoginScreen() {
                   disabled={bioLoading}
                   style={[styles.bioBtn, styles.bioBtnFinger, bioLoading && styles.bioBtnDisabled]}
                 >
-                  <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
+                  <View style={[styles.bioOrb, { backgroundColor: colors.clickSoft }]} />
                   {bioLoading ? (
-                    <ActivityIndicator size="small" color={colors.accent} />
+                    <ActivityIndicator size="small" color={colors.click} />
                   ) : (
-                    <Fingerprint size={rs(36)} color={colors.accent} strokeWidth={1.4} />
+                    <Fingerprint size={rs(36)} color={colors.click} strokeWidth={1.4} />
                   )}
                   <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
                 </TouchableOpacity>
@@ -264,8 +264,8 @@ export default function LoginScreen() {
                 activeOpacity={0.7}
                 style={[styles.bioBtn, styles.bioBtnFinger]}
               >
-                <View style={[styles.bioOrb, { backgroundColor: colors.accentGlow }]} />
-                <Fingerprint size={rs(36)} color={colors.accent} strokeWidth={1.4} />
+                <View style={[styles.bioOrb, { backgroundColor: colors.clickSoft }]} />
+                <Fingerprint size={rs(36)} color={colors.click} strokeWidth={1.4} />
                 <Text style={styles.bioLabel}>{t('auth.biometricFinger')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -319,13 +319,13 @@ const styles = StyleSheet.create({
   forgotText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(12),
-    color: colors.accent,
+    color: colors.click,
     letterSpacing: 0.2,
   },
   loginBtnWrap: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
     shadowRadius: rs(30),
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 1.5,
     borderColor: 'rgba(232, 129, 58, 0.3)',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.1,
     shadowRadius: rs(20),
@@ -422,6 +422,6 @@ const styles = StyleSheet.create({
   registerLink: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(14),
-    color: colors.accent,
+    color: colors.click,
   },
 });

@@ -18,7 +18,7 @@ export const MonthSummaryCard = React.memo(({ event, t }: CardProps) => {
   return (
     <View style={styles.cardBase}>
       <View style={styles.monthHeader}>
-        <Calendar size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+        <Calendar size={rs(16)} color={colors.click} strokeWidth={1.8} />
         <Text style={styles.monthTitle}>{event.monthLabel}</Text>
       </View>
       <Text style={styles.monthSummaryLabel}>{t('diary.monthSummary')}</Text>

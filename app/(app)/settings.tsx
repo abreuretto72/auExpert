@@ -106,7 +106,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <TouchableOpacity
@@ -114,7 +114,7 @@ export default function SettingsScreen() {
           onPress={() => setPdfModal(true)}
           activeOpacity={0.7}
         >
-          <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -124,7 +124,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Bell size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <Bell size={rs(20)} color={colors.click} strokeWidth={1.8} />
               <View style={styles.toggleTextCol}>
                 <Text style={styles.toggleLabel}>{t('settings.notifications')}</Text>
                 <Text style={styles.toggleDesc}>{t('settings.notificationsDesc')}</Text>
@@ -133,8 +133,8 @@ export default function SettingsScreen() {
             <Switch
               value={notificationsEnabled}
               onValueChange={setNotificationsEnabled}
-              trackColor={{ false: colors.border, true: colors.accent + '50' }}
-              thumbColor={notificationsEnabled ? colors.accent : colors.textDim}
+              trackColor={{ false: colors.border, true: colors.click + '50' }}
+              thumbColor={notificationsEnabled ? colors.click : colors.textDim}
             />
           </View>
         </View>
@@ -144,7 +144,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Fingerprint size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <Fingerprint size={rs(20)} color={colors.click} strokeWidth={1.8} />
               <View style={styles.toggleTextCol}>
                 <Text style={styles.toggleLabel}>{t('settings.biometric')}</Text>
                 <Text style={styles.toggleDesc}>{t('settings.biometricDesc')}</Text>
@@ -153,8 +153,8 @@ export default function SettingsScreen() {
             <Switch
               value={biometricEnabled}
               onValueChange={setBiometricEnabled}
-              trackColor={{ false: colors.border, true: colors.accent + '50' }}
-              thumbColor={biometricEnabled ? colors.accent : colors.textDim}
+              trackColor={{ false: colors.border, true: colors.click + '50' }}
+              thumbColor={biometricEnabled ? colors.click : colors.textDim}
             />
           </View>
         </View>
@@ -192,7 +192,7 @@ export default function SettingsScreen() {
             onPress={() => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/terms.html')}
             activeOpacity={0.7}
           >
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             <View style={styles.toggleTextCol}>
               <Text style={styles.toggleLabel}>{t('menu.terms')}</Text>
               <Text style={styles.toggleDesc}>{t('menu.termsDesc')}</Text>
@@ -205,7 +205,7 @@ export default function SettingsScreen() {
             onPress={() => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/privacy.html')}
             activeOpacity={0.7}
           >
-            <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <Shield size={rs(20)} color={colors.click} strokeWidth={1.8} />
             <View style={styles.toggleTextCol}>
               <Text style={styles.toggleLabel}>{t('menu.privacy')}</Text>
               <Text style={styles.toggleDesc}>{t('menu.privacyDesc')}</Text>

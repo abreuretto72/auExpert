@@ -141,7 +141,7 @@ export default function PhotoAnalysisScreen() {
   }, [handleNewAnalysis]);
 
   const isDog = pet?.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -176,7 +176,7 @@ export default function PhotoAnalysisScreen() {
       <ScrollView
         contentContainerStyle={s.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.click} colors={[colors.click]} />}
       >
         {/* Botões nova análise */}
         <View style={s.actionRow}>
@@ -184,9 +184,9 @@ export default function PhotoAnalysisScreen() {
             <Camera size={rs(22)} color={petColor} strokeWidth={1.8} />
             <Text style={[s.actionText, { color: petColor }]}>{t('addPet.takePhoto')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.actionBtn, { borderColor: colors.accent + '30' }]} onPress={handleGallery} disabled={analyzing} activeOpacity={0.7}>
-            <ImageIcon size={rs(22)} color={colors.accent} strokeWidth={1.8} />
-            <Text style={[s.actionText, { color: colors.accent }]}>{t('addPet.pickFromGallery')}</Text>
+          <TouchableOpacity style={[s.actionBtn, { borderColor: colors.click + '30' }]} onPress={handleGallery} disabled={analyzing} activeOpacity={0.7}>
+            <ImageIcon size={rs(22)} color={colors.click} strokeWidth={1.8} />
+            <Text style={[s.actionText, { color: colors.click }]}>{t('addPet.pickFromGallery')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -197,7 +197,7 @@ export default function PhotoAnalysisScreen() {
             onPress={() => setPdfModal(true)}
             activeOpacity={0.7}
           >
-            <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(18)} color={colors.click} strokeWidth={1.8} />
             <Text style={s.exportBtnText}>{t('photoAnalysis.exportPdf')}</Text>
           </TouchableOpacity>
         )}
@@ -291,9 +291,9 @@ export default function PhotoAnalysisScreen() {
               {/* Humor */}
               {moodName && (
                 <View style={s.resultRow}>
-                  <SmilePlus size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+                  <SmilePlus size={rs(16)} color={colors.click} strokeWidth={1.8} />
                   <Text style={s.resultLabel}>{t('diary.mood')}</Text>
-                  <Text style={[s.resultValue, { color: colors.accent, textTransform: 'capitalize' }]}>{moodName}</Text>
+                  <Text style={[s.resultValue, { color: colors.click, textTransform: 'capitalize' }]}>{moodName}</Text>
                 </View>
               )}
 
@@ -371,8 +371,8 @@ const s = StyleSheet.create({
   actionText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12) },
 
   // Export PDF
-  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.accent + '10', borderWidth: 1, borderColor: colors.accent + '30', borderRadius: radii.xl, paddingVertical: rs(12), marginBottom: spacing.md },
-  exportBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.accent },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.click + '10', borderWidth: 1, borderColor: colors.click + '30', borderRadius: radii.xl, paddingVertical: rs(12), marginBottom: spacing.md },
+  exportBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(13), color: colors.click },
 
   // Analyzing
   analyzingCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(10), backgroundColor: colors.purpleSoft, borderRadius: radii.xl, paddingVertical: rs(14), marginBottom: spacing.md },

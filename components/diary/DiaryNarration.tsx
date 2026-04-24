@@ -50,7 +50,7 @@ const DiaryNarration = ({ entryId, narration, petName, onDeleted, showDelete = f
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <PawIcon size={rs(14)} color={colors.accent} />
+        <PawIcon size={rs(14)} color={colors.click} />
         <Text style={styles.title} numberOfLines={1}>
           {t('diary.petNarrates', { name: petName })}
         </Text>
@@ -72,9 +72,9 @@ const DiaryNarration = ({ entryId, narration, petName, onDeleted, showDelete = f
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.accent + '08',
+    backgroundColor: colors.click + '08',
     borderWidth: 1,
-    borderColor: colors.accent + '12',
+    borderColor: colors.click + '12',
     borderRadius: rs(radii.lg),
     padding: rs(spacing.sm + 4),
   },
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(11),
-    color: colors.accent,
+    color: colors.click,
     flex: 1,
   },
   deleteBtn: {

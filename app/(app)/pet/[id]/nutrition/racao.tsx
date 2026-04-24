@@ -53,7 +53,7 @@ export default function RacaoScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.racaoTitle')}</Text>
         <View style={s.backBtn} />
@@ -65,7 +65,7 @@ export default function RacaoScreen() {
             {/* Main food card */}
             <View style={s.foodCard}>
               <View style={s.foodIconWrap}>
-                <Utensils size={rs(28)} color={colors.lime} />
+                <Utensils size={rs(28)} color={colors.success} />
               </View>
               <View style={s.foodInfo}>
                 <Text style={s.foodName}>{food.product_name ?? '—'}</Text>
@@ -178,17 +178,17 @@ const s = StyleSheet.create({
   },
   foodIconWrap: {
     width: rs(56), height: rs(56), borderRadius: rs(28),
-    backgroundColor: colors.limeSoft, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center',
   },
   foodInfo: { flex: 1, justifyContent: 'center' },
   foodName: { fontSize: fs(16), fontWeight: '700', color: colors.text, marginBottom: rs(2) },
   foodBrand: { fontSize: fs(13), color: colors.textSec, marginBottom: rs(6) },
   categoryPill: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.limeSoft, borderRadius: rs(8),
+    backgroundColor: colors.successSoft, borderRadius: rs(8),
     paddingHorizontal: rs(8), paddingVertical: rs(3),
   },
-  categoryText: { fontSize: fs(11), color: colors.lime, fontWeight: '600' },
+  categoryText: { fontSize: fs(11), color: colors.success, fontWeight: '600' },
   alertRow: {
     flexDirection: 'row', alignItems: 'flex-start', gap: rs(8),
     backgroundColor: colors.warningSoft, borderRadius: rs(10),
@@ -216,14 +216,14 @@ const s = StyleSheet.create({
   },
   calcResult: {
     flexDirection: 'row', alignItems: 'center', gap: rs(8),
-    backgroundColor: colors.petrolGlow, borderRadius: rs(8), padding: rs(10),
+    backgroundColor: colors.textSec, borderRadius: rs(8), padding: rs(10),
   },
   calcResultText: { fontSize: fs(14), color: colors.petrol, fontWeight: '600' },
   emptyWrap: { alignItems: 'center', paddingVertical: rs(40), gap: rs(12) },
   emptyText: { fontSize: fs(14), color: colors.textDim, textAlign: 'center' },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8),
-    backgroundColor: colors.accent, borderRadius: rs(14), padding: rs(16),
+    backgroundColor: colors.click, borderRadius: rs(14), padding: rs(16),
     marginTop: rs(8),
   },
   ctaBtnText: { fontSize: fs(15), fontWeight: '700', color: '#fff' },

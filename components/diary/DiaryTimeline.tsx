@@ -95,7 +95,7 @@ export default function DiaryTimeline({
   const { toast, confirm } = useToast();
   const { isOwner } = useMyPetRole(petId);
 
-  const petColor = petSpecies === 'cat' ? colors.purple : colors.accent;
+  const petColor = petSpecies === 'cat' ? colors.purple : colors.click;
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     const yes = await confirm({ text: t('diary.deleteConfirm'), type: 'warning' });
@@ -224,7 +224,7 @@ export default function DiaryTimeline({
       {headerExtra}
       {onOpenPdf && (
         <TouchableOpacity style={styles.pdfBtn} onPress={onOpenPdf} activeOpacity={0.7}>
-          <Download size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+          <Download size={rs(14)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.pdfBtnText}>{t('diary.pdfExport')}</Text>
         </TouchableOpacity>
       )}
@@ -237,7 +237,7 @@ export default function DiaryTimeline({
     if (timelineEvents.length === 0) return null;
     return (
       <View style={styles.footerContainer}>
-        <PawIcon size={rs(20)} color={colors.accent} />
+        <PawIcon size={rs(20)} color={colors.click} />
         <Text style={styles.footerText}>{t('diary.storyContinues', { name: petName, context: sexContext(petSex) })}</Text>
       </View>
     );
@@ -285,7 +285,7 @@ export default function DiaryTimeline({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />
+          <RefreshControl refreshing={false} onRefresh={onRefresh} tintColor={colors.click} colors={[colors.click]} />
         }
       />
 
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
 
   // Timeline
   entryRow: { flexDirection: 'row', marginLeft: rs(28), marginRight: rs(16), marginTop: rs(16) },
-  timelineLine: { position: 'absolute', left: rs(5), top: rs(16), bottom: rs(-16), width: 2, backgroundColor: colors.accent + '15' },
+  timelineLine: { position: 'absolute', left: rs(5), top: rs(16), bottom: rs(-16), width: 2, backgroundColor: colors.click + '15' },
   timelineDot: { width: rs(12), height: rs(12), borderRadius: rs(6), marginTop: rs(18), marginRight: rs(12), zIndex: 1 },
   entryCardWrapper: { flex: 1 },
 
@@ -324,11 +324,11 @@ const styles = StyleSheet.create({
   footerText: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim },
 
   // PDF export button (header)
-  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), alignSelf: 'flex-end', marginRight: rs(16), marginTop: rs(8), marginBottom: rs(4), backgroundColor: colors.accentGlow, borderRadius: rs(10), paddingHorizontal: rs(10), paddingVertical: rs(6), borderWidth: 1, borderColor: colors.accent + '30' },
-  pdfBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.accent },
+  pdfBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), alignSelf: 'flex-end', marginRight: rs(16), marginTop: rs(8), marginBottom: rs(4), backgroundColor: colors.clickSoft, borderRadius: rs(10), paddingHorizontal: rs(10), paddingVertical: rs(6), borderWidth: 1, borderColor: colors.click + '30' },
+  pdfBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(11), color: colors.click },
 
   // FABs
-  fab: { position: 'absolute', bottom: rs(24), right: rs(20), width: rs(56), height: rs(56), borderRadius: rs(18), backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: colors.accent, shadowOffset: { width: 0, height: rs(8) }, shadowOpacity: 0.35, shadowRadius: rs(16) },
+  fab: { position: 'absolute', bottom: rs(24), right: rs(20), width: rs(56), height: rs(56), borderRadius: rs(18), backgroundColor: colors.click, alignItems: 'center', justifyContent: 'center', elevation: 8, shadowColor: colors.click, shadowOffset: { width: 0, height: rs(8) }, shadowOpacity: 0.35, shadowRadius: rs(16) },
 
   // Skeleton
   skeletonContainer: { paddingHorizontal: rs(16), paddingTop: rs(16), gap: rs(16) },

@@ -34,7 +34,7 @@ const METRIC_CONFIG: Record<string, { labelKey: string; color: string; icon: str
   health_score: { labelKey: 'health.metricHealthScore', color: colors.success,  icon: 'score' },
   temperature:  { labelKey: 'health.metricTemperature', color: colors.warning,  icon: 'temp' },
   heart_rate:   { labelKey: 'health.metricHeartRate',   color: colors.danger,   icon: 'heart' },
-  glucose:      { labelKey: 'health.metricGlucose',     color: colors.gold,     icon: 'glucose' },
+  glucose:      { labelKey: 'health.metricGlucose',     color: colors.warning,     icon: 'glucose' },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -186,7 +186,7 @@ export default function MetricsCharts({ petId }: { petId: string }) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={colors.click} />
       </View>
     );
   }

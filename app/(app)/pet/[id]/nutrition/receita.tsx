@@ -36,7 +36,7 @@ export default function ReceitaScreen() {
       <SafeAreaView style={s.safeArea}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-            <ChevronLeft size={rs(22)} color={colors.accent} />
+            <ChevronLeft size={rs(22)} color={colors.click} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('nutrition.receitaTitle')}</Text>
           <View style={s.backBtn} />
@@ -53,7 +53,7 @@ export default function ReceitaScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{recipe.name}</Text>
         <View style={s.backBtn} />
@@ -102,7 +102,7 @@ export default function ReceitaScreen() {
             <View style={s.listCard}>
               {recipe.ingredients.map((ing, i) => (
                 <View key={i} style={s.listRow}>
-                  <View style={[s.dot, { backgroundColor: colors.lime }]} />
+                  <View style={[s.dot, { backgroundColor: colors.success }]} />
                   <Text style={s.listText}>{ing}</Text>
                 </View>
               ))}
@@ -214,10 +214,10 @@ const s = StyleSheet.create({
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(12) },
   stepNumber: {
     width: rs(22), height: rs(22), borderRadius: rs(11),
-    backgroundColor: colors.accentGlow, borderWidth: 1, borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft, borderWidth: 1, borderColor: colors.click + '40',
     alignItems: 'center', justifyContent: 'center', marginTop: rs(2),
   },
-  stepNumberText: { fontSize: fs(11), fontWeight: '700', color: colors.accent },
+  stepNumberText: { fontSize: fs(11), fontWeight: '700', color: colors.click },
   storageCard: {
     backgroundColor: colors.card, borderRadius: rs(14), padding: rs(14),
     borderWidth: 1, borderColor: colors.border, gap: rs(10),

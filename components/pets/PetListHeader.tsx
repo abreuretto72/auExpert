@@ -61,9 +61,9 @@ const PetListHeader: React.FC<PetListHeaderProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               {density === 'card' ? (
-                <List size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                <List size={rs(18)} color={colors.click} strokeWidth={1.8} />
               ) : (
-                <LayoutGrid size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                <LayoutGrid size={rs(18)} color={colors.click} strokeWidth={1.8} />
               )}
             </TouchableOpacity>
           )}
@@ -125,14 +125,14 @@ const styles = StyleSheet.create({
     width: rs(32),
     height: rs(32),
     borderRadius: rs(8),
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(10),
     paddingHorizontal: rs(12),
     paddingVertical: rs(6),

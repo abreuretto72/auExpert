@@ -101,13 +101,13 @@ export default function CardapioPdfScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('nutrition.cardapioPdfTitle', { name: '' })}</Text>
           <View style={s.headerBtn} />
         </View>
         <View style={s.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.click} />
         </View>
       </SafeAreaView>
     );
@@ -117,7 +117,7 @@ export default function CardapioPdfScreen() {
     <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.cardapioPdfTitle', { name: pet.name })}</Text>
         <View style={s.headerBtn} />
@@ -126,7 +126,7 @@ export default function CardapioPdfScreen() {
       <View style={s.content}>
         <View style={s.previewBox}>
           <View style={s.iconWrap}>
-            <Utensils size={rs(48)} color={colors.lime} strokeWidth={1.3} />
+            <Utensils size={rs(48)} color={colors.success} strokeWidth={1.3} />
           </View>
           <Text style={s.readyTitle}>{t('nutrition.cardapioPdfReady')}</Text>
           <Text style={s.readySubtitle}>{t('nutrition.cardapioPdfReadySubtitle')}</Text>
@@ -134,15 +134,15 @@ export default function CardapioPdfScreen() {
 
         <View style={s.actions}>
           <TouchableOpacity
-            style={[s.actionRow, { borderColor: colors.accent + '40' }]}
+            style={[s.actionRow, { borderColor: colors.click + '40' }]}
             onPress={handlePrint}
             activeOpacity={0.8}
             disabled={isBusy}
           >
-            <View style={[s.actionIcon, { backgroundColor: colors.accentGlow }]}>
+            <View style={[s.actionIcon, { backgroundColor: colors.clickSoft }]}>
               {isBusy
-                ? <ActivityIndicator color={colors.accent} size="small" />
-                : <Download size={rs(22)} color={colors.accent} strokeWidth={1.8} />}
+                ? <ActivityIndicator color={colors.click} size="small" />
+                : <Download size={rs(22)} color={colors.click} strokeWidth={1.8} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.actionTitle}>{t('nutrition.cardapioPrintOrSave')}</Text>
@@ -192,7 +192,7 @@ const s = StyleSheet.create({
   previewBox: { alignItems: 'center', padding: rs(32) },
   iconWrap: {
     width: rs(96), height: rs(96), borderRadius: rs(28),
-    backgroundColor: colors.limeSoft,
+    backgroundColor: colors.successSoft,
     alignItems: 'center', justifyContent: 'center', marginBottom: rs(16),
   },
   readyTitle: { fontSize: fs(20), fontWeight: '700', color: colors.text, textAlign: 'center' },

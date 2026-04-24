@@ -31,7 +31,7 @@ export default function SoNaturalScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.soNaturalScreenTitle')}</Text>
         <View style={s.backBtn} />

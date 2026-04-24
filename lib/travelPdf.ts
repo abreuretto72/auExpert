@@ -61,7 +61,7 @@ function formatDate(iso: string | null, lang: string): string {
 }
 
 const TYPE_COLOR: Record<string, string> = {
-  road_trip:     colors.accent,
+  road_trip:     colors.click,
   flight:        colors.sky,
   local:         colors.petrol,
   international: colors.purple,
@@ -72,7 +72,7 @@ const TYPE_COLOR: Record<string, string> = {
 const STATUS_COLOR: Record<string, string> = {
   completed: colors.petrol,
   active:    colors.success,
-  planned:   colors.gold,
+  planned:   colors.warning,
 };
 
 function typeLabel(type: string): string {
@@ -111,7 +111,7 @@ function buildBody(data: TravelData, lang: string): string {
         </div>
         <div style="flex:1;min-width:120px;border:1px solid #ddd;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('travels.statKm'))}</div>
-          <div style="font-size:20px;font-weight:700;color:${colors.accent};margin-top:2px;">${data.totalKm.toLocaleString()}</div>
+          <div style="font-size:20px;font-weight:700;color:${colors.click};margin-top:2px;">${data.totalKm.toLocaleString()}</div>
         </div>
         <div style="flex:1;min-width:120px;border:1px solid #ddd;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('travels.statDays'))}</div>

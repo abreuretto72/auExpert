@@ -306,7 +306,7 @@ export default function InviteLandingScreen() {
       <SafeAreaView style={styles.safe}>
         <Header router={router} title={t('invite.title')} />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={colors.click} />
           <Text style={styles.loadingText}>{t('invite.loading')}</Text>
         </View>
       </SafeAreaView>
@@ -333,7 +333,7 @@ export default function InviteLandingScreen() {
   const inviterName = p.inviter.display_name || t('invite.inviterFallback');
   const petName = pet?.name || t('invite.unknownPet');
   const SpeciesIcon = pet?.species === 'cat' ? Cat : Dog;
-  const speciesColor = pet?.species === 'cat' ? colors.purple : colors.accent;
+  const speciesColor = pet?.species === 'cat' ? colors.purple : colors.click;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -391,7 +391,7 @@ export default function InviteLandingScreen() {
         {/* Avisos (needs_onboarding, duplicate_active_grant) */}
         {p.needs_onboarding && (
           <View style={styles.noticeCard}>
-            <Mail size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <Mail size={rs(18)} color={colors.click} strokeWidth={1.8} />
             <Text style={styles.noticeText}>{t('invite.needsOnboarding')}</Text>
           </View>
         )}
@@ -442,7 +442,7 @@ function Header({ router, title }: { router: ReturnType<typeof useRouter>; title
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-        <ChevronLeft size={rs(26)} color={colors.accent} strokeWidth={1.8} />
+        <ChevronLeft size={rs(26)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{title}</Text>
       <View style={{ width: rs(26) }} />
@@ -578,10 +578,10 @@ const styles = StyleSheet.create({
   // Notices
   noticeCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: rs(10),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderRadius: radii.lg,
     padding: spacing.md,
-    borderWidth: 1, borderColor: colors.accentMed,
+    borderWidth: 1, borderColor: colors.clickRing,
     marginBottom: spacing.md,
   },
   noticeCardWarning: {

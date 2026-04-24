@@ -58,7 +58,7 @@ function EmptyState() {
   return (
     <View style={styles.emptyBox}>
       <View style={styles.emptyIconWrap}>
-        <UserPlus size={rs(40)} color={colors.accent} strokeWidth={1.6} />
+        <UserPlus size={rs(40)} color={colors.click} strokeWidth={1.6} />
       </View>
       <Text style={styles.emptyTitle}>{t('pro.patients.emptyTitle')}</Text>
       <Text style={styles.emptyText}>{t('pro.patients.emptyText')}</Text>
@@ -125,9 +125,9 @@ export default function ProPatientsScreen() {
           activeOpacity={0.7}
         >
           {isFetching ? (
-            <ActivityIndicator size={rs(16)} color={colors.accent} />
+            <ActivityIndicator size={rs(16)} color={colors.click} />
           ) : (
-            <RefreshCw size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <RefreshCw size={rs(18)} color={colors.click} strokeWidth={1.8} />
           )}
         </TouchableOpacity>
       </View>
@@ -135,7 +135,7 @@ export default function ProPatientsScreen() {
       {/* Title block */}
       <View style={styles.titleBlock}>
         <View style={styles.titleRow}>
-          <Users size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <Users size={rs(22)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.title}>{t('pro.patients.title')}</Text>
         </View>
         {professional?.display_name ? (
@@ -181,8 +181,8 @@ export default function ProPatientsScreen() {
             <RefreshControl
               refreshing={isFetching && patients.length > 0}
               onRefresh={refetch}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={colors.click}
+              colors={[colors.click]}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     width: rs(36),
     height: rs(36),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     width: rs(80),
     height: rs(80),
     borderRadius: rs(24),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(spacing.md),
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(spacing.lg),
     paddingVertical: rs(spacing.sm),
     borderRadius: rs(radii.lg),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   retryText: {
     fontFamily: 'Sora_700Bold',

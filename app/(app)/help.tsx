@@ -82,15 +82,15 @@ const LENSES: LensItem[] = [
   { type: 'exam',            Icon: FileText,          color: colors.petrol },
   { type: 'weight',          Icon: Scale,             color: colors.petrol },
   { type: 'clinical_metric', Icon: Activity,          color: colors.success },
-  { type: 'food',            Icon: UtensilsCrossed,   color: colors.lime },
+  { type: 'food',            Icon: UtensilsCrossed,   color: colors.success },
   { type: 'plan',            Icon: CreditCard,        color: colors.petrol },
-  { type: 'mood',            Icon: SmilePlus,         color: colors.accent },
+  { type: 'mood',            Icon: SmilePlus,         color: colors.click },
   { type: 'moment',          Icon: Sparkles,          color: colors.purple },
   { type: 'connection',      Icon: Heart,             color: colors.rose },
   { type: 'travel',          Icon: MapPin,            color: colors.sky },
-  { type: 'expense',         Icon: DollarSign,        color: colors.gold },
+  { type: 'expense',         Icon: DollarSign,        color: colors.warning },
   { type: 'boarding',        Icon: Home,              color: colors.petrol },
-  { type: 'dog_walker',      Icon: PersonStanding,    color: colors.accent },
+  { type: 'dog_walker',      Icon: PersonStanding,    color: colors.click },
   { type: 'grooming',        Icon: Scissors,          color: colors.petrol },
   { type: 'photo_analysis',  Icon: Camera,            color: colors.purple },
 ];
@@ -140,7 +140,7 @@ export default function HelpScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.headerBar}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('help.title')}</Text>
         <TouchableOpacity
@@ -148,7 +148,7 @@ export default function HelpScreen() {
           onPress={() => setPdfModal(true)}
           activeOpacity={0.7}
         >
-          <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -161,7 +161,7 @@ export default function HelpScreen() {
         >
           <HelpCircle
             size={rs(16)}
-            color={activeTab === 'faq' ? colors.accent : colors.textDim}
+            color={activeTab === 'faq' ? colors.click : colors.textDim}
             strokeWidth={1.8}
           />
           <Text style={[styles.tabLabel, activeTab === 'faq' && styles.tabLabelActive]}>
@@ -176,7 +176,7 @@ export default function HelpScreen() {
         >
           <Sparkles
             size={rs(16)}
-            color={activeTab === 'panel' ? colors.accent : colors.textDim}
+            color={activeTab === 'panel' ? colors.click : colors.textDim}
             strokeWidth={1.8}
           />
           <Text style={[styles.tabLabel, activeTab === 'panel' && styles.tabLabelActive]}>
@@ -190,7 +190,7 @@ export default function HelpScreen() {
           {/* Acoes rapidas */}
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.actionCard} onPress={handleContact} activeOpacity={0.7}>
-              <MessageCircle size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+              <MessageCircle size={rs(24)} color={colors.click} strokeWidth={1.8} />
               <Text style={styles.actionLabel}>{t('help.contact')}</Text>
               <Text style={styles.actionDesc}>{t('help.contactDesc')}</Text>
             </TouchableOpacity>
@@ -213,7 +213,7 @@ export default function HelpScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.faqHeader}>
-                <HelpCircle size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+                <HelpCircle size={rs(18)} color={colors.click} strokeWidth={1.8} />
                 <Text style={styles.faqQuestion}>{item.q}</Text>
                 {openFaq === idx ? (
                   <ChevronUp size={rs(18)} color={colors.textDim} strokeWidth={1.8} />
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     color: colors.textDim,
   },
   tabLabelActive: {
-    color: colors.accent,
+    color: colors.click,
   },
 
   // FAQ tab

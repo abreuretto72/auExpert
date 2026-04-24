@@ -41,7 +41,7 @@ const RARITY_COLOR: Record<string, string> = {
   common:    colors.textDim,
   rare:      colors.petrol,
   epic:      colors.purple,
-  legendary: colors.gold,
+  legendary: colors.warning,
 };
 
 const CATEGORY_ORDER = ['diary', 'health', 'social', 'financial', 'travel', 'milestone', 'special'];
@@ -66,7 +66,7 @@ function XPProgressBar({
     <View style={styles.xpCard}>
       <View style={styles.xpHeader}>
         <View style={styles.levelBadge}>
-          <Trophy size={rs(14)} color={colors.gold} strokeWidth={2} />
+          <Trophy size={rs(14)} color={colors.warning} strokeWidth={2} />
           <Text style={styles.levelText}>{t('achievements.level', { level })}</Text>
         </View>
         <Text style={styles.xpTotal}>{xpTotal} XP</Text>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(6),
-    backgroundColor: colors.gold + '18',
+    backgroundColor: colors.warning + '18',
     borderRadius: rs(8),
     paddingHorizontal: rs(10),
     paddingVertical: rs(4),
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   levelText: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(13),
-    color: colors.gold,
+    color: colors.warning,
   },
   xpTotal: {
     fontFamily: 'JetBrainsMono_700Bold',
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.gold,
+    backgroundColor: colors.warning,
     borderRadius: rs(3),
   },
   xpSubtext: {

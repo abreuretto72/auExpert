@@ -31,7 +31,7 @@ export default function HappinessPdfScreen() {
       readyTitleKey="happinessPdf.ready"
       readySubtitleKey="happinessPdf.readySubtitle"
       icon={Smile}
-      iconColor={colors.gold}
+      iconColor={colors.warning}
       isReady={!isLoading && !!pet}
       onPreview={handlePreview}
       onShare={handleShare}

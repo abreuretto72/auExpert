@@ -82,7 +82,7 @@ const RecentPetsRow: React.FC<RecentPetsRowProps> = ({ recent, onSelectPet }) =>
                   />
                 ) : (
                   isDog ? (
-                    <Dog size={rs(12)} color={colors.accent} strokeWidth={1.8} />
+                    <Dog size={rs(12)} color={colors.click} strokeWidth={1.8} />
                   ) : (
                     <Cat size={rs(12)} color={colors.purple} strokeWidth={1.8} />
                   )
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
     gap: rs(6),
   },
   chipFirst: {
-    borderColor: colors.accent + '40',
-    backgroundColor: colors.accentSoft,
+    borderColor: colors.click + '40',
+    backgroundColor: colors.clickSoft,
   },
   chipDefault: {
     borderColor: colors.border,

@@ -42,6 +42,7 @@ import { radii, spacing } from '../../../../constants/spacing';
 import { useNutricao } from '../../../../hooks/useNutricao';
 import { usePets } from '../../../../hooks/usePets';
 import { sexContext } from '../../../../utils/petGender';
+import { calcAgeMonths } from '../../../../utils/format';
 import { Skeleton } from '../../../../components/Skeleton';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -80,10 +81,10 @@ function categoryLabel(t: (k: string) => string, cat: string | null): string {
 }
 
 function ageMonthsFromPet(pet: { birth_date?: string | null; estimated_age_months?: number | null }): number {
+  // calcAgeMonths faz parse local-safe de "yyyy-mm-dd" — ver utils/format.ts.
+  // NUNCA trocar por `new Date(pet.birth_date)` direto — bug de timezone UTC.
   if (pet.birth_date) {
-    const birth = new Date(pet.birth_date);
-    const now = new Date();
-    return Math.max(0, (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth()));
+    return Math.max(0, calcAgeMonths(pet.birth_date));
   }
   return pet.estimated_age_months ?? 0;
 }
@@ -142,7 +143,7 @@ export default function NutricaoScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <ChevronLeft size={rs(22)} color={colors.accent} />
+            <ChevronLeft size={rs(22)} color={colors.click} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('nutrition.title')}</Text>
           <View style={styles.headerActions}>
@@ -191,7 +192,7 @@ export default function NutricaoScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('nutrition.title')}</Text>
         <View style={styles.headerActions}>
@@ -200,10 +201,10 @@ export default function NutricaoScreen() {
             style={styles.actionBtn}
             accessibilityLabel={t('nutritionPdf.icon')}
           >
-            <FileText size={rs(20)} color={colors.accent} />
+            <FileText size={rs(20)} color={colors.click} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => nav('modalidade')} style={styles.actionBtn}>
-            <Settings2 size={rs(20)} color={colors.accent} />
+            <Settings2 size={rs(20)} color={colors.click} />
           </TouchableOpacity>
         </View>
       </View>
@@ -216,7 +217,7 @@ export default function NutricaoScreen() {
           <RefreshControl
             refreshing={isLoadingNutricao}
             onRefresh={onRefresh}
-            tintColor={colors.accent}
+            tintColor={colors.click}
           />
         }
       >
@@ -241,8 +242,8 @@ export default function NutricaoScreen() {
         {/* Modalidade + life stage + weight pills */}
         <View style={styles.infoRow}>
           <View style={styles.infoPill}>
-            <Leaf size={rs(14)} color={colors.lime} />
-            <Text style={[styles.infoPillText, { color: colors.lime }]}>
+            <Leaf size={rs(14)} color={colors.success} />
+            <Text style={[styles.infoPillText, { color: colors.success }]}>
               {modalidadeLabel(t, nutricao?.modalidade ?? 'so_racao')}
             </Text>
           </View>
@@ -279,7 +280,7 @@ export default function NutricaoScreen() {
 
         {/* Current food */}
         <View style={styles.sectionHeaderRow}>
-          <Utensils size={rs(13)} color={colors.lime} />
+          <Utensils size={rs(13)} color={colors.success} />
           <Text style={styles.sectionLabel}>{t('nutrition.sectionCurrentFood')}</Text>
         </View>
 
@@ -311,7 +312,7 @@ export default function NutricaoScreen() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.emptyCard} onPress={() => nav('trocar')} activeOpacity={0.8}>
-            <Plus size={rs(20)} color={colors.accent} />
+            <Plus size={rs(20)} color={colors.click} />
             <Text style={styles.emptyText}>{t('nutrition.addFirstFood')}</Text>
           </TouchableOpacity>
         )}
@@ -343,11 +344,11 @@ export default function NutricaoScreen() {
 
         {/* Action grid */}
         <View style={styles.actionGrid}>
-          <ActionBtn icon={<ShieldAlert size={rs(22)} color={colors.accent} />} label={t('nutrition.btnRestrictions')} onPress={() => nav('restricoes')} />
-          <ActionBtn icon={<BookOpen size={rs(22)} color={colors.accent} />} label={t('nutrition.btnHistory')} onPress={() => nav('historico')} />
-          <ActionBtn icon={<Sparkles size={rs(22)} color={colors.accent} />} label={t('nutrition.btnAITips')} onPress={() => nav('dicas')} />
-          <ActionBtn icon={<Settings2 size={rs(22)} color={colors.accent} />} label={t('nutrition.btnModalidade')} onPress={() => nav('modalidade')} />
-          <ActionBtn icon={<CalendarDays size={rs(22)} color={colors.accent} />} label={t('nutrition.btnWeeklyMenu')} onPress={() => nav('cardapio')} />
+          <ActionBtn icon={<ShieldAlert size={rs(22)} color={colors.click} />} label={t('nutrition.btnRestrictions')} onPress={() => nav('restricoes')} />
+          <ActionBtn icon={<BookOpen size={rs(22)} color={colors.click} />} label={t('nutrition.btnHistory')} onPress={() => nav('historico')} />
+          <ActionBtn icon={<Sparkles size={rs(22)} color={colors.click} />} label={t('nutrition.btnAITips')} onPress={() => nav('dicas')} />
+          <ActionBtn icon={<Settings2 size={rs(22)} color={colors.click} />} label={t('nutrition.btnModalidade')} onPress={() => nav('modalidade')} />
+          <ActionBtn icon={<CalendarDays size={rs(22)} color={colors.click} />} label={t('nutrition.btnWeeklyMenu')} onPress={() => nav('cardapio')} />
         </View>
       </ScrollView>
 
@@ -463,13 +464,13 @@ const styles = StyleSheet.create({
     marginBottom: rs(14),
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: colors.accent,
+    borderColor: colors.click,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(8),
   },
-  emptyText: { fontSize: fs(14), color: colors.accent, fontWeight: '600' },
+  emptyText: { fontSize: fs(14), color: colors.click, fontWeight: '600' },
   evalCard: {
     backgroundColor: colors.card,
     borderRadius: rs(14),
@@ -541,7 +542,7 @@ const actionStyles = StyleSheet.create({
     width: rs(44),
     height: rs(44),
     borderRadius: rs(22),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

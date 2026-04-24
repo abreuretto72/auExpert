@@ -31,7 +31,7 @@ export default function DicasScreen() {
       <SafeAreaView style={s.safeArea}>
         <Header onBack={() => router.back()} title={t('nutrition.dicasTitle')} onPdf={() => setPdfModal(true)} pdfLabel={t('nutritionPdf.icon')} />
         <View style={s.centered}>
-          <ActivityIndicator color={colors.accent} size="large" />
+          <ActivityIndicator color={colors.click} size="large" />
           <Text style={s.loadingText}>{t('nutrition.dicasLoading')}</Text>
         </View>
       </SafeAreaView>
@@ -145,12 +145,12 @@ function Header({
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={onBack} style={s.backBtn}>
-        <ChevronLeft size={rs(22)} color={colors.accent} />
+        <ChevronLeft size={rs(22)} color={colors.click} />
       </TouchableOpacity>
       <Text style={s.headerTitle}>{title}</Text>
       {onPdf ? (
         <TouchableOpacity onPress={onPdf} style={s.backBtn} accessibilityLabel={pdfLabel}>
-          <FileText size={rs(20)} color={colors.accent} />
+          <FileText size={rs(20)} color={colors.click} />
         </TouchableOpacity>
       ) : (
         <View style={s.backBtn} />
@@ -210,7 +210,7 @@ const s = StyleSheet.create({
   emptyText: { fontSize: fs(13), color: colors.textDim, textAlign: 'center', lineHeight: rs(20) },
   refreshBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8),
-    backgroundColor: colors.accent, borderRadius: rs(12), padding: rs(14),
+    backgroundColor: colors.click, borderRadius: rs(12), padding: rs(14),
   },
   refreshBtnText: { fontSize: fs(14), color: '#fff', fontWeight: '700' },
 });

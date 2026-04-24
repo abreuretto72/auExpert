@@ -74,7 +74,7 @@ function CurrentFoodCard({ food }: { food: NutritionRecord | null }) {
         <SectionHeader
           icon={UtensilsCrossed}
           label={t('nutrition.currentFood')}
-          color={colors.lime}
+          color={colors.success}
         />
         <EmptyRow label={t('nutrition.noCurrentFood')} />
       </View>
@@ -91,7 +91,7 @@ function CurrentFoodCard({ food }: { food: NutritionRecord | null }) {
       <SectionHeader
         icon={UtensilsCrossed}
         label={t('nutrition.currentFood')}
-        color={colors.lime}
+        color={colors.success}
       />
       <Text style={styles.foodName}>{name}</Text>
       {food.brand && food.product_name && food.product_name !== food.brand && (
@@ -109,7 +109,7 @@ function CurrentFoodCard({ food }: { food: NutritionRecord | null }) {
           </Text>
         )}
         {kcalDay != null && (
-          <Text style={[styles.foodMetaItem, { color: colors.lime }]}>
+          <Text style={[styles.foodMetaItem, { color: colors.success }]}>
             ~{kcalDay} kcal/{t('nutrition.portionDay')}
           </Text>
         )}
@@ -171,21 +171,21 @@ function TreatsSummary({ treats }: { treats: NutritionRecord[] }) {
       <SectionHeader
         icon={Cookie}
         label={t('nutrition.recentTreats')}
-        color={colors.gold}
+        color={colors.warning}
         count={treats.length}
       />
       {treats.length === 0
         ? <EmptyRow label={t('nutrition.noTreats')} />
         : (
           <View style={styles.treatsRow}>
-            <View style={[styles.treatsStat, { borderColor: colors.gold + '30' }]}>
-              <Text style={[styles.treatsStatValue, { color: colors.gold }]}>
+            <View style={[styles.treatsStat, { borderColor: colors.warning + '30' }]}>
+              <Text style={[styles.treatsStatValue, { color: colors.warning }]}>
                 {treats.length}
               </Text>
               <Text style={styles.treatsStatLabel}>{t('nutrition.treatsCount')}</Text>
             </View>
-            <View style={[styles.treatsStat, { borderColor: colors.gold + '30' }]}>
-              <Text style={[styles.treatsStatValue, { color: colors.gold }]}>
+            <View style={[styles.treatsStat, { borderColor: colors.warning + '30' }]}>
+              <Text style={[styles.treatsStatValue, { color: colors.warning }]}>
                 ~{kcalEstimate}
               </Text>
               <Text style={styles.treatsStatLabel}>{t('nutrition.treatsKcal')}</Text>
@@ -254,7 +254,7 @@ function FoodHistoryTimeline({ history }: { history: NutritionRecord[] }) {
                 <Text style={styles.historyName}>
                   {h.product_name ?? '—'}
                   {h.is_current ? (
-                    <Text style={{ color: colors.lime }}> · {t('nutrition.current')}</Text>
+                    <Text style={{ color: colors.success }}> · {t('nutrition.current')}</Text>
                   ) : null}
                 </Text>
                 <Text style={styles.historyDates}>
@@ -303,7 +303,7 @@ export function NutritionLensContent({ petId }: NutritionLensContentProps) {
       {/* AI hint when no data yet */}
       {!hasAnyData && (
         <View style={styles.aiHint}>
-          <Sparkles size={rs(16)} color={colors.lime} strokeWidth={1.8} />
+          <Sparkles size={rs(16)} color={colors.success} strokeWidth={1.8} />
           <Text style={styles.aiHintText}>{t('nutrition.aiHintRecords')}</Text>
         </View>
       )}
@@ -333,8 +333,8 @@ const styles = StyleSheet.create({
   },
   currentFoodCard: {
     borderWidth: 1,
-    borderColor: colors.lime + '30',
-    backgroundColor: colors.lime + '06',
+    borderColor: colors.success + '30',
+    backgroundColor: colors.success + '06',
   },
 
   // Section header
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   treatsStat: {
     flex: 1,
-    backgroundColor: colors.goldSoft,
+    backgroundColor: colors.warningSoft,
     borderRadius: radii.lg,
     borderWidth: 1,
     padding: spacing.sm,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   historyDotCurrent: {
-    backgroundColor: colors.lime,
+    backgroundColor: colors.success,
   },
   historyLine: {
     width: 1.5,
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.limeSoft,
+    backgroundColor: colors.successSoft,
     borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   aiHintText: {
     fontFamily: 'Caveat_400Regular',
     fontSize: fs(14),
-    color: colors.lime,
+    color: colors.success,
     flex: 1,
     fontStyle: 'italic',
     lineHeight: fs(14) * 1.6,

@@ -115,7 +115,7 @@ export const VideoAnalysisCard = React.memo(({ event, t, onDelete, isOwner, onAd
         {va && (va.energy_score != null || va.calm_score != null || va.locomotion_score != null) && (
           <View style={styles.videoCardScores}>
             {va.energy_score != null && (
-              <ScoreBadge label={t('diary.energy')} value={va.energy_score} color={colors.gold} />
+              <ScoreBadge label={t('diary.energy')} value={va.energy_score} color={colors.warning} />
             )}
             {va.calm_score != null && (
               <ScoreBadge label={t('diary.calm')} value={va.calm_score} color={colors.success} />

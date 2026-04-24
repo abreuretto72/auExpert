@@ -19,7 +19,7 @@ import { useLensTravel, type PetTravel } from '../../hooks/useLens';
 // ── Travel type config ────────────────────────────────────────────────────────
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; labelKey: string }> = {
-  road_trip:     { icon: Car,       color: colors.accent,  labelKey: 'travels.typeRoadTrip' },
+  road_trip:     { icon: Car,       color: colors.click,  labelKey: 'travels.typeRoadTrip' },
   flight:        { icon: Plane,     color: colors.sky,     labelKey: 'travels.typeFlight' },
   local:         { icon: MapPin,    color: colors.petrol,  labelKey: 'travels.typeLocal' },
   international: { icon: Globe,     color: colors.purple,  labelKey: 'travels.typeInternational' },
@@ -30,7 +30,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; labe
 const STATUS_COLOR: Record<string, string> = {
   completed: colors.petrol,
   active:    colors.success,
-  planned:   colors.gold,
+  planned:   colors.warning,
 };
 
 // ── Summary card ──────────────────────────────────────────────────────────────
@@ -58,8 +58,8 @@ function TravelSummaryCard({
         </View>
 
         <View style={[styles.statItem, styles.statBorder]}>
-          <View style={[styles.statIcon, { backgroundColor: colors.accent + '15' }]}>
-            <Navigation size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+          <View style={[styles.statIcon, { backgroundColor: colors.click + '15' }]}>
+            <Navigation size={rs(16)} color={colors.click} strokeWidth={1.8} />
           </View>
           <Text style={styles.statValue}>{totalKm.toLocaleString()}</Text>
           <Text style={styles.statLabel}>{t('travels.statKm')}</Text>

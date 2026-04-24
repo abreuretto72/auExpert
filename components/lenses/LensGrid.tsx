@@ -36,11 +36,11 @@ interface LensConfig {
 
 const LENSES: LensConfig[] = [
   { id: 'health', icon: ShieldCheck, labelKey: 'lenses.health', color: colors.success, route: 'health' },
-  { id: 'nutrition', icon: UtensilsCrossed, labelKey: 'lenses.nutrition', color: colors.lime, route: 'nutrition' },
-  { id: 'expenses', icon: Receipt, labelKey: 'lenses.expenses', color: colors.gold, route: 'expenses' },
-  { id: 'friends', icon: PawIcon, labelKey: 'lenses.friends', color: colors.accent, route: 'friends' },
+  { id: 'nutrition', icon: UtensilsCrossed, labelKey: 'lenses.nutrition', color: colors.success, route: 'nutrition' },
+  { id: 'expenses', icon: Receipt, labelKey: 'lenses.expenses', color: colors.warning, route: 'expenses' },
+  { id: 'friends', icon: PawIcon, labelKey: 'lenses.friends', color: colors.click, route: 'friends' },
   { id: 'plans', icon: Heart, labelKey: 'lenses.plans', color: colors.rose, route: 'plans' },
-  { id: 'achievements', icon: Trophy, labelKey: 'lenses.achievements', color: colors.gold, route: 'achievements' },
+  { id: 'achievements', icon: Trophy, labelKey: 'lenses.achievements', color: colors.warning, route: 'achievements' },
   { id: 'happiness', icon: Smile, labelKey: 'lenses.happiness', color: colors.success, route: 'happiness' },
   { id: 'travels', icon: Plane, labelKey: 'lenses.travels', color: colors.sky, route: 'travel' },
 ];

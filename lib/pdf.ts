@@ -89,7 +89,7 @@ function buildHtml(logoB64: string, options: PdfOptions): string {
   const dateStr = getDateStr();
   const logoImg = logoB64
     ? `<img src="data:image/png;base64,${logoB64}" class="header-logo" />`
-    : `<span style="font-size:15px;font-weight:700;color:${colors.accent};">auExpert</span>`;
+    : `<span style="font-size:15px;font-weight:700;color:${colors.click};">auExpert</span>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -122,7 +122,7 @@ function buildHtml(logoB64: string, options: PdfOptions): string {
     /* ── Header ── */
     .page-header {
       background: #fff;
-      border-bottom: 2.5px solid ${colors.accent};
+      border-bottom: 2.5px solid ${colors.click};
       padding: 8px 0 10px 0;
       display: flex;
       flex-direction: row;
@@ -200,7 +200,7 @@ function buildHtml(logoB64: string, options: PdfOptions): string {
       font-size: 13px;
       font-style: italic;
       color: #555;
-      border-left: 3px solid ${colors.accent};
+      border-left: 3px solid ${colors.click};
       padding-left: 10px;
       margin-top: 8px;
     }
@@ -210,7 +210,7 @@ function buildHtml(logoB64: string, options: PdfOptions): string {
       color: ${colors.petrol};
     }
     .entry-special {
-      color: ${colors.gold};
+      color: ${colors.warning};
       font-weight: 700;
       font-size: 11px;
     }

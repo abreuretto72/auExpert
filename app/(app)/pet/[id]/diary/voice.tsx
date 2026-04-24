@@ -258,7 +258,7 @@ export default function VoiceDiaryScreen() {
       <View style={styles.root}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-            <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={2} />
+            <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={2} />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
             {t('diary.micTitle', { name: petName })}
@@ -283,7 +283,7 @@ export default function VoiceDiaryScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.7}>
-          <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={2} />
+          <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {t('diary.micTitle', { name: petName })}
@@ -302,7 +302,7 @@ export default function VoiceDiaryScreen() {
               styles.waveBar,
               {
                 transform: [{ scaleY: anim }],
-                backgroundColor: isRecording ? colors.accent : colors.textGhost,
+                backgroundColor: isRecording ? colors.click : colors.textGhost,
               },
             ]}
           />
@@ -349,7 +349,7 @@ export default function VoiceDiaryScreen() {
               autoFocus={false}
               placeholder={t('diary.transcribedPlaceholder')}
               placeholderTextColor={colors.placeholder}
-              selectionColor={colors.accent}
+              selectionColor={colors.click}
             />
           )}
         </View>
@@ -449,8 +449,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35, shadowRadius: rs(12), elevation: 6,
   },
   micToggleBtnRecording: {
-    backgroundColor: colors.accent,
-    shadowColor: colors.accent,
+    backgroundColor: colors.click,
+    shadowColor: colors.click,
   },
   micToggleBtnPaused: {
     backgroundColor: colors.textGhost,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     marginBottom: rs(spacing.md),
   },
   transcriptCardEditable: {
-    borderColor: colors.accent,
+    borderColor: colors.click,
   },
   transcriptLabel: {
     color: colors.textDim, fontSize: fs(10),
@@ -515,10 +515,10 @@ const styles = StyleSheet.create({
   confirmBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: rs(spacing.xs),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     paddingVertical: rs(spacing.md),
     borderRadius: rs(radii.xl),
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3, shadowRadius: rs(12), elevation: 6,
   },
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   unavailableBtn: {
     marginTop: rs(8),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(14),
     paddingHorizontal: rs(32),
     paddingVertical: rs(14),

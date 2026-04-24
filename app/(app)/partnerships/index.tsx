@@ -66,7 +66,7 @@ function roleColor(role: AccessRole): string {
     case 'ong_member':
       return colors.rose;
     default:
-      return colors.accent;
+      return colors.click;
   }
 }
 
@@ -117,7 +117,7 @@ interface PartnerGrantCardProps {
 const PartnerGrantCard = React.memo<PartnerGrantCardProps>(({ grant, onRevoke, isRevoking }) => {
   const { t } = useTranslation();
   const isDog = grant.pet_species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
   const rc = roleColor(grant.role);
   const expiryLabel = formatRelativeExpiry(grant.expires_at, t);
 
@@ -159,8 +159,8 @@ const PartnerGrantCard = React.memo<PartnerGrantCardProps>(({ grant, onRevoke, i
 
         {grant.can_see_finances ? (
           <View style={styles.metaRow}>
-            <Wallet size={rs(13)} color={colors.accent} strokeWidth={1.8} />
-            <Text style={[styles.metaText, { color: colors.accent }]}>
+            <Wallet size={rs(13)} color={colors.click} strokeWidth={1.8} />
+            <Text style={[styles.metaText, { color: colors.click }]}>
               {t('partnerships.canSeeFinances')}
             </Text>
           </View>
@@ -206,7 +206,7 @@ interface PendingInviteCardProps {
 const PendingInviteCard = React.memo<PendingInviteCardProps>(({ invite, onCancel, isCancelling }) => {
   const { t } = useTranslation();
   const isDog = invite.pet_species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
   const rc = roleColor(invite.role);
   const expiryLabel = formatRelativeExpiry(invite.expires_at, t);
 
@@ -246,8 +246,8 @@ const PendingInviteCard = React.memo<PendingInviteCardProps>(({ invite, onCancel
 
         {invite.can_see_finances ? (
           <View style={styles.metaRow}>
-            <Wallet size={rs(13)} color={colors.accent} strokeWidth={1.8} />
-            <Text style={[styles.metaText, { color: colors.accent }]}>
+            <Wallet size={rs(13)} color={colors.click} strokeWidth={1.8} />
+            <Text style={[styles.metaText, { color: colors.click }]}>
               {t('partnerships.canSeeFinances')}
             </Text>
           </View>
@@ -290,7 +290,7 @@ function EmptyState({ tab, onInvite }: { tab: Tab; onInvite: () => void }) {
   return (
     <View style={styles.emptyBox}>
       <View style={styles.emptyIconWrap}>
-        <Icon size={rs(40)} color={colors.accent} strokeWidth={1.5} />
+        <Icon size={rs(40)} color={colors.click} strokeWidth={1.5} />
       </View>
       <Text style={styles.emptyTitle}>
         {tab === 'partners' ? t('partnerships.emptyPartnersTitle') : t('partnerships.emptyInvitesTitle')}
@@ -414,11 +414,11 @@ export default function PartnershipsScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(24)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleWrap}>
-          <Handshake size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          <Handshake size={rs(18)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.headerTitle}>{headerTitle}</Text>
         </View>
 
@@ -430,9 +430,9 @@ export default function PartnershipsScreen() {
           activeOpacity={0.7}
         >
           {activeQ.isFetching ? (
-            <ActivityIndicator size={rs(14)} color={colors.accent} />
+            <ActivityIndicator size={rs(14)} color={colors.click} />
           ) : (
-            <RefreshCw size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+            <RefreshCw size={rs(16)} color={colors.click} strokeWidth={1.8} />
           )}
         </TouchableOpacity>
       </View>
@@ -464,7 +464,7 @@ export default function PartnershipsScreen() {
       {/* Content */}
       {isInitialLoading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size={rs(24)} color={colors.accent} />
+          <ActivityIndicator size={rs(24)} color={colors.click} />
         </View>
       ) : activeQ.error ? (
         <View style={styles.errorBox}>
@@ -488,8 +488,8 @@ export default function PartnershipsScreen() {
             <RefreshControl
               refreshing={grantsQ.isFetching && grantsQ.count > 0}
               onRefresh={grantsQ.refetch}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={colors.click}
+              colors={[colors.click]}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -505,8 +505,8 @@ export default function PartnershipsScreen() {
             <RefreshControl
               refreshing={invitesQ.isFetching && invitesQ.count > 0}
               onRefresh={invitesQ.refetch}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={colors.click}
+              colors={[colors.click]}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     width: rs(32),
     height: rs(32),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     width: rs(80),
     height: rs(80),
     borderRadius: rs(24),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(spacing.md),
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(spacing.lg),
     paddingVertical: rs(12),
     borderRadius: rs(radii.lg),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   emptyCtaText: {
     fontFamily: 'Sora_700Bold',
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(spacing.lg),
     paddingVertical: rs(spacing.sm),
     borderRadius: rs(radii.lg),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   retryText: {
     fontFamily: 'Sora_700Bold',
@@ -796,10 +796,10 @@ const styles = StyleSheet.create({
     width: rs(56),
     height: rs(56),
     borderRadius: rs(20),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

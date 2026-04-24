@@ -306,11 +306,11 @@ export default function ProntuarioScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.replace(`/pet/${id}` as never)} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
           <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
         <View style={s.loadingCenter}>
@@ -336,11 +336,11 @@ export default function ProntuarioScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.replace(`/pet/${id}` as never)} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
           <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
         <View style={s.loadingCenter}>
@@ -352,7 +352,7 @@ export default function ProntuarioScreen() {
             {errMsg}
           </Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => refetch()} activeOpacity={0.8}>
-            <RefreshCw size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+            <RefreshCw size={rs(16)} color={colors.click} strokeWidth={1.8} />
             <Text style={s.retryText}>{t('prontuario.retry')}</Text>
           </TouchableOpacity>
         </View>
@@ -380,12 +380,12 @@ export default function ProntuarioScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.replace(`/pet/${id}` as never)} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('prontuario.title', { name: pet?.name ?? '...', context: sexContext(pet?.sex) })}</Text>
         <View style={{ flexDirection: 'row', gap: rs(8) }}>
           <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleRegenerate}
@@ -393,7 +393,7 @@ export default function ProntuarioScreen() {
             activeOpacity={0.7}
             disabled={isRegenerating}
           >
-            <RefreshCw size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <RefreshCw size={rs(18)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
       </View>
@@ -407,7 +407,7 @@ export default function ProntuarioScreen() {
       >
         {TAB_IDS.map((id) => {
           const isActive = activeTab === id;
-          const color = isActive ? colors.accent : colors.textDim;
+          const color = isActive ? colors.click : colors.textDim;
           return (
             <TouchableOpacity
               key={id}
@@ -427,7 +427,7 @@ export default function ProntuarioScreen() {
         contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={handleRefresh} tintColor={colors.accent} />
+          <RefreshControl refreshing={false} onRefresh={handleRefresh} tintColor={colors.click} />
         }
       >
         {/* Pet identity card */}
@@ -439,7 +439,7 @@ export default function ProntuarioScreen() {
               <View style={s.identityIconWrap}>
                 {pet?.species === 'cat'
                   ? <Cat size={rs(24)} color={colors.purple} strokeWidth={1.8} />
-                  : <Dog size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+                  : <Dog size={rs(24)} color={colors.click} strokeWidth={1.8} />
                 }
               </View>
             )}
@@ -612,18 +612,18 @@ export default function ProntuarioScreen() {
                   key={tv.id}
                   style={[
                     s.listItem,
-                    tv.is_primary && { borderLeftColor: colors.accent, borderLeftWidth: rs(3) },
+                    tv.is_primary && { borderLeftColor: colors.click, borderLeftWidth: rs(3) },
                   ]}
                 >
-                  <View style={[s.listIconWrap, { backgroundColor: tv.is_primary ? colors.accentGlow : colors.petrolSoft }]}>
-                    <UserCheck size={rs(16)} color={tv.is_primary ? colors.accent : colors.petrol} strokeWidth={1.8} />
+                  <View style={[s.listIconWrap, { backgroundColor: tv.is_primary ? colors.clickSoft : colors.petrolSoft }]}>
+                    <UserCheck size={rs(16)} color={tv.is_primary ? colors.click : colors.petrol} strokeWidth={1.8} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={s.titleRow}>
                       <Text style={s.listItemTitle}>{tv.name}</Text>
                       {tv.is_primary && (
-                        <View style={[s.confirmChip, { backgroundColor: colors.accentGlow }]}>
-                          <Text style={[s.confirmChipText, { color: colors.accent }]}>
+                        <View style={[s.confirmChip, { backgroundColor: colors.clickSoft }]}>
+                          <Text style={[s.confirmChipText, { color: colors.click }]}>
                             {t('prontuario.trustedVets.primary')}
                           </Text>
                         </View>
@@ -1050,7 +1050,7 @@ export default function ProntuarioScreen() {
             <Activity size={rs(32)} color={colors.textDim} strokeWidth={1.4} />
             <Text style={s.tabEmptyText}>{t('prontuario.tabEmpty.sinais')}</Text>
             <TouchableOpacity style={s.tabEmptyBtn} onPress={handleRegenerate} activeOpacity={0.8}>
-              <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <RefreshCw size={rs(14)} color={colors.click} strokeWidth={1.8} />
               <Text style={s.tabEmptyBtnText}>{t('prontuario.tabEmptyRegen')}</Text>
             </TouchableOpacity>
           </View>
@@ -1242,7 +1242,7 @@ export default function ProntuarioScreen() {
             <ShieldAlert size={rs(32)} color={colors.textDim} strokeWidth={1.4} />
             <Text style={s.tabEmptyText}>{t('prontuario.tabEmpty.raca')}</Text>
             <TouchableOpacity style={s.tabEmptyBtn} onPress={handleRegenerate} activeOpacity={0.8}>
-              <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <RefreshCw size={rs(14)} color={colors.click} strokeWidth={1.8} />
               <Text style={s.tabEmptyBtnText}>{t('prontuario.tabEmptyRegen')}</Text>
             </TouchableOpacity>
           </View>
@@ -1254,7 +1254,7 @@ export default function ProntuarioScreen() {
             <Phone size={rs(32)} color={colors.textDim} strokeWidth={1.4} />
             <Text style={s.tabEmptyText}>{t('prontuario.tabEmpty.emergencia')}</Text>
             <TouchableOpacity style={s.tabEmptyBtn} onPress={handleRegenerate} activeOpacity={0.8}>
-              <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <RefreshCw size={rs(14)} color={colors.click} strokeWidth={1.8} />
               <Text style={s.tabEmptyBtnText}>{t('prontuario.tabEmptyRegen')}</Text>
             </TouchableOpacity>
           </View>
@@ -1390,8 +1390,8 @@ const s = StyleSheet.create({
     borderColor: colors.border,
   },
   tabBtnActive: {
-    backgroundColor: colors.accentGlow,
-    borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft,
+    borderColor: colors.click + '40',
   },
   tabLabel: {
     fontFamily: 'Sora_600SemiBold',
@@ -1407,11 +1407,11 @@ const s = StyleSheet.create({
   loadingTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(17), color: colors.text, textAlign: 'center' },
   loadingSubtitle: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, textAlign: 'center' },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(8), backgroundColor: colors.card, borderRadius: rs(12), paddingHorizontal: rs(20), paddingVertical: rs(12), borderWidth: 1, borderColor: colors.border, marginTop: rs(8) },
-  retryText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.accent },
+  retryText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.click },
 
   identityCard: { backgroundColor: colors.card, borderRadius: rs(18), padding: rs(16), marginBottom: rs(16), borderWidth: 1, borderColor: colors.border },
   identityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: rs(12), marginBottom: rs(12) },
-  identityIconWrap: { width: rs(56), height: rs(56), borderRadius: rs(16), backgroundColor: colors.accentGlow, alignItems: 'center', justifyContent: 'center' },
+  identityIconWrap: { width: rs(56), height: rs(56), borderRadius: rs(16), backgroundColor: colors.clickSoft, alignItems: 'center', justifyContent: 'center' },
   petAvatar: { width: rs(56), height: rs(56), borderRadius: rs(16), backgroundColor: colors.card },
   petName: { fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text },
   petMeta: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, marginTop: rs(2) },
@@ -1685,6 +1685,6 @@ const s = StyleSheet.create({
 
   tabEmptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: rs(40), paddingHorizontal: rs(32), gap: rs(12) },
   tabEmptyText: { fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textDim, textAlign: 'center', lineHeight: fs(20) },
-  tabEmptyBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(4), paddingHorizontal: rs(16), paddingVertical: rs(8), borderRadius: rs(10), borderWidth: 1, borderColor: colors.accent + '40', backgroundColor: colors.accentSoft },
-  tabEmptyBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+  tabEmptyBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginTop: rs(4), paddingHorizontal: rs(16), paddingVertical: rs(8), borderRadius: rs(10), borderWidth: 1, borderColor: colors.click + '40', backgroundColor: colors.clickSoft },
+  tabEmptyBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.click },
 });

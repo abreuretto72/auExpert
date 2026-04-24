@@ -33,7 +33,7 @@ export default function HistoricoScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.historicoTitle')}</Text>
         <TouchableOpacity
@@ -41,7 +41,7 @@ export default function HistoricoScreen() {
           style={s.backBtn}
           accessibilityLabel={t('nutritionPdf.icon')}
         >
-          <FileText size={rs(20)} color={colors.accent} />
+          <FileText size={rs(20)} color={colors.click} />
         </TouchableOpacity>
       </View>
 
@@ -142,28 +142,28 @@ const s = StyleSheet.create({
     width: rs(12), height: rs(12), borderRadius: rs(6),
     backgroundColor: colors.textGhost, borderWidth: 2, borderColor: colors.border,
   },
-  dotCurrent: { backgroundColor: colors.lime, borderColor: colors.lime },
+  dotCurrent: { backgroundColor: colors.success, borderColor: colors.success },
   line: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: rs(2) },
   card: {
     flex: 1, backgroundColor: colors.card, borderRadius: rs(14),
     padding: rs(14), marginBottom: rs(12),
     borderWidth: 1, borderColor: colors.border,
   },
-  cardCurrent: { borderColor: colors.lime + '50' },
+  cardCurrent: { borderColor: colors.success + '50' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: rs(8), marginBottom: rs(4) },
   foodName: { flex: 1, fontSize: fs(14), fontWeight: '700', color: colors.text },
   foodBrand: { fontSize: fs(12), color: colors.textSec, marginBottom: rs(6) },
   currentBadge: {
-    backgroundColor: colors.limeSoft, borderRadius: rs(6),
+    backgroundColor: colors.successSoft, borderRadius: rs(6),
     paddingHorizontal: rs(8), paddingVertical: rs(2),
   },
-  currentBadgeText: { fontSize: fs(11), color: colors.lime, fontWeight: '700' },
+  currentBadgeText: { fontSize: fs(11), color: colors.success, fontWeight: '700' },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: rs(5) },
   dateText: { fontSize: fs(12), color: colors.textDim },
   monthsText: { fontSize: fs(12), color: colors.textDim },
   ctaBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8),
-    backgroundColor: colors.accent, borderRadius: rs(14), padding: rs(16), marginTop: rs(16),
+    backgroundColor: colors.click, borderRadius: rs(14), padding: rs(16), marginTop: rs(16),
   },
   ctaBtnText: { fontSize: fs(15), fontWeight: '700', color: '#fff' },
 });

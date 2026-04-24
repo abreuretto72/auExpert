@@ -151,7 +151,7 @@ function buildBody(rows: AgendaPdfRow[]): string {
       ? `<span style="background:${STATUS_COLOR[row.status] ?? '#888'}22;color:${STATUS_COLOR[row.status] ?? '#888'};border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px;">${escHtml(statusLabel(row.status))}</span>`
       : '';
     const recurring = row.is_recurring
-      ? `<span style="background:${colors.accent}22;color:${colors.accent};border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px;">${escHtml(t('agendaPdf.recurrent'))}</span>`
+      ? `<span style="background:${colors.click}22;color:${colors.click};border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;margin-left:6px;">${escHtml(t('agendaPdf.recurrent'))}</span>`
       : '';
     return `<div style="border:1px solid #ddd;border-radius:8px;padding:10px 12px;margin-bottom:8px;page-break-inside:avoid;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -181,12 +181,12 @@ function buildBody(rows: AgendaPdfRow[]): string {
       const dateStr = formatDateHeader(items[0].date, lang);
       const itemsHtml = items.map(renderRow).join('');
       return `<div style="margin-bottom:14px;page-break-inside:avoid;">
-        <h3 style="font-size:12px;color:${colors.accent};margin-bottom:6px;border-bottom:1px solid ${colors.accent}44;padding-bottom:2px;">${escHtml(dateStr)}</h3>
+        <h3 style="font-size:12px;color:${colors.click};margin-bottom:6px;border-bottom:1px solid ${colors.click}44;padding-bottom:2px;">${escHtml(dateStr)}</h3>
         ${itemsHtml}
       </div>`;
     }).join('');
     return `<section style="margin-bottom:20px;">
-      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.accent};padding-bottom:4px;">${escHtml(heading)}</h2>
+      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.click};padding-bottom:4px;">${escHtml(heading)}</h2>
       ${groupsHtml}
     </section>`;
   };

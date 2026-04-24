@@ -31,7 +31,7 @@ export default function ExpensesPdfScreen() {
       readyTitleKey="expensesPdf.ready"
       readySubtitleKey="expensesPdf.readySubtitle"
       icon={DollarSign}
-      iconColor={colors.gold}
+      iconColor={colors.warning}
       isReady={!isLoading && !!pet}
       onPreview={handlePreview}
       onShare={handleShare}

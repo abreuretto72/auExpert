@@ -58,8 +58,8 @@ export default function AchievementsScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.accent}
-          colors={[colors.accent]}
+          tintColor={colors.click}
+          colors={[colors.click]}
         />
       }
     >
@@ -77,7 +77,7 @@ export default function AchievementsScreen() {
           activeOpacity={0.7}
           accessibilityLabel={t('pdfCommon.printOrSave')}
         >
-          <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(18)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 

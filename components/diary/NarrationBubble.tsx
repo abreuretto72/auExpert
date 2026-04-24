@@ -31,9 +31,9 @@ interface MoodVisual {
 }
 
 const MOOD_COLORS: Readonly<Record<string, MoodVisual>> = {
-  ecstatic: { color: colors.gold, dotColor: colors.gold },
+  ecstatic: { color: colors.warning, dotColor: colors.warning },
   happy: { color: colors.success, dotColor: colors.success },
-  playful: { color: colors.accent, dotColor: colors.accent },
+  playful: { color: colors.click, dotColor: colors.click },
   calm: { color: colors.petrol, dotColor: colors.petrol },
   tired: { color: colors.textDim, dotColor: colors.textDim },
   anxious: { color: colors.warning, dotColor: colors.warning },
@@ -57,13 +57,13 @@ const formatConfidence = (value: number): string =>
 // ══════════════════════════════════════
 
 const TAG_COLORS: readonly string[] = [
-  colors.accent,
+  colors.click,
   colors.petrol,
   colors.purple,
   colors.success,
-  colors.gold,
+  colors.warning,
   colors.sky,
-  colors.lime,
+  colors.success,
   colors.rose,
 ];
 
@@ -164,12 +164,12 @@ const NarrationBubble: React.FC<NarrationBubbleProps> = ({
             <View style={styles.footerActions}>
               {onEdit && (
                 <TouchableOpacity style={styles.regenerateBtn} onPress={handleEditStart} activeOpacity={0.7}>
-                  <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+                  <Pencil size={rs(14)} color={colors.click} strokeWidth={1.8} />
                 </TouchableOpacity>
               )}
               {onRegenerate && (
                 <TouchableOpacity style={styles.regenerateBtn} onPress={handleRegenerate} activeOpacity={0.7}>
-                  <RefreshCw size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+                  <RefreshCw size={rs(14)} color={colors.click} strokeWidth={1.8} />
                   <Text style={styles.regenerateText}>{t('diary.regenerate')}</Text>
                 </TouchableOpacity>
               )}
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Sora',
     fontWeight: '600',
     fontSize: fs(12),
-    color: colors.accent,
+    color: colors.click,
   },
   editInput: {
     fontWeight: '400',
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     lineHeight: fs(14) * 1.7,
     backgroundColor: colors.bgCard,
     borderWidth: 1.5,
-    borderColor: colors.accent + '60',
+    borderColor: colors.click + '60',
     borderRadius: rs(10),
     padding: rs(10),
     marginBottom: spacing.sm,
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: rs(8),
   },
   confirmBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   cancelText: {
     fontFamily: 'Sora',

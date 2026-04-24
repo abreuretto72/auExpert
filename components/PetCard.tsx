@@ -52,7 +52,7 @@ const PetCard: React.FC<PetCardProps> = ({
   pet, onPress, onEdit,
   onPressIA, onPressDiary, onPressAgenda, onPressMembers,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isDog = pet.species === 'dog';
 
   const [diaryLoading, setDiaryLoading] = useState(false);
@@ -70,7 +70,7 @@ const PetCard: React.FC<PetCardProps> = ({
     // Fallback: reset if screen never hides this component (e.g. navigation error)
     diaryTimerRef.current = setTimeout(() => setDiaryLoading(false), 4000);
   };
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
   const mood = pet.current_mood
     ? moods.find((m) => m.id === pet.current_mood)
     : null;
@@ -92,7 +92,7 @@ const PetCard: React.FC<PetCardProps> = ({
             <>
               <View style={[styles.avatarGlow, { backgroundColor: petColor + '10' }]} />
               {isDog ? (
-                <Dog size={36} color={colors.accent} strokeWidth={1.8} />
+                <Dog size={36} color={colors.click} strokeWidth={1.8} />
               ) : (
                 <Cat size={36} color={colors.purple} strokeWidth={1.8} />
               )}
@@ -126,7 +126,7 @@ const PetCard: React.FC<PetCardProps> = ({
 
           <View style={styles.tagsRow}>
             {[
-              pet.estimated_age_months ? formatAge(pet.estimated_age_months) : null,
+              pet.estimated_age_months ? formatAge(pet.estimated_age_months, i18n.language) : null,
               pet.weight_kg ? formatWeight(pet.weight_kg) : null,
               isDog ? t('pets.dog') : t('pets.cat'),
             ]
@@ -144,7 +144,7 @@ const PetCard: React.FC<PetCardProps> = ({
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={styles.editBtn}
         >
-          <Pencil size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+          <Pencil size={rs(16)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -218,7 +218,7 @@ const PetCard: React.FC<PetCardProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <Users size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+          <Users size={rs(16)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
 
         {pet.last_activity ? (
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     width: rs(36),
     height: rs(36),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(radii.lg),
     paddingVertical: rs(10),
     alignItems: 'center',
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     width: rs(32),
     height: rs(32),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },

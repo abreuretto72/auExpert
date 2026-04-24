@@ -269,7 +269,7 @@ export default function DiaryEntryEditScreen() {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
         <View style={s.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.accent} />
+          <ActivityIndicator size="large" color={colors.click} />
         </View>
       </SafeAreaView>
     );
@@ -300,7 +300,7 @@ export default function DiaryEntryEditScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={handleBack} style={s.headerBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('diary.editTitle')}</Text>
         <TouchableOpacity onPress={handleDeleteEntry} style={s.deleteBtn} activeOpacity={0.7}>
@@ -313,8 +313,8 @@ export default function DiaryEntryEditScreen() {
           activeOpacity={0.7}
         >
           {isSaving
-            ? <ActivityIndicator size="small" color={colors.accent} />
-            : <Check size={rs(20)} color={isDirty ? colors.accent : colors.textDim} strokeWidth={2} />
+            ? <ActivityIndicator size="small" color={colors.click} />
+            : <Check size={rs(20)} color={isDirty ? colors.click : colors.textDim} strokeWidth={2} />
           }
         </TouchableOpacity>
       </View>
@@ -375,7 +375,7 @@ export default function DiaryEntryEditScreen() {
                   : ImageIcon;
                 const iconColor = m.type === 'video' ? colors.sky
                   : m.type === 'audio' ? colors.rose
-                  : colors.accent;
+                  : colors.click;
 
                 return (
                   <TouchableOpacity
@@ -580,7 +580,7 @@ const s = StyleSheet.create({
   },
   saveButton: {
     marginTop: rs(24),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(14),
     paddingVertical: rs(16),
     alignItems: 'center',

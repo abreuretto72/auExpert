@@ -86,7 +86,7 @@ export function CardActions({
 
   return (
     <TouchableOpacity onPress={() => setDeleteMode(true)} style={cas.editBtn} hitSlop={HIT}>
-      <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+      <Pencil size={rs(14)} color={colors.click} strokeWidth={1.8} />
     </TouchableOpacity>
   );
 }
@@ -132,7 +132,7 @@ export function resolveModuleRow(
 export const cas = StyleSheet.create({
   editBtn: {
     width: rs(28), height: rs(28), borderRadius: rs(8),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center', justifyContent: 'center',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },

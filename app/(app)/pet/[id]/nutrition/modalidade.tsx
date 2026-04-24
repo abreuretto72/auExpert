@@ -28,15 +28,15 @@ const OPTIONS: Array<{
     key: 'so_racao',
     titleKey: 'nutrition.soRacaoTitle',
     descKey: 'nutrition.soRacaoDesc',
-    icon: <FlameKindling size={rs(28)} color={colors.accent} />,
-    color: colors.accent,
+    icon: <FlameKindling size={rs(28)} color={colors.click} />,
+    color: colors.click,
   },
   {
     key: 'racao_natural',
     titleKey: 'nutrition.racaoNaturalTitle',
     descKey: 'nutrition.racaoNaturalDesc',
-    icon: <Leaf size={rs(28)} color={colors.lime} />,
-    color: colors.lime,
+    icon: <Leaf size={rs(28)} color={colors.success} />,
+    color: colors.success,
   },
   {
     key: 'so_natural',
@@ -83,7 +83,7 @@ export default function ModalidadeScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.modalidadeTitle')}</Text>
         <TouchableOpacity
@@ -91,7 +91,7 @@ export default function ModalidadeScreen() {
           style={s.backBtn}
           accessibilityLabel={t('nutritionPdf.icon')}
         >
-          <FileText size={rs(20)} color={colors.accent} />
+          <FileText size={rs(20)} color={colors.click} />
         </TouchableOpacity>
       </View>
 
@@ -178,7 +178,7 @@ const s = StyleSheet.create({
   radioInner: { width: rs(12), height: rs(12), borderRadius: rs(6) },
   confirmBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: colors.accent, borderRadius: rs(14), padding: rs(16),
+    gap: rs(8), backgroundColor: colors.click, borderRadius: rs(14), padding: rs(16),
   },
   confirmBtnDisabled: { opacity: 0.5 },
   confirmBtnText: { fontSize: fs(15), fontWeight: '700', color: '#fff' },

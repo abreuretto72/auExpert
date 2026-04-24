@@ -39,7 +39,7 @@ const ROLE_CONFIG: Record<MemberRole, {
   color: string;
   Icon: React.ElementType;
 }> = {
-  owner:     { labelKey: 'members.roles.owner',     descKey: 'members.roles.ownerDesc',     color: colors.accent,  Icon: ShieldCheck },
+  owner:     { labelKey: 'members.roles.owner',     descKey: 'members.roles.ownerDesc',     color: colors.click,  Icon: ShieldCheck },
   co_parent: { labelKey: 'members.roles.co_parent', descKey: 'members.roles.coParentDesc',  color: colors.purple,  Icon: UserCheck },
   caregiver: { labelKey: 'members.roles.caregiver', descKey: 'members.roles.caregiverDesc', color: colors.petrol,  Icon: Users },
   viewer:    { labelKey: 'members.roles.viewer',    descKey: 'members.roles.viewerDesc',    color: colors.textDim, Icon: Eye },
@@ -102,7 +102,7 @@ function MemberCard({
           <Text style={s.memberName}>{displayName}</Text>
           {isMemberRoot && (
             <View style={s.rootBadge}>
-              <Crown size={rs(10)} color={colors.gold} strokeWidth={2} />
+              <Crown size={rs(10)} color={colors.warning} strokeWidth={2} />
               <Text style={s.rootBadgeText}>{t('members.rootBadge')}</Text>
             </View>
           )}
@@ -261,8 +261,8 @@ function InviteSheet({
                 </View>
               )}
               {role === 'owner' && (
-                <View style={[s.validityInfo, { backgroundColor: colors.accentSoft }]}>
-                  <Text style={[s.validityText, { color: colors.accent }]}>
+                <View style={[s.validityInfo, { backgroundColor: colors.clickSoft }]}>
+                  <Text style={[s.validityText, { color: colors.click }]}>
                     {t('members.ownerNoExpiry')}
                   </Text>
                 </View>
@@ -309,8 +309,8 @@ function InviteSheet({
                 <Switch
                   value={canSeeFinances}
                   onValueChange={setCanSeeFinances}
-                  trackColor={{ false: colors.border, true: colors.accent + '80' }}
-                  thumbColor={canSeeFinances ? colors.accent : colors.textDim}
+                  trackColor={{ false: colors.border, true: colors.click + '80' }}
+                  thumbColor={canSeeFinances ? colors.click : colors.textDim}
                 />
               </View>
 
@@ -413,11 +413,11 @@ export default function CoparentsScreen() {
       <ScrollView
         style={s.container}
         contentContainerStyle={s.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.click} />}
       >
         {/* Header */}
         <View style={s.headerCard}>
-          <Users size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          <Users size={rs(20)} color={colors.click} strokeWidth={1.8} />
           <View style={s.headerInfo}>
             <Text style={s.headerTitle}>
               {t('members.delegateTitle', { name: pet?.name ?? '…' })}
@@ -434,7 +434,7 @@ export default function CoparentsScreen() {
         </View>
 
         {isLoading ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: rs(32) }} />
+          <ActivityIndicator color={colors.click} style={{ marginTop: rs(32) }} />
         ) : (
           <>
             <Text style={s.sectionLabel}>{t('members.active')}</Text>
@@ -451,7 +451,7 @@ export default function CoparentsScreen() {
                   <Text style={s.memberName}>{t('members.you')}</Text>
                   {myRole.isRoot && (
                     <View style={s.rootBadge}>
-                      <Crown size={rs(10)} color={colors.gold} strokeWidth={2} />
+                      <Crown size={rs(10)} color={colors.warning} strokeWidth={2} />
                       <Text style={s.rootBadgeText}>{t('members.rootBadge')}</Text>
                     </View>
                   )}
@@ -513,7 +513,7 @@ export default function CoparentsScreen() {
         {/* Bottom invite button */}
         {availableRoles.length > 0 && !isLoading && (
           <TouchableOpacity style={s.addBottomBtn} onPress={() => setInviteVisible(true)}>
-            <UserPlus size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <UserPlus size={rs(18)} color={colors.click} strokeWidth={1.8} />
             <Text style={s.addBottomBtnText}>{t('members.add')}</Text>
           </TouchableOpacity>
         )}
@@ -548,7 +548,7 @@ const s = StyleSheet.create({
   headerSub: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textSec, marginTop: rs(2) },
   addBtn: {
     width: rs(40), height: rs(40), borderRadius: rs(12),
-    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.click, alignItems: 'center', justifyContent: 'center',
   },
 
   // Section label
@@ -564,7 +564,7 @@ const s = StyleSheet.create({
     borderRadius: rs(radii.card), padding: rs(spacing.md),
   },
   memberCardRoot: {
-    borderColor: colors.gold + '40',
+    borderColor: colors.warning + '40',
     backgroundColor: colors.card,
   },
   memberIconCircle: {
@@ -579,10 +579,10 @@ const s = StyleSheet.create({
   // Root badge
   rootBadge: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
-    backgroundColor: colors.gold + '20', borderRadius: rs(radii.sm),
+    backgroundColor: colors.warning + '20', borderRadius: rs(radii.sm),
     paddingHorizontal: rs(6), paddingVertical: rs(2),
   },
-  rootBadgeText: { fontFamily: 'Sora_700Bold', fontSize: fs(9), color: colors.gold, letterSpacing: 0.5 },
+  rootBadgeText: { fontFamily: 'Sora_700Bold', fontSize: fs(9), color: colors.warning, letterSpacing: 0.5 },
 
   // Role badge
   roleBadge: {
@@ -618,9 +618,9 @@ const s = StyleSheet.create({
   addBottomBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8),
     marginTop: rs(8), paddingVertical: rs(14), borderRadius: rs(radii.card),
-    borderWidth: 1.5, borderColor: colors.accent + '40', borderStyle: 'dashed',
+    borderWidth: 1.5, borderColor: colors.click + '40', borderStyle: 'dashed',
   },
-  addBottomBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.accent },
+  addBottomBtnText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(14), color: colors.click },
 
   // Invite sheet
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11,18,25,0.75)', justifyContent: 'flex-end' },
@@ -708,7 +708,7 @@ const s = StyleSheet.create({
   // Buttons
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8),
-    marginTop: rs(20), backgroundColor: colors.accent,
+    marginTop: rs(20), backgroundColor: colors.click,
     borderRadius: rs(radii.xl), paddingVertical: rs(16),
   },
   primaryBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(16), color: '#fff' },

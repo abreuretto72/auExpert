@@ -38,7 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
   exam: colors.purple,
   medication: colors.sky,
   surgery: colors.danger,
-  weight: colors.accent,
+  weight: colors.click,
   allergy: colors.danger,
 };
 
@@ -78,7 +78,7 @@ const ClassificationRow = React.memo(function ClassificationRow({
         </View>
       </View>
       {selected
-        ? <CheckSquare size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+        ? <CheckSquare size={rs(20)} color={colors.click} strokeWidth={1.8} />
         : <Square size={rs(20)} color={colors.textGhost} strokeWidth={1.8} />}
     </TouchableOpacity>
   );
@@ -138,7 +138,7 @@ export default function PDFImportScreen({
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <ChevronLeft size={rs(20)} color={colors.accent} strokeWidth={2} />
+          <ChevronLeft size={rs(20)} color={colors.click} strokeWidth={2} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('pdf.title')}</Text>
       </View>
@@ -146,7 +146,7 @@ export default function PDFImportScreen({
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         {/* File card */}
         <View style={s.fileCard}>
-          <FileText size={rs(24)} color={colors.gold} strokeWidth={1.8} />
+          <FileText size={rs(24)} color={colors.warning} strokeWidth={1.8} />
           <View style={{ flex: 1 }}>
             <Text style={s.fileName} numberOfLines={1}>{fileName}</Text>
             {result.date_range && (
@@ -282,7 +282,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: rs(14),
     borderWidth: 1,
-    borderColor: colors.gold + '30',
+    borderColor: colors.warning + '30',
     padding: rs(14),
   },
   fileName: {
@@ -359,7 +359,7 @@ const s = StyleSheet.create({
   selectAllText: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(12),
-    color: colors.accent,
+    color: colors.click,
   },
 
   row: {
@@ -373,8 +373,8 @@ const s = StyleSheet.create({
     padding: rs(12),
   },
   rowSelected: {
-    borderColor: colors.accent + '40',
-    backgroundColor: colors.accentSoft,
+    borderColor: colors.click + '40',
+    backgroundColor: colors.clickSoft,
   },
   typeIcon: {
     width: rs(34),
@@ -435,7 +435,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(8),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(14),
     paddingVertical: rs(16),
   },

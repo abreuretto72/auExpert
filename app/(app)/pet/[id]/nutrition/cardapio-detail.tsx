@@ -17,7 +17,7 @@ import { usePets } from '../../../../../hooks/usePets';
 import type { Cardapio, CardapioDia } from '../../../../../hooks/useNutricao';
 
 const WEEKDAY_COLORS = [
-  colors.accent, colors.petrol, colors.purple, colors.success,
+  colors.click, colors.petrol, colors.purple, colors.success,
   colors.warning, colors.rose, colors.sky,
 ];
 
@@ -155,7 +155,7 @@ function Header({
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={onBack} style={s.backBtn}>
-        <ChevronLeft size={rs(22)} color={colors.accent} />
+        <ChevronLeft size={rs(22)} color={colors.click} />
       </TouchableOpacity>
       <Text style={s.headerTitle}>{title}</Text>
       <View style={s.headerActions}>
@@ -165,7 +165,7 @@ function Header({
           disabled={!canExport}
           activeOpacity={0.7}
         >
-          <FileText size={rs(20)} color={canExport ? colors.accent : colors.textGhost} />
+          <FileText size={rs(20)} color={canExport ? colors.click : colors.textGhost} />
         </TouchableOpacity>
       </View>
     </View>

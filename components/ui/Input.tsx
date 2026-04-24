@@ -136,7 +136,7 @@ export function Input(props: InputProps) {
           onPress={handleMicPress}
           style={[styles.suffix, listening && styles.micActive]}
         >
-          <Mic size={20} color={listening ? '#fff' : colors.accent} strokeWidth={1.8} />
+          <Mic size={20} color={listening ? '#fff' : colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </Animated.View>,
     );
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   inputFocused: {
-    borderColor: colors.accent,
+    borderColor: colors.click,
   },
   inputError: {
     borderColor: colors.danger,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   micActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: rs(16),
     padding: rs(6),
   },

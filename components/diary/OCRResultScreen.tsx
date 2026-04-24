@@ -64,7 +64,7 @@ function OCRFieldRow({
           <ConfidenceBadge confidence={field.confidence} />
           {!editing && (
             <TouchableOpacity onPress={() => setEditing(true)} activeOpacity={0.7} style={styles.editBtn}>
-              <Pencil size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <Pencil size={rs(14)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
         </View>
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     width: rs(28),
     height: rs(28),
     borderRadius: rs(8),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(10),
     paddingVertical: rs(6),
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: colors.click,
   },
   saveBtn: {
     width: rs(32),
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   totalValue: {
-    color: colors.accent,
+    color: colors.click,
     fontSize: fs(15),
     fontWeight: '700',
   },
@@ -545,10 +545,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(spacing.xs),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     paddingVertical: rs(spacing.md),
     borderRadius: rs(radii.xl),
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3,
     shadowRadius: rs(12),

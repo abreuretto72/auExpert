@@ -354,7 +354,7 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
             </TouchableOpacity>
           )}
           {canEdit && !expanded && <ChevronDown size={rs(14)} color={colors.textDim} strokeWidth={1.8} />}
-          {canEdit && expanded && <ChevronUp size={rs(14)} color={colors.accent} strokeWidth={1.8} />}
+          {canEdit && expanded && <ChevronUp size={rs(14)} color={colors.click} strokeWidth={1.8} />}
         </View>
       </TouchableOpacity>
 
@@ -370,7 +370,7 @@ export const DiaryModuleCard = React.memo(({ classification, moduleRow, onUpdate
                 onChangeText={(v) => setEditValues((prev) => ({ ...prev, [key]: v }))}
                 multiline={multiline}
                 placeholderTextColor={colors.placeholder}
-                selectionColor={colors.accent}
+                selectionColor={colors.click}
               />
             </View>
           ))}
@@ -516,7 +516,7 @@ const s = StyleSheet.create({
     paddingVertical: rs(5),
     paddingHorizontal: rs(12),
     borderRadius: rs(radii.md),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   saveText: {
     fontFamily: 'Sora_700Bold',

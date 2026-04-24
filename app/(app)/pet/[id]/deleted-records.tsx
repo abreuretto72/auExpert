@@ -57,7 +57,7 @@ function DeletedEntryCard({ item, locale, onRestore, isRestoring }: DeletedEntry
       {/* Header row */}
       <View style={s.cardHeader}>
         <View style={s.cardIconWrap}>
-          <BookOpen size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+          <BookOpen size={rs(16)} color={colors.click} strokeWidth={1.8} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={s.cardType}>
@@ -74,8 +74,8 @@ function DeletedEntryCard({ item, locale, onRestore, isRestoring }: DeletedEntry
           activeOpacity={0.7}
         >
           {isRestoring
-            ? <ActivityIndicator size="small" color={colors.accent} />
-            : <RotateCcw size={rs(16)} color={colors.accent} strokeWidth={2} />}
+            ? <ActivityIndicator size="small" color={colors.click} />
+            : <RotateCcw size={rs(16)} color={colors.click} strokeWidth={2} />}
           <Text style={s.restoreBtnText}>{t('diary.restore')}</Text>
         </TouchableOpacity>
       </View>
@@ -149,7 +149,7 @@ export default function DeletedRecordsScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('pet.deletedRecords')}</Text>
         <View style={s.headerBtn} />
@@ -212,7 +212,7 @@ const s = StyleSheet.create({
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(10), marginBottom: rs(10) },
   cardIconWrap: {
     width: rs(36), height: rs(36), borderRadius: rs(10),
-    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.accent + '20',
+    backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.click + '20',
     alignItems: 'center', justifyContent: 'center',
   },
   cardType: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textSec, textTransform: 'capitalize' },
@@ -220,10 +220,10 @@ const s = StyleSheet.create({
 
   restoreBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(5),
-    backgroundColor: colors.accent + '12', borderWidth: 1, borderColor: colors.accent + '30',
+    backgroundColor: colors.click + '12', borderWidth: 1, borderColor: colors.click + '30',
     borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(8),
   },
-  restoreBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(12), color: colors.accent },
+  restoreBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(12), color: colors.click },
 
   cardContent: {
     fontFamily: 'Sora_400Regular', fontSize: fs(13), color: colors.textSec,

@@ -42,7 +42,7 @@ export default function RacaoNaturalScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.racaoNaturalScreenTitle')}</Text>
         <View style={s.backBtn} />
@@ -69,7 +69,7 @@ export default function RacaoNaturalScreen() {
               <Text style={s.legendText}>{`${naturalPct}% Natural`}</Text>
             </View>
             <View style={s.legendItem}>
-              <View style={[s.legendDot, { backgroundColor: colors.accent }]} />
+              <View style={[s.legendDot, { backgroundColor: colors.click }]} />
               <Text style={s.legendText}>{`${pct2}% Ração`}</Text>
             </View>
           </View>
@@ -82,8 +82,8 @@ export default function RacaoNaturalScreen() {
             value={naturalPct}
             onValueChange={(v) => setNaturalPct(Math.round(v))}
             minimumTrackTintColor={colors.success}
-            maximumTrackTintColor={colors.accent}
-            thumbTintColor={colors.lime}
+            maximumTrackTintColor={colors.click}
+            thumbTintColor={colors.success}
           />
         </View>
 
@@ -130,7 +130,7 @@ const s = StyleSheet.create({
   sliderLabel: { fontSize: fs(15), fontWeight: '700', color: colors.text, textAlign: 'center' },
   barOuter: { flexDirection: 'row', height: rs(20), borderRadius: rs(10), overflow: 'hidden' },
   barNatural: { backgroundColor: colors.success },
-  barRacao: { backgroundColor: colors.accent },
+  barRacao: { backgroundColor: colors.click },
   barLegend: { flexDirection: 'row', justifyContent: 'center', gap: rs(24) },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
   legendDot: { width: rs(10), height: rs(10), borderRadius: rs(5) },
@@ -146,7 +146,7 @@ const s = StyleSheet.create({
   warningDesc: { fontSize: fs(13), color: colors.textSec },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: rs(8), backgroundColor: colors.accent, borderRadius: rs(14), padding: rs(16),
+    gap: rs(8), backgroundColor: colors.click, borderRadius: rs(14), padding: rs(16),
   },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: { fontSize: fs(15), fontWeight: '700', color: '#fff' },

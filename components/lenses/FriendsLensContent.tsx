@@ -28,7 +28,7 @@ const SPECIES_ICON: Record<string, React.ElementType> = {
 };
 
 const SPECIES_COLOR: Record<string, string> = {
-  dog: colors.accent,
+  dog: colors.click,
   cat: colors.purple,
   bird: colors.sky,
   rabbit: colors.success,
@@ -112,8 +112,8 @@ function FriendsSummary({ total, topFriend }: { total: number; topFriend: PetCon
   return (
     <View style={styles.summaryCard}>
       <View style={styles.summaryLeft}>
-        <View style={[styles.summaryIconWrap, { backgroundColor: colors.accentGlow }]}>
-          <Users size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+        <View style={[styles.summaryIconWrap, { backgroundColor: colors.clickSoft }]}>
+          <Users size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </View>
         <View>
           <Text style={styles.summaryCount}>{total}</Text>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   summaryCount: {
     fontFamily: 'JetBrainsMono_700Bold',
     fontSize: fs(28),
-    color: colors.accent,
+    color: colors.click,
     lineHeight: fs(30),
   },
   summaryLabel: {

@@ -188,10 +188,10 @@ export default function PdfExportModal({ visible, onClose, events, petName, getM
           <View style={styles.handle} />
 
           <View style={styles.header}>
-            <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             <Text style={styles.headerTitle}>{t('diary.pdfExport')}</Text>
             <TouchableOpacity onPress={onClose} style={{ marginLeft: 'auto' }}>
-              <X size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+              <X size={rs(18)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -229,15 +229,15 @@ export default function PdfExportModal({ visible, onClose, events, petName, getM
             <Text style={styles.info}>{t('diary.pdfMaxEntries', { max: String(MAX_PDF_ENTRIES) })}</Text>
 
             <TouchableOpacity
-              style={[styles.actionRow, { borderColor: colors.accent + '40' }]}
+              style={[styles.actionRow, { borderColor: colors.click + '40' }]}
               onPress={handlePreview}
               disabled={generating}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIcon, { backgroundColor: colors.accentGlow }]}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.clickSoft }]}>
                 {generating
-                  ? <ActivityIndicator color={colors.accent} size="small" />
-                  : <Download size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+                  ? <ActivityIndicator color={colors.click} size="small" />
+                  : <Download size={rs(20)} color={colors.click} strokeWidth={1.8} />}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.actionTitle}>{t('diary.printOrSave')}</Text>

@@ -168,7 +168,7 @@ export default function AddMetricsModal({
               <Text style={styles.title}>{t('health.addMetric')}</Text>
             </View>
             <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: colors.petrolGlow,
+    backgroundColor: colors.textSec,
     borderColor: colors.petrol,
   },
   chipText: {
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: radii.xl,
     paddingVertical: rs(16),
     marginTop: rs(8),

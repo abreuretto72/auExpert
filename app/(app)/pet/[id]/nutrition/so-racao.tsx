@@ -31,7 +31,7 @@ export default function SoRacaoScreen() {
     <SafeAreaView style={s.safeArea}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} />
+          <ChevronLeft size={rs(22)} color={colors.click} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('nutrition.soRacaoScreenTitle')}</Text>
         <View style={s.backBtn} />
@@ -40,13 +40,13 @@ export default function SoRacaoScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={s.heroCard}>
-          <FlameKindling size={rs(40)} color={colors.accent} />
+          <FlameKindling size={rs(40)} color={colors.click} />
           <Text style={s.heroTitle}>{t('nutrition.soRacaoScreenTitle')}</Text>
           <Text style={s.heroSubtitle}>{t('nutrition.soRacaoScreenSubtitle')}</Text>
         </View>
 
         {/* Toppers */}
-        <SectionLabel icon={<Star size={rs(13)} color={colors.gold} />} label={t('nutrition.topperTitle')} />
+        <SectionLabel icon={<Star size={rs(13)} color={colors.warning} />} label={t('nutrition.topperTitle')} />
         <Text style={s.hint}>{t('nutrition.topperHint')}</Text>
         <View style={s.topperGrid}>
           {TOPPERS.map((topper) => (
@@ -105,8 +105,8 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: rs(16), gap: rs(14), paddingBottom: rs(40) },
   heroCard: {
-    backgroundColor: colors.accentGlow, borderRadius: rs(20), padding: rs(24),
-    alignItems: 'center', gap: rs(8), borderWidth: 1, borderColor: colors.accent + '30',
+    backgroundColor: colors.clickSoft, borderRadius: rs(20), padding: rs(24),
+    alignItems: 'center', gap: rs(8), borderWidth: 1, borderColor: colors.click + '30',
   },
   heroTitle: { fontSize: fs(18), fontWeight: '800', color: colors.text },
   heroSubtitle: { fontSize: fs(13), color: colors.textSec, textAlign: 'center' },

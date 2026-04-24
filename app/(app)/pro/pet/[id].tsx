@@ -60,7 +60,7 @@ import {
   type ClinicalMetric,
 } from '../../../../hooks/useProClinicalBundle';
 import { useProDiaryBundle } from '../../../../hooks/useProDiaryBundle';
-import { ExpandableCard, InfoRow, EmptyState } from '../../pet/[id]/_health/components';
+import { ExpandableCard, InfoRow, EmptyState } from '../../../../components/health/components';
 import type {
   Vaccine, Allergy, Consultation, Medication, Exam, Surgery, DiaryEntry,
 } from '../../../../types/database';
@@ -105,7 +105,7 @@ function TabsBar({ active, onChange }: { active: TabId; onChange: (id: TabId) =>
     <View style={styles.tabsBar}>
       {TABS.map((tab) => {
         const isActive = tab.id === active;
-        const tint = isActive ? colors.accent : colors.textDim;
+        const tint = isActive ? colors.click : colors.textDim;
         return (
           <TouchableOpacity
             key={tab.id}
@@ -545,8 +545,8 @@ function ClinicalTab({
       {metrics.length > 0 ? (
         <View style={styles.section}>
           <SectionHeader
-            icon={<Activity size={rs(16)} color={colors.accent} strokeWidth={1.8} />}
-            color={colors.accent}
+            icon={<Activity size={rs(16)} color={colors.click} strokeWidth={1.8} />}
+            color={colors.click}
             title={t('health.tabMetrics')}
             count={metrics.length}
           />
@@ -555,7 +555,7 @@ function ClinicalTab({
               key={m.id}
               header={
                 <View style={styles.cardHeader}>
-                  <Activity size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+                  <Activity size={rs(14)} color={colors.click} strokeWidth={1.8} />
                   <View style={styles.cardHeaderInfo}>
                     <Text style={styles.cardHeaderTitle}>
                       {m.marker_name ?? m.metric_type}
@@ -648,7 +648,7 @@ function DiaryTab({
             activeOpacity={0.7}
           >
             {isFetchingNextPage ? (
-              <ActivityIndicator size={rs(16)} color={colors.accent} />
+              <ActivityIndicator size={rs(16)} color={colors.click} />
             ) : (
               <Text style={styles.loadMoreText}>{t('pro.petView.loadMore')}</Text>
             )}
@@ -672,7 +672,7 @@ function DiaryEntryCard({ entry }: { entry: DiaryEntry }) {
         <Text style={styles.diaryDate}>{formatDate(date)}</Text>
         {entry.mood_id ? (
           <View style={styles.diaryMood}>
-            <Smile size={rs(11)} color={colors.accent} strokeWidth={1.8} />
+            <Smile size={rs(11)} color={colors.click} strokeWidth={1.8} />
             <Text style={styles.diaryMoodText}>
               {t(`moods.${entry.mood_id}`, { defaultValue: entry.mood_id })}
             </Text>
@@ -744,7 +744,7 @@ function SkeletonList() {
 function severityColor(severity: string): string {
   switch (severity) {
     case 'severe': return colors.danger;
-    case 'moderate': return colors.accent;
+    case 'moderate': return colors.click;
     case 'mild': return colors.warning;
     default: return colors.textDim;
   }
@@ -833,7 +833,7 @@ export default function ProPetViewScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
           >
-            <ChevronLeft size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(24)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('pro.petView.title')}</Text>
           <View style={styles.headerRight} />
@@ -849,7 +849,7 @@ export default function ProPetViewScreen() {
   }
 
   const isDog = patient.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -861,7 +861,7 @@ export default function ProPetViewScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={rs(24)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(24)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
           {patient.pet_name}
@@ -878,7 +878,7 @@ export default function ProPetViewScreen() {
             <>
               <View style={[styles.avatarGlow, { backgroundColor: petColor + '10' }]} />
               {isDog ? (
-                <Dog size={rs(28)} color={colors.accent} strokeWidth={1.8} />
+                <Dog size={rs(28)} color={colors.click} strokeWidth={1.8} />
               ) : (
                 <Cat size={rs(28)} color={colors.purple} strokeWidth={1.8} />
               )}
@@ -923,8 +923,8 @@ export default function ProPetViewScreen() {
             <RefreshControl
               refreshing={refreshing || (clinicalFetching && !clinicalLoading)}
               onRefresh={onRefresh}
-              tintColor={colors.accent}
-              colors={[colors.accent]}
+              tintColor={colors.click}
+              colors={[colors.click]}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -968,7 +968,7 @@ const styles = StyleSheet.create({
     width: rs(36),
     height: rs(36),
     borderRadius: rs(10),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1076,8 +1076,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   tabBtnActive: {
-    borderColor: colors.accent + '60',
-    backgroundColor: colors.accent + '12',
+    borderColor: colors.click + '60',
+    backgroundColor: colors.click + '12',
   },
   tabLabel: {
     fontFamily: 'Sora_600SemiBold',
@@ -1255,12 +1255,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(8),
     paddingVertical: rs(3),
     borderRadius: rs(radii.sm),
-    backgroundColor: colors.accent + '12',
+    backgroundColor: colors.click + '12',
   },
   diaryMoodText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(10),
-    color: colors.accent,
+    color: colors.click,
   },
   diaryContent: {
     fontFamily: 'Sora_400Regular',
@@ -1274,7 +1274,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: rs(radii.md),
     borderLeftWidth: rs(3),
-    borderLeftColor: colors.accent,
+    borderLeftColor: colors.click,
     marginBottom: rs(spacing.sm),
   },
   narrationLabel: {
@@ -1348,7 +1348,7 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(12),
-    color: colors.accent,
+    color: colors.click,
     letterSpacing: rs(0.3),
   },
   // Permission denied

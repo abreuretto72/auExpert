@@ -77,15 +77,15 @@ export default function PdfActionModal({
 
           <View style={s.actions}>
             <TouchableOpacity
-              style={[s.actionRow, { borderColor: colors.accent + '40' }, busy && s.disabled]}
+              style={[s.actionRow, { borderColor: colors.click + '40' }, busy && s.disabled]}
               onPress={handlePreview}
               disabled={busy}
               activeOpacity={0.8}
             >
-              <View style={[s.actionIcon, { backgroundColor: colors.accentGlow }]}>
+              <View style={[s.actionIcon, { backgroundColor: colors.clickSoft }]}>
                 {isPrinting
-                  ? <ActivityIndicator color={colors.accent} size="small" />
-                  : <Download size={rs(20)} color={colors.accent} strokeWidth={1.8} />}
+                  ? <ActivityIndicator color={colors.click} size="small" />
+                  : <Download size={rs(20)} color={colors.click} strokeWidth={1.8} />}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.actionTitle}>{t('pdfCommon.printOrSave')}</Text>

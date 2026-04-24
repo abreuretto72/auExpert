@@ -33,7 +33,7 @@ export default function NutritionPdfScreen() {
       readyTitleKey="nutritionPdf.ready"
       readySubtitleKey="nutritionPdf.readySubtitle"
       icon={Leaf}
-      iconColor={colors.lime}
+      iconColor={colors.success}
       isReady={!isLoading && !!pet}
       onPreview={handlePreview}
       onShare={handleShare}

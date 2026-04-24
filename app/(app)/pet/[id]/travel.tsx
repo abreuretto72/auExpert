@@ -77,7 +77,7 @@ export default function TravelScreen() {
           activeOpacity={0.7}
           accessibilityLabel={t('pdfCommon.printOrSave')}
         >
-          <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(18)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 

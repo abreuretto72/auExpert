@@ -19,12 +19,12 @@ const CATEGORY_CONFIG: Record<string, { labelKey: string; color: string; Icon: R
   hospedagem:   { labelKey: 'expenses.category.hospedagem',   color: colors.sky,      Icon: Home },
   cuidados:     { labelKey: 'expenses.category.cuidados',     color: colors.purple,   Icon: Shield },
   treinamento:  { labelKey: 'expenses.category.treinamento',  color: colors.purple,   Icon: Dumbbell },
-  acessorios:   { labelKey: 'expenses.category.acessorios',   color: colors.gold,     Icon: Package },
+  acessorios:   { labelKey: 'expenses.category.acessorios',   color: colors.warning,     Icon: Package },
   tecnologia:   { labelKey: 'expenses.category.tecnologia',   color: colors.petrol,   Icon: Cpu },
-  plano:        { labelKey: 'expenses.category.plano',        color: colors.gold,     Icon: Receipt },
+  plano:        { labelKey: 'expenses.category.plano',        color: colors.warning,     Icon: Receipt },
   funerario:    { labelKey: 'expenses.category.funerario',    color: colors.textDim,  Icon: Pill },
   emergencia:   { labelKey: 'expenses.category.emergencia',   color: colors.danger,   Icon: AlertCircle },
-  lazer:        { labelKey: 'expenses.category.lazer',        color: colors.accent,   Icon: Smile },
+  lazer:        { labelKey: 'expenses.category.lazer',        color: colors.click,   Icon: Smile },
   documentacao: { labelKey: 'expenses.category.documentacao', color: colors.textDim,  Icon: FileText },
   outros:       { labelKey: 'expenses.category.outros',       color: colors.textDim,  Icon: MoreHorizontal },
 };
@@ -167,7 +167,7 @@ function MonthCard({ group }: { group: MonthGroup }) {
       <View style={styles.monthHeader}>
         <Text style={styles.monthLabel}>{group.label}</Text>
         <View style={styles.monthTotalBadge}>
-          <TrendingDown size={rs(12)} color={colors.gold} strokeWidth={2} />
+          <TrendingDown size={rs(12)} color={colors.warning} strokeWidth={2} />
           <Text style={styles.monthTotal}>{formatCurrency(group.total, group.currency)}</Text>
         </View>
       </View>
@@ -199,7 +199,7 @@ export default function ExpensesLens({ petId }: { petId: string }) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
+        <ActivityIndicator color={colors.click} />
       </View>
     );
   }
@@ -275,13 +275,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: rs(4),
-    backgroundColor: colors.goldSoft,
+    backgroundColor: colors.warningSoft,
     paddingHorizontal: rs(10),
     paddingVertical: rs(4),
     borderRadius: rs(10),
   },
   monthTotal: {
-    color: colors.gold,
+    color: colors.warning,
     fontSize: fs(13),
     fontWeight: '700',
     fontVariant: ['tabular-nums'],

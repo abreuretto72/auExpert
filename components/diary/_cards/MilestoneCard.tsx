@@ -18,12 +18,12 @@ export const MilestoneCard = React.memo(({ event, t, onDelete, isOwner, onAdminD
     <View style={styles.milestoneActions}>
       <CardActions event={event} onDelete={onDelete} />
     </View>
-    <Trophy size={rs(28)} color={colors.gold} strokeWidth={1.8} />
+    <Trophy size={rs(28)} color={colors.warning} strokeWidth={1.8} />
     <Text style={styles.milestoneTitle}>{event.title}</Text>
     <Text style={styles.milestoneDetail}>{event.detail}</Text>
     {event.badgeName && (
       <View style={styles.badgeChip}>
-        <Star size={rs(12)} color={colors.gold} strokeWidth={1.8} />
+        <Star size={rs(12)} color={colors.warning} strokeWidth={1.8} />
         <Text style={styles.badgeChipText}>{event.badgeName}</Text>
       </View>
     )}

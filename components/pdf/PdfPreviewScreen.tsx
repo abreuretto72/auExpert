@@ -37,7 +37,7 @@ export interface PdfPreviewScreenProps {
   readySubtitleParams?: Record<string, string | number>;
   /** Lucide icon rendered in the hero box */
   icon: LucideIcon;
-  /** Hero icon tint (defaults to `colors.accent`) */
+  /** Hero icon tint (defaults to `colors.click`) */
   iconColor?: string;
   /** Ready to render / generate? If false, shows spinner and skips auto-open. */
   isReady: boolean;
@@ -56,7 +56,7 @@ export function PdfPreviewScreen({
   readySubtitleKey,
   readySubtitleParams,
   icon: Icon,
-  iconColor = colors.accent,
+  iconColor = colors.click,
   isReady,
   onPreview,
   onShare,
@@ -111,13 +111,13 @@ export function PdfPreviewScreen({
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t(titleKey, titleParams)}</Text>
           <View style={s.headerBtn} />
         </View>
         <View style={s.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.click} />
           <Text style={s.loadingText}>{t('pdfCommon.generating')}</Text>
         </View>
       </SafeAreaView>
@@ -129,7 +129,7 @@ export function PdfPreviewScreen({
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{t(titleKey, titleParams)}</Text>
         <View style={s.headerBtn} />
@@ -148,15 +148,15 @@ export function PdfPreviewScreen({
         {/* Action: print / save */}
         <View style={s.actions}>
           <TouchableOpacity
-            style={[s.actionRow, { borderColor: colors.accent + '40' }]}
+            style={[s.actionRow, { borderColor: colors.click + '40' }]}
             onPress={handlePreview}
             activeOpacity={0.8}
             disabled={isGenerating}
           >
-            <View style={[s.actionIcon, { backgroundColor: colors.accentGlow }]}>
+            <View style={[s.actionIcon, { backgroundColor: colors.clickSoft }]}>
               {isGenerating
-                ? <ActivityIndicator color={colors.accent} size="small" />
-                : <Download size={rs(22)} color={colors.accent} strokeWidth={1.8} />}
+                ? <ActivityIndicator color={colors.click} size="small" />
+                : <Download size={rs(22)} color={colors.click} strokeWidth={1.8} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.actionTitle}>{t('pdfCommon.printOrSave')}</Text>

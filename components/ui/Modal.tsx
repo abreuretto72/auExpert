@@ -46,7 +46,7 @@ export const Modal: React.FC<ModalProps> = ({
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <TouchableOpacity onPress={onClose}>
-              <X size={20} color={colors.accent} strokeWidth={1.8} />
+              <X size={20} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
         )}

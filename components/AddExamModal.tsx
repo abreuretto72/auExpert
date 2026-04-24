@@ -303,11 +303,11 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
     <View style={styles.stepContainer}>
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <ClipboardList size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ClipboardList size={rs(22)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.title}>{t('health.addExam')}</Text>
         </View>
         <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -331,7 +331,7 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
           <Text style={styles.methodTitle}>{t('health.photoExam')}</Text>
           <Text style={styles.methodDesc}>{t('health.photoExamDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.methodCard} onPress={handlePickFromGallery} activeOpacity={0.7}>
@@ -342,18 +342,18 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
           <Text style={styles.methodTitle}>{t('health.galleryExam')}</Text>
           <Text style={styles.methodDesc}>{t('health.galleryExamDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.methodCard} onPress={handleManualEntry} activeOpacity={0.7}>
-        <View style={[styles.methodIconWrap, { backgroundColor: colors.accentGlow }]}>
-          <PenLine size={rs(28)} color={colors.accent} strokeWidth={1.8} />
+        <View style={[styles.methodIconWrap, { backgroundColor: colors.clickSoft }]}>
+          <PenLine size={rs(28)} color={colors.click} strokeWidth={1.8} />
         </View>
         <View style={styles.methodTextWrap}>
           <Text style={styles.methodTitle}>{t('health.manualExamEntry')}</Text>
           <Text style={styles.methodDesc}>{t('health.manualExamEntryDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
     </ScrollView>
   </View>
@@ -363,11 +363,11 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
     <View style={styles.stepContainer}>
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={handleBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('health.examDetails')}</Text>
         <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -663,8 +663,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentGlow,
+    borderColor: colors.click,
+    backgroundColor: colors.clickSoft,
   },
   chipText: {
     fontFamily: 'Sora_600SemiBold',
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     color: colors.textSec,
   },
   chipTextActive: {
-    color: colors.accent,
+    color: colors.click,
   },
   disclaimer: {
     fontFamily: 'Sora_400Regular',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: radii.xl,
     paddingVertical: rs(16),
     marginTop: spacing.md,

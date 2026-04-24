@@ -45,7 +45,7 @@ function roleColor(role: AccessRole): string {
     case 'ong_member':
       return colors.rose;
     default:
-      return colors.accent;
+      return colors.click;
   }
 }
 
@@ -68,7 +68,7 @@ function formatRelativeExpiry(expiresAt: string | null, t: (k: string, p?: Recor
 const PatientCard: React.FC<PatientCardProps> = ({ patient, onPress }) => {
   const { t } = useTranslation();
   const isDog = patient.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
   const rc = roleColor(patient.role);
 
   const location = [patient.tutor_city, patient.tutor_country]
@@ -91,7 +91,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient, onPress }) => {
             <>
               <View style={[styles.avatarGlow, { backgroundColor: petColor + '10' }]} />
               {isDog ? (
-                <Dog size={rs(32)} color={colors.accent} strokeWidth={1.8} />
+                <Dog size={rs(32)} color={colors.click} strokeWidth={1.8} />
               ) : (
                 <Cat size={rs(32)} color={colors.purple} strokeWidth={1.8} />
               )}
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: rs(radii.md),
     borderLeftWidth: rs(3),
-    borderLeftColor: colors.accent,
+    borderLeftColor: colors.click,
   },
   notesLabel: {
     fontFamily: 'Sora_700Bold',

@@ -80,7 +80,7 @@ function pill(text: string, color: string): string {
 
 function sectionWrap(heading: string, count: number, innerHtml: string): string {
   return `<section style="margin-bottom:20px;page-break-inside:avoid;">
-    <h2 style="font-size:13px;color:#222;margin-bottom:8px;border-bottom:2px solid ${colors.accent};padding-bottom:3px;">
+    <h2 style="font-size:13px;color:#222;margin-bottom:8px;border-bottom:2px solid ${colors.click};padding-bottom:3px;">
       ${escHtml(heading)} <span style="color:${colors.textDim};font-weight:400;font-size:11px;">(${count})</span>
     </h2>
     ${innerHtml}
@@ -227,7 +227,7 @@ function buildBody(data: HealthPdfData, lang: string): string {
         return `<div style="font-size:11px;color:#333;padding:3px 0;">${when} — <strong>${val}</strong></div>`;
       }).join('');
       return `<div style="margin-bottom:8px;">
-        <div style="font-size:11px;font-weight:700;color:${colors.accent};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">${escHtml(type)}</div>
+        <div style="font-size:11px;font-weight:700;color:${colors.click};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">${escHtml(type)}</div>
         ${rows}
       </div>`;
     }).join('');
@@ -251,7 +251,7 @@ function buildBody(data: HealthPdfData, lang: string): string {
       ];
       return row(title, meta);
     }).join('');
-    const totalLine = `<div style="font-size:12px;font-weight:700;color:${colors.accent};margin-top:6px;text-align:right;">${escHtml(t('healthPdf.total'))}: ${total.toFixed(2)}</div>`;
+    const totalLine = `<div style="font-size:12px;font-weight:700;color:${colors.click};margin-top:6px;text-align:right;">${escHtml(t('healthPdf.total'))}: ${total.toFixed(2)}</div>`;
     out.push(sectionWrap(t('healthPdf.sectionExpenses'), expenses.length, inner + totalLine));
   }
 

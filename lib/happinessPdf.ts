@@ -144,7 +144,7 @@ function buildBody(data: HappinessAgg, lang: string): string {
 
   const summaryHtml = `
     <section style="margin-bottom:18px;page-break-inside:avoid;">
-      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.accent};padding-bottom:3px;">${escHtml(t('happinessPdf.summary'))}</h2>
+      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.click};padding-bottom:3px;">${escHtml(t('happinessPdf.summary'))}</h2>
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
         <div style="flex:1;min-width:120px;border:1px solid #ddd;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('happinessPdf.avgScore'))}</div>
@@ -156,11 +156,11 @@ function buildBody(data: HappinessAgg, lang: string): string {
         </div>
         <div style="flex:1;min-width:120px;border:1px solid #ddd;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('happinessPdf.totalEntries'))}</div>
-          <div style="font-size:20px;font-weight:700;color:${colors.accent};margin-top:2px;">${data.totalEntries}</div>
+          <div style="font-size:20px;font-weight:700;color:${colors.click};margin-top:2px;">${data.totalEntries}</div>
         </div>
         <div style="flex:1;min-width:120px;border:1px solid #ddd;border-radius:8px;padding:10px;">
           <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">${escHtml(t('happinessPdf.streak'))}</div>
-          <div style="font-size:20px;font-weight:700;color:${colors.accent};margin-top:2px;">${data.streakDays} <span style="font-size:11px;font-weight:400;color:#888;">${escHtml(t('happinessPdf.streakDays'))}</span></div>
+          <div style="font-size:20px;font-weight:700;color:${colors.click};margin-top:2px;">${data.streakDays} <span style="font-size:11px;font-weight:400;color:#888;">${escHtml(t('happinessPdf.streakDays'))}</span></div>
         </div>
       </div>
       <div style="font-size:11px;color:${trendColor};font-weight:600;">
@@ -171,7 +171,7 @@ function buildBody(data: HappinessAgg, lang: string): string {
 
   const daysHtml = `
     <section style="page-break-inside:auto;">
-      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.accent};padding-bottom:3px;">${escHtml(t('happinessPdf.daysBreakdown'))}</h2>
+      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.click};padding-bottom:3px;">${escHtml(t('happinessPdf.daysBreakdown'))}</h2>
       ${data.days.map((d) => `
         <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid #eee;page-break-inside:avoid;">
           <div style="flex:1;font-size:11px;color:#333;">${escHtml(formatDate(d.date, lang))}</div>

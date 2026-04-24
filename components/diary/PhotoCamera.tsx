@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     lineHeight: fs(20),
   },
   permissionBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     paddingHorizontal: rs(32),
     paddingVertical: rs(14),
     borderRadius: rs(14),

@@ -342,7 +342,7 @@ function buildProntuario(data: PainelData): string {
 
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('painelPdf.prontuarioTitle'), colors.accent)}
+      ${sectionHeader(t('painelPdf.prontuarioTitle'), colors.click)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
         ${statCard(t('painelPdf.prontuarioTotalVac'), String(totalVac), colors.petrol)}
         ${statCard(t('painelPdf.prontuarioOk'), String(okCount), colors.success)}
@@ -364,7 +364,7 @@ function buildNutricao(data: PainelData): string {
   if (!n || !n.currentFood) {
     return `
       <section style="margin-bottom:14px;page-break-inside:avoid;">
-        ${sectionHeader(t('painelPdf.nutritionTitle'), colors.lime)}
+        ${sectionHeader(t('painelPdf.nutritionTitle'), colors.success)}
         <p style="font-size:10px;color:#888;margin:0;">${escHtml(t('painelPdf.nutritionNone'))}</p>
       </section>
     `;
@@ -373,8 +373,8 @@ function buildNutricao(data: PainelData): string {
   const cf = n.currentFood;
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('painelPdf.nutritionTitle'), colors.lime)}
-      <div style="border:1px solid #e5e7eb;border-left:3px solid ${colors.lime};border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+      ${sectionHeader(t('painelPdf.nutritionTitle'), colors.success)}
+      <div style="border:1px solid #e5e7eb;border-left:3px solid ${colors.success};border-radius:6px;padding:8px 10px;margin-bottom:6px;">
         <div style="font-size:11px;font-weight:700;color:#222;">${escHtml(cf.product_name ?? '—')}</div>
         ${cf.brand ? `<div style="font-size:10px;color:#666;margin-top:2px;">${escHtml(cf.brand)}</div>` : ''}
         <div style="font-size:10px;color:#555;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;">
@@ -385,7 +385,7 @@ function buildNutricao(data: PainelData): string {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${statCard(t('painelPdf.nutritionSupplements'), String(n.activeSupplements.length), colors.petrol)}
-        ${statCard(t('painelPdf.nutritionTreats'), String(n.recentTreats.length), colors.gold)}
+        ${statCard(t('painelPdf.nutritionTreats'), String(n.recentTreats.length), colors.warning)}
         ${statCard(t('painelPdf.nutritionIntolerances'), String(n.intolerances.length), n.intolerances.length > 0 ? colors.danger : colors.textDim)}
       </div>
     </section>
@@ -397,7 +397,7 @@ function buildGastos(data: PainelData, lang: string): string {
   if (data.monthTotal === 0) {
     return `
       <section style="margin-bottom:14px;page-break-inside:avoid;">
-        ${sectionHeader(t('painelPdf.expensesTitle'), colors.gold)}
+        ${sectionHeader(t('painelPdf.expensesTitle'), colors.warning)}
         <p style="font-size:10px;color:#888;margin:0;">${escHtml(t('painelPdf.expensesNone'))}</p>
       </section>
     `;
@@ -405,9 +405,9 @@ function buildGastos(data: PainelData, lang: string): string {
   const topCats = data.monthCategories.slice(0, 4);
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('painelPdf.expensesTitle'), colors.gold)}
+      ${sectionHeader(t('painelPdf.expensesTitle'), colors.warning)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-        ${statCard(t('painelPdf.expensesMonthTotal'), formatMoney(data.monthTotal, lang), colors.gold)}
+        ${statCard(t('painelPdf.expensesMonthTotal'), formatMoney(data.monthTotal, lang), colors.warning)}
         ${statCard(t('painelPdf.expensesMonthCount'), String(data.expenses.filter((e) => (e.date ?? '') >= new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10)).length), colors.petrol)}
       </div>
       ${topCats.length > 0 ? `
@@ -428,7 +428,7 @@ function buildAmigos(data: PainelData): string {
   if (data.friends.length === 0) {
     return `
       <section style="margin-bottom:14px;page-break-inside:avoid;">
-        ${sectionHeader(t('painelPdf.friendsTitle'), colors.accent)}
+        ${sectionHeader(t('painelPdf.friendsTitle'), colors.click)}
         <p style="font-size:10px;color:#888;margin:0;">${escHtml(t('painelPdf.friendsNone'))}</p>
       </section>
     `;
@@ -437,9 +437,9 @@ function buildAmigos(data: PainelData): string {
   const top5 = data.friends.slice(0, 5);
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('painelPdf.friendsTitle'), colors.accent)}
+      ${sectionHeader(t('painelPdf.friendsTitle'), colors.click)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-        ${statCard(t('painelPdf.friendsTotal'), String(data.friends.length), colors.accent)}
+        ${statCard(t('painelPdf.friendsTotal'), String(data.friends.length), colors.click)}
         ${statCard(t('painelPdf.friendsBest'), String(bestFriends.length), colors.rose)}
       </div>
       ${top5.map((f) => `
@@ -458,18 +458,18 @@ function buildConquistas(data: PainelData): string {
   if (!a || a.achievements.length === 0) {
     return `
       <section style="margin-bottom:14px;page-break-inside:avoid;">
-        ${sectionHeader(t('painelPdf.achievementsTitle'), colors.gold)}
+        ${sectionHeader(t('painelPdf.achievementsTitle'), colors.warning)}
         <p style="font-size:10px;color:#888;margin:0;">${escHtml(t('painelPdf.achievementsNone'))}</p>
       </section>
     `;
   }
   return `
     <section style="margin-bottom:14px;page-break-inside:avoid;">
-      ${sectionHeader(t('painelPdf.achievementsTitle'), colors.gold)}
+      ${sectionHeader(t('painelPdf.achievementsTitle'), colors.warning)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-        ${statCard(t('painelPdf.achievementsLevel'), String(a.level), colors.gold)}
+        ${statCard(t('painelPdf.achievementsLevel'), String(a.level), colors.warning)}
         ${statCard(t('painelPdf.achievementsXP'), String(a.xpTotal), colors.petrol)}
-        ${statCard(t('painelPdf.achievementsCount'), String(a.achievements.length), colors.accent)}
+        ${statCard(t('painelPdf.achievementsCount'), String(a.achievements.length), colors.click)}
       </div>
       ${a.recent.length > 0 ? `
         <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${escHtml(t('painelPdf.achievementsRecent'))}</div>
@@ -504,7 +504,7 @@ function buildFelicidade(data: PainelData, lang: string): string {
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${statCard(t('painelPdf.happinessAvg'), `${h.avgScore}/100`, scoreColor(h.avgScore))}
         ${statCard(t('painelPdf.happinessDominant'), moodLabel(h.dominantMood, lang), colors.petrol)}
-        ${statCard(t('painelPdf.happinessStreak'), `${h.streakDays}d`, colors.accent)}
+        ${statCard(t('painelPdf.happinessStreak'), `${h.streakDays}d`, colors.click)}
         ${statCard(t('painelPdf.happinessEntries'), String(h.totalEntries), colors.petrol)}
       </div>
       <div style="font-size:10px;color:#666;margin-top:6px;">
@@ -531,7 +531,7 @@ function buildViagens(data: PainelData): string {
       ${sectionHeader(t('painelPdf.travelsTitle'), colors.sky)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
         ${statCard(t('painelPdf.travelsTrips'), String(tr.totalTrips), colors.sky)}
-        ${statCard(t('painelPdf.travelsKm'), tr.totalKm.toLocaleString(), colors.accent)}
+        ${statCard(t('painelPdf.travelsKm'), tr.totalKm.toLocaleString(), colors.click)}
         ${statCard(t('painelPdf.travelsDays'), String(tr.totalDays), colors.success)}
       </div>
       ${recent.map((t2) => `
@@ -560,7 +560,7 @@ function buildPlanos(data: PainelData, lang: string): string {
       ${sectionHeader(t('painelPdf.plansTitle'), colors.rose)}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
         ${statCard(t('painelPdf.plansActive'), String(p.summary.active_count), colors.success)}
-        ${statCard(t('painelPdf.plansMonthly'), formatMoney(p.summary.total_monthly_cost, lang), colors.accent)}
+        ${statCard(t('painelPdf.plansMonthly'), formatMoney(p.summary.total_monthly_cost, lang), colors.click)}
         ${statCard(t('painelPdf.plansNextRenewal'), formatDate(p.summary.next_renewal_date, lang), colors.petrol)}
       </div>
       ${p.plans.slice(0, 4).map((pl) => `

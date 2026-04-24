@@ -58,8 +58,8 @@ export default function ExpensesScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.gold}
-          colors={[colors.gold]}
+          tintColor={colors.warning}
+          colors={[colors.warning]}
         />
       }
     >
@@ -76,7 +76,7 @@ export default function ExpensesScreen() {
           activeOpacity={0.7}
           accessibilityLabel={t('pdfCommon.printOrSave')}
         >
-          <FileText size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(18)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 

@@ -71,7 +71,7 @@ function CaptionField({
           onPress={onMicToggle}
           activeOpacity={0.7}
         >
-          <Mic size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+          <Mic size={rs(18)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
     </View>
@@ -274,7 +274,7 @@ export function DocumentPreviewStep({
         />
       ) : (
         <View style={s.mediaPlaceholder}>
-          <FileText size={rs(40)} color={colors.gold} strokeWidth={1.5} />
+          <FileText size={rs(40)} color={colors.warning} strokeWidth={1.5} />
         </View>
       )}
       <Text style={s.sectionLabel}>{t('diary.docTypeSelectorTitle')}</Text>
@@ -387,8 +387,8 @@ const s = StyleSheet.create({
     borderColor: colors.border,
   },
   docTypeChipActive: {
-    backgroundColor: colors.accentGlow,
-    borderColor: `${colors.accent}60`,
+    backgroundColor: colors.clickSoft,
+    borderColor: `${colors.click}60`,
   },
   docTypeText: {
     fontFamily: 'Sora_600SemiBold',
@@ -396,7 +396,7 @@ const s = StyleSheet.create({
     color: colors.textSec,
   },
   docTypeTextActive: {
-    color: colors.accent,
+    color: colors.click,
   },
 
   // Caption field
@@ -419,7 +419,7 @@ const s = StyleSheet.create({
     gap: rs(8),
   },
   captionInputRowActive: {
-    borderColor: `${colors.accent}60`,
+    borderColor: `${colors.click}60`,
   },
   captionInput: {
     flex: 1,
@@ -433,12 +433,12 @@ const s = StyleSheet.create({
     width: rs(32),
     height: rs(32),
     borderRadius: rs(10),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inlineMicActive: {
-    backgroundColor: colors.accentMed,
+    backgroundColor: colors.clickRing,
   },
 
   // Confirm button
@@ -447,10 +447,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(8),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     paddingVertical: rs(16),
     borderRadius: rs(14),
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3,
     shadowRadius: rs(12),

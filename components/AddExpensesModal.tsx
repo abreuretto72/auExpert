@@ -163,11 +163,11 @@ export default function AddExpensesModal({
           {/* Header */}
           <View style={styles.headerRow}>
             <View style={styles.titleRow}>
-              <Receipt size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <Receipt size={rs(20)} color={colors.click} strokeWidth={1.8} />
               <Text style={styles.title}>{t('health.addExpense')}</Text>
             </View>
             <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
@@ -181,7 +181,7 @@ export default function AddExpensesModal({
             <Input
               label={t('health.expenseAmount')}
               placeholder={t('health.expenseAmountPlaceholder')}
-              icon={<Receipt size={rs(18)} color={colors.accent} strokeWidth={1.8} />}
+              icon={<Receipt size={rs(18)} color={colors.click} strokeWidth={1.8} />}
               value={amount}
               onChangeText={setAmount}
               error={errors.amount}
@@ -341,8 +341,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   chipActive: {
-    backgroundColor: colors.accentGlow,
-    borderColor: colors.accent,
+    backgroundColor: colors.clickSoft,
+    borderColor: colors.click,
   },
   chipText: {
     fontFamily: 'Sora_500Medium',
@@ -350,14 +350,14 @@ const styles = StyleSheet.create({
     color: colors.textSec,
   },
   chipTextActive: {
-    color: colors.accent,
+    color: colors.click,
     fontFamily: 'Sora_600SemiBold',
   },
   submitBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: radii.xl,
     paddingVertical: rs(16),
     marginTop: rs(8),

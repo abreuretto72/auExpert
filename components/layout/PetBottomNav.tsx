@@ -36,7 +36,7 @@ const TABS: TabConfig[] = [
 ];
 
 // Active color — teal as specified in the nav design
-const ACTIVE_COLOR = colors.accent;
+const ACTIVE_COLOR = colors.click;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -104,13 +104,13 @@ const styles = StyleSheet.create({
     color: colors.textDim,
   },
   labelActive: {
-    color: colors.accent,
+    color: colors.click,
   },
   dot: {
     width: rs(4),
     height: rs(4),
     borderRadius: rs(2),
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     marginTop: rs(1),
   },
 });

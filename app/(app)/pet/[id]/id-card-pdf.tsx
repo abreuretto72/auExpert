@@ -92,13 +92,13 @@ export default function IdCardPdfScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-            <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>{t('idCard.pdfTitle', { name: pet?.name ?? '' })}</Text>
           <View style={s.headerBtn} />
         </View>
         <View style={s.center}>
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.click} />
           <Text style={s.loadingText}>{t('idCard.generating')}</Text>
         </View>
       </SafeAreaView>
@@ -112,7 +112,7 @@ export default function IdCardPdfScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('idCard.pdfTitle', { name: pet.name })}</Text>
         <View style={s.headerBtn} />
@@ -122,7 +122,7 @@ export default function IdCardPdfScreen() {
         {/* Preview illustration */}
         <View style={s.previewBox}>
           <View style={s.previewIconWrap}>
-            <CreditCard size={rs(48)} color={colors.accent} strokeWidth={1.3} />
+            <CreditCard size={rs(48)} color={colors.click} strokeWidth={1.3} />
           </View>
           <Text style={s.previewTitle}>{t('idCard.pdfReady')}</Text>
           <Text style={s.previewSubtitle}>{t('idCard.pdfReadySubtitle')}</Text>
@@ -132,15 +132,15 @@ export default function IdCardPdfScreen() {
         <View style={s.actions}>
           {/* Print / Preview */}
           <TouchableOpacity
-            style={[s.actionRow, { borderColor: colors.accent + '40' }]}
+            style={[s.actionRow, { borderColor: colors.click + '40' }]}
             onPress={handlePreview}
             activeOpacity={0.8}
             disabled={isGenerating}
           >
-            <View style={[s.actionIcon, { backgroundColor: colors.accentGlow }]}>
+            <View style={[s.actionIcon, { backgroundColor: colors.clickSoft }]}>
               {isGenerating
-                ? <ActivityIndicator color={colors.accent} size="small" />
-                : <Download size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+                ? <ActivityIndicator color={colors.click} size="small" />
+                : <Download size={rs(22)} color={colors.click} strokeWidth={1.8} />
               }
             </View>
             <View style={{ flex: 1 }}>
@@ -193,7 +193,7 @@ const s = StyleSheet.create({
 
   content: { flex: 1, padding: rs(24) },
   previewBox: { alignItems: 'center', padding: rs(32) },
-  previewIconWrap: { width: rs(96), height: rs(96), borderRadius: rs(28), backgroundColor: colors.accentGlow, alignItems: 'center', justifyContent: 'center', marginBottom: rs(16) },
+  previewIconWrap: { width: rs(96), height: rs(96), borderRadius: rs(28), backgroundColor: colors.clickSoft, alignItems: 'center', justifyContent: 'center', marginBottom: rs(16) },
   previewTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(20), color: colors.text, textAlign: 'center' },
   previewSubtitle: { fontFamily: 'Sora_400Regular', fontSize: fs(14), color: colors.textDim, textAlign: 'center', marginTop: rs(8), lineHeight: fs(14) * 1.6 },
 

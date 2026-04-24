@@ -193,7 +193,7 @@ export default function ProfileScreen() {
   }, [user?.id, toast, t]);
 
   if (loading) {
-    return <SafeAreaView style={s.safe}><View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View></SafeAreaView>;
+    return <SafeAreaView style={s.safe}><View style={s.center}><ActivityIndicator size="large" color={colors.click} /></View></SafeAreaView>;
   }
 
   const memberDate = data.created_at ? new Date(data.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '';
@@ -205,7 +205,7 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t('tutor.profile')}</Text>
         <TouchableOpacity
@@ -213,7 +213,7 @@ export default function ProfileScreen() {
           style={s.headerBtn}
           activeOpacity={0.7}
         >
-          <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+          <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -224,12 +224,12 @@ export default function ProfileScreen() {
             {data.avatar_url ? (
               <Image source={{ uri: data.avatar_url }} style={s.avatarImg} />
             ) : (
-              <LinearGradient colors={[colors.accent, colors.accentDark]} style={s.avatarGrad}>
+              <LinearGradient colors={[colors.click, colors.clickDark]} style={s.avatarGrad}>
                 <User size={rs(48)} color="#fff" strokeWidth={1.5} />
               </LinearGradient>
             )}
             <TouchableOpacity style={s.cameraBtn} onPress={handleChangePhoto}>
-              <Camera size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+              <Camera size={rs(16)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
           <Text style={s.avatarName}>{data.full_name || 'Tutor'}</Text>
@@ -251,10 +251,10 @@ export default function ProfileScreen() {
         <View style={s.xpCard}>
           <View style={s.xpTop}>
             <View style={s.xpLevelRow}>
-              <Trophy size={rs(18)} color={colors.gold} strokeWidth={1.8} />
+              <Trophy size={rs(18)} color={colors.warning} strokeWidth={1.8} />
               <Text style={s.xpLevelText}>{t('tutor.level', { level: data.level })}</Text>
             </View>
-            <Text style={s.xpTitle}>{data.title}</Text>
+            <Text style={s.xpTitle}>{t(`tutor.titles.level${Math.min(Math.max(data.level, 1), 10)}`)}</Text>
           </View>
           <View style={s.xpTrack}><View style={[s.xpFill, { width: `${xpPct}%` }]} /></View>
           <View style={s.xpBottom}>
@@ -265,20 +265,20 @@ export default function ProfileScreen() {
 
         {/* ── Proof of Love ── */}
         <TouchableOpacity style={s.proofCard} activeOpacity={0.7}>
-          <View style={s.proofIcon}><Heart size={rs(20)} color={colors.gold} strokeWidth={1.8} /></View>
+          <View style={s.proofIcon}><Heart size={rs(20)} color={colors.warning} strokeWidth={1.8} /></View>
           <View style={{ flex: 1 }}>
             <Text style={s.proofTitle}>{t('tutor.proofOfLove')}</Text>
             <Text style={s.proofSub}>{t(`tutor.proofTier.${data.proof_of_love_tier}`)} — {t('tutor.proofDiscount', { percent: discount })}</Text>
           </View>
-          <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronRight size={rs(14)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
 
         {/* ── Estatísticas 2x2 ── */}
         <Text style={s.sectionLabel}>{t('tutor.stats').toUpperCase()}</Text>
         <View style={s.statsGrid}>
           {[
-            { label: t('tutor.statPets'), value: pets.length, icon: <Heart size={rs(16)} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
-            { label: t('tutor.statDiary'), value: 0, icon: <BookOpen size={rs(16)} color={colors.accent} strokeWidth={1.8} />, color: colors.accent },
+            { label: t('tutor.statPets'), value: pets.length, icon: <Heart size={rs(16)} color={colors.click} strokeWidth={1.8} />, color: colors.click },
+            { label: t('tutor.statDiary'), value: 0, icon: <BookOpen size={rs(16)} color={colors.click} strokeWidth={1.8} />, color: colors.click },
             { label: t('tutor.statAnalysis'), value: 0, icon: <ScanEye size={rs(16)} color={colors.purple} strokeWidth={1.8} />, color: colors.purple },
             { label: t('tutor.statVaccines'), value: '—', icon: <ShieldCheck size={rs(16)} color={colors.success} strokeWidth={1.8} />, color: colors.success },
           ].map((st, i) => (
@@ -292,7 +292,7 @@ export default function ProfileScreen() {
         {/* ── Meus Pets ── */}
         <Text style={s.sectionLabel}>{t('pets.myPets').toUpperCase()}</Text>
         {pets.map((pet) => {
-          const petColor = pet.species === 'dog' ? colors.accent : colors.purple;
+          const petColor = pet.species === 'dog' ? colors.click : colors.purple;
           return (
             <TouchableOpacity key={pet.id} style={s.petRow} activeOpacity={0.7} onPress={() => router.push(`/pet/${pet.id}` as never)}>
               {pet.avatar_url ? (
@@ -312,7 +312,7 @@ export default function ProfileScreen() {
               <Text style={[s.petHealth, { color: (pet.health_score ?? 0) >= 80 ? colors.success : colors.warning }]}>
                 {pet.health_score ?? '—'}
               </Text>
-              <ChevronRight size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+              <ChevronRight size={rs(14)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           );
         })}
@@ -325,7 +325,7 @@ export default function ProfileScreen() {
         {/* Endereço */}
         <Text style={s.sectionLabel}>{t('tutor.address').toUpperCase()}</Text>
         <TouchableOpacity style={s.gpsBtn} onPress={handleGps} disabled={gpsLoading} activeOpacity={0.7}>
-          {gpsLoading ? <ActivityIndicator size="small" color={colors.accent} /> : <Navigation size={rs(18)} color={colors.accent} strokeWidth={1.8} />}
+          {gpsLoading ? <ActivityIndicator size="small" color={colors.click} /> : <Navigation size={rs(18)} color={colors.click} strokeWidth={1.8} />}
           <Text style={s.gpsBtnText}>{gpsLoading ? t('tutor.detectingGps') : t('tutor.detectGps')}</Text>
         </TouchableOpacity>
         <Input label={t('tutor.addressStreet')} value={data.address_street} onChangeText={(v) => update('address_street', v)} icon={<MapPin size={rs(20)} color={colors.petrol} strokeWidth={1.8} />} />
@@ -370,8 +370,8 @@ export default function ProfileScreen() {
             <Switch
               value={data[item.key] as boolean}
               onValueChange={(v) => update(item.key, v)}
-              trackColor={{ false: colors.border, true: colors.accent + '50' }}
-              thumbColor={data[item.key] ? colors.accent : colors.textDim}
+              trackColor={{ false: colors.border, true: colors.click + '50' }}
+              thumbColor={data[item.key] ? colors.click : colors.textDim}
             />
           </View>
         ))}
@@ -392,7 +392,7 @@ const s = StyleSheet.create({
 
   // Avatar
   avatarSection: { alignItems: 'center', paddingVertical: spacing.xl },
-  avatarGrad: { width: rs(100), height: rs(100), borderRadius: rs(32), alignItems: 'center', justifyContent: 'center', shadowColor: colors.accent, shadowOffset: { width: 0, height: rs(6) }, shadowOpacity: 0.3, shadowRadius: rs(16), elevation: 6 },
+  avatarGrad: { width: rs(100), height: rs(100), borderRadius: rs(32), alignItems: 'center', justifyContent: 'center', shadowColor: colors.click, shadowOffset: { width: 0, height: rs(6) }, shadowOpacity: 0.3, shadowRadius: rs(16), elevation: 6 },
   avatarImg: { width: rs(100), height: rs(100), borderRadius: rs(32) },
   cameraBtn: { position: 'absolute', bottom: rs(-4), right: rs(-4), width: rs(32), height: rs(32), borderRadius: rs(10), backgroundColor: colors.card, borderWidth: 2, borderColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   avatarName: { fontFamily: 'Sora_700Bold', fontSize: fs(24), color: colors.text, marginTop: spacing.md },
@@ -400,20 +400,20 @@ const s = StyleSheet.create({
   avatarMetaText: { fontFamily: 'Sora_400Regular', fontSize: fs(12), color: colors.textDim },
 
   // XP
-  xpCard: { backgroundColor: colors.card, borderRadius: rs(20), padding: rs(20), marginBottom: rs(14), borderWidth: 1, borderColor: colors.gold + '12' },
+  xpCard: { backgroundColor: colors.card, borderRadius: rs(20), padding: rs(20), marginBottom: rs(14), borderWidth: 1, borderColor: colors.warning + '12' },
   xpTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: rs(12) },
   xpLevelRow: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
-  xpLevelText: { fontFamily: 'Sora_800ExtraBold', fontSize: fs(16), color: colors.gold },
+  xpLevelText: { fontFamily: 'Sora_800ExtraBold', fontSize: fs(16), color: colors.warning },
   xpTitle: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim },
   xpTrack: { height: rs(6), borderRadius: rs(3), backgroundColor: colors.border, marginBottom: rs(8) },
-  xpFill: { height: '100%', borderRadius: rs(3), backgroundColor: colors.gold },
+  xpFill: { height: '100%', borderRadius: rs(3), backgroundColor: colors.warning },
   xpBottom: { flexDirection: 'row', justifyContent: 'space-between' },
   xpVal: { fontFamily: 'JetBrainsMono_500Medium', fontSize: fs(10), color: colors.textDim },
   xpNext: { fontFamily: 'JetBrainsMono_400Regular', fontSize: fs(10), color: colors.textGhost },
 
   // Proof of Love
   proofCard: { flexDirection: 'row', alignItems: 'center', gap: rs(14), backgroundColor: colors.card, borderRadius: rs(18), padding: rs(16), marginBottom: rs(14), borderWidth: 1, borderColor: colors.border },
-  proofIcon: { width: rs(42), height: rs(42), borderRadius: rs(14), backgroundColor: colors.gold + '10', alignItems: 'center', justifyContent: 'center' },
+  proofIcon: { width: rs(42), height: rs(42), borderRadius: rs(14), backgroundColor: colors.warning + '10', alignItems: 'center', justifyContent: 'center' },
   proofTitle: { fontFamily: 'Sora_700Bold', fontSize: fs(14), color: colors.text },
   proofSub: { fontFamily: 'Sora_400Regular', fontSize: fs(11), color: colors.textDim, marginTop: 2 },
 
@@ -442,15 +442,15 @@ const s = StyleSheet.create({
 
   // Edit fields
   row: { flexDirection: 'row', gap: spacing.sm },
-  gpsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.accent + '12', borderWidth: 1, borderColor: colors.accent + '25', borderRadius: radii.lg, paddingVertical: rs(12), marginBottom: spacing.md },
-  gpsBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.accent },
+  gpsBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(8), backgroundColor: colors.click + '12', borderWidth: 1, borderColor: colors.click + '25', borderRadius: radii.lg, paddingVertical: rs(12), marginBottom: spacing.md },
+  gpsBtnText: { fontFamily: 'Sora_700Bold', fontSize: fs(13), color: colors.click },
 
   // Social
   socialChips: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(8), marginBottom: spacing.md },
   socialChip: { paddingHorizontal: rs(14), paddingVertical: rs(8), borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.border },
-  socialChipActive: { backgroundColor: colors.accent + '15', borderColor: colors.accent },
+  socialChipActive: { backgroundColor: colors.click + '15', borderColor: colors.click },
   socialChipText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.textSec },
-  socialChipTextActive: { color: colors.accent },
+  socialChipTextActive: { color: colors.click },
 
   // Privacy
   privacyRow: { flexDirection: 'row', alignItems: 'center', gap: rs(12), backgroundColor: colors.card, borderRadius: rs(14), padding: rs(14), marginBottom: rs(8), borderWidth: 1, borderColor: colors.border },

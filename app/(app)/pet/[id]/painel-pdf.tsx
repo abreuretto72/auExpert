@@ -34,7 +34,7 @@ export default function PainelPdfScreen() {
       readyTitleKey="painelPdf.ready"
       readySubtitleKey="painelPdf.readySubtitle"
       icon={LayoutGrid}
-      iconColor={colors.accent}
+      iconColor={colors.click}
       isReady={!isLoading && !!pet}
       onPreview={handlePreview}
       onShare={handleShare}

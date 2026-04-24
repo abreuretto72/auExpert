@@ -57,7 +57,7 @@ export const Button: React.FC<ButtonProps> = ({
   if (isPrimary || isDanger) {
     const gradientColors = isDanger
       ? [colors.danger, '#C0392B'] as const
-      : [colors.accent, colors.accentDark] as const;
+      : [colors.click, colors.clickDark] as const;
 
     return (
       <TouchableOpacity
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   gradient: {
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 30,

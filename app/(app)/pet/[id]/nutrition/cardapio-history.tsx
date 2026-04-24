@@ -23,7 +23,7 @@ import type { CardapioHistoryItem } from '../../../../../hooks/useNutricao';
 const MODALIDADE_COLORS: Record<string, string> = {
   so_racao: colors.petrol,
   racao_natural: colors.success,
-  so_natural: colors.lime,
+  so_natural: colors.success,
 };
 
 export default function CardapioHistoryScreen() {
@@ -118,8 +118,8 @@ export default function CardapioHistoryScreen() {
               activeOpacity={0.7}
             >
               {isExporting
-                ? <ActivityIndicator size="small" color={colors.accent} />
-                : <FileText size={rs(16)} color={colors.accent} />}
+                ? <ActivityIndicator size="small" color={colors.click} />
+                : <FileText size={rs(16)} color={colors.click} />}
             </TouchableOpacity>
             <ChevronRight size={rs(16)} color={colors.textDim} />
           </View>
@@ -165,7 +165,7 @@ function Header({ onBack, title }: { onBack: () => void; title: string }) {
   return (
     <View style={s.header}>
       <TouchableOpacity onPress={onBack} style={s.backBtn}>
-        <ChevronLeft size={rs(22)} color={colors.accent} />
+        <ChevronLeft size={rs(22)} color={colors.click} />
       </TouchableOpacity>
       <Text style={s.headerTitle}>{title}</Text>
       <View style={s.backBtn} />
@@ -204,7 +204,7 @@ const s = StyleSheet.create({
   cardActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: rs(8) },
   exportIconBtn: {
     width: rs(32), height: rs(32), alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accentGlow, borderRadius: rs(8),
-    borderWidth: 1, borderColor: colors.accent + '40',
+    backgroundColor: colors.clickSoft, borderRadius: rs(8),
+    borderWidth: 1, borderColor: colors.click + '40',
   },
 });

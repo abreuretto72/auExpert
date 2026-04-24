@@ -90,14 +90,14 @@ function AudioThumb({ localUri, duration }: { localUri: string; duration?: numbe
       activeOpacity={0.85}
     >
       <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-        <Music2 size={rs(22)} color={isPlaying ? colors.accentLight : colors.accent} strokeWidth={1.8} />
+        <Music2 size={rs(22)} color={isPlaying ? colors.clickLight : colors.click} strokeWidth={1.8} />
       </Animated.View>
 
       {/* Play/pause overlay badge */}
       <View style={styles.audioPlayBadge}>
         {isPlaying
-          ? <Pause size={rs(8)} color={colors.accent} strokeWidth={2.5} fill={colors.accent} />
-          : <Play size={rs(8)} color={colors.accent} strokeWidth={2.5} fill={colors.accent} />
+          ? <Pause size={rs(8)} color={colors.click} strokeWidth={2.5} fill={colors.click} />
+          : <Play size={rs(8)} color={colors.click} strokeWidth={2.5} fill={colors.click} />
         }
       </View>
 
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: rs(2),
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.clickSoft,
   },
   audioPlayBadge: {
     position: 'absolute',
@@ -232,16 +232,16 @@ const styles = StyleSheet.create({
     width: rs(14),
     height: rs(14),
     borderRadius: rs(7),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderWidth: 1,
-    borderColor: `${colors.accent}40`,
+    borderColor: `${colors.click}40`,
     alignItems: 'center',
     justifyContent: 'center',
   },
   audioLabel: {
     fontFamily: 'JetBrainsMono_500Medium',
     fontSize: fs(9),
-    color: colors.accent,
+    color: colors.click,
   },
   progressTrack: {
     position: 'absolute',
@@ -249,11 +249,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: rs(3),
-    backgroundColor: `${colors.accent}30`,
+    backgroundColor: `${colors.click}30`,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
   },
   docContainer: {
     alignItems: 'center',

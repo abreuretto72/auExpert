@@ -11,6 +11,7 @@ import {
   BackHandler,
   Platform,
   Linking,
+  Image,
 } from 'react-native';
 import {
   Settings,
@@ -43,6 +44,7 @@ interface DrawerMenuProps {
   onClose: () => void;
   userName?: string;
   userEmail?: string;
+  userAvatarUrl?: string | null;
 }
 
 interface MenuItem {
@@ -59,6 +61,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
   onClose,
   userName = 'Tutor',
   userEmail = '',
+  userAvatarUrl = null,
 }) => {
   const router = useRouter();
   const { t } = useTranslation();
@@ -134,31 +137,31 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
 
   const menuItems: MenuItem[] = [
     {
-      icon: <Settings size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Settings size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.preferences'),
       sublabel: t('menu.preferencesDesc'),
       route: '/settings',
     },
     {
-      icon: <Shield size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Shield size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.privacy'),
       sublabel: t('menu.privacyDesc'),
       onPress: () => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/privacy.html'),
     },
     {
-      icon: <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
+      icon: <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.terms'),
       sublabel: t('menu.termsDesc'),
       onPress: () => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/terms.html'),
     },
     {
-      icon: <HelpCircle size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
+      icon: <HelpCircle size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.helpSupport'),
       sublabel: t('menu.helpSupportDesc'),
       route: '/help',
     },
     {
-      icon: <Cloud size={rs(20)} color={colors.accent} strokeWidth={1.8} />,
+      icon: <Cloud size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.backup'),
       sublabel: t('menu.backupDesc'),
       badge: t('menu.auto'),
@@ -192,18 +195,24 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
           <View style={styles.topBar}>
             <View />
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+              <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           </View>
 
           {/* Profile */}
           <View style={styles.profileSection}>
             <View style={styles.avatarWrap}>
-              <LinearGradient
-                colors={[colors.accent, colors.accentDark]}
-                style={StyleSheet.absoluteFill}
-              />
-              <User size={rs(26)} color="#fff" strokeWidth={1.8} />
+              {userAvatarUrl ? (
+                <Image source={{ uri: userAvatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : (
+                <>
+                  <LinearGradient
+                    colors={[colors.click, colors.clickDark]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <User size={rs(26)} color="#fff" strokeWidth={1.8} />
+                </>
+              )}
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{userName}</Text>
@@ -246,7 +255,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.7}
-            onPress={() => handleNavigate('/settings')}
+            onPress={() => handleNavigate('/danger-zone')}
           >
             <View style={[styles.menuIconBox, styles.dangerIconBox]}>
               <Trash2 size={rs(20)} color={colors.danger} strokeWidth={1.8} />
@@ -269,7 +278,7 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
             onPress={handleExit}
           >
             <View style={styles.menuIconBox}>
-              <LogOut size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <LogOut size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </View>
             <View style={styles.menuTextCol}>
               <Text style={styles.menuLabel}>{t('menu.exitApp')}</Text>
@@ -364,7 +373,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(4) },
     shadowOpacity: 0.3,
     shadowRadius: rs(12),
@@ -403,7 +412,7 @@ const styles = StyleSheet.create({
     width: rs(42),
     height: rs(42),
     borderRadius: radii.lg,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -425,9 +434,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   menuBadge: {
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     borderWidth: 1,
-    borderColor: colors.accent + '20',
+    borderColor: colors.click + '20',
     borderRadius: rs(6),
     paddingHorizontal: rs(8),
     paddingVertical: rs(3),
@@ -435,7 +444,7 @@ const styles = StyleSheet.create({
   menuBadgeText: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(9),
-    color: colors.accent,
+    color: colors.click,
   },
   footer: {
     alignItems: 'center',

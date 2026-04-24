@@ -200,7 +200,7 @@ export default function PetScreen() {
   }
 
   const isDog = pet.species === 'dog';
-  const petColor = isDog ? colors.accent : colors.purple;
+  const petColor = isDog ? colors.click : colors.purple;
   const latestMood = moodLogs.length > 0 ? moods.find((m) => m.id === moodLogs[0].mood_id) : null;
 
 
@@ -221,7 +221,7 @@ export default function PetScreen() {
             )}
           </View>
           <View style={s.cameraBtn}>
-            <Camera size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+            <Camera size={rs(14)} color={colors.click} strokeWidth={1.8} />
           </View>
         </TouchableOpacity>
 
@@ -250,7 +250,7 @@ export default function PetScreen() {
           <Text style={s.breedText}>{pet.breed ?? t('addPet.unknownBreed')}</Text>
           <View style={s.tagsRow}>
             {[
-              pet.estimated_age_months ? formatAge(pet.estimated_age_months) : null,
+              pet.estimated_age_months ? formatAge(pet.estimated_age_months, i18n.language) : null,
               pet.weight_kg ? formatWeight(pet.weight_kg) : null,
               isDog ? t('pets.dog') : t('pets.cat'),
             ].filter(Boolean).map((tag, i) => (
@@ -264,11 +264,11 @@ export default function PetScreen() {
       {showPhotoOptions && (
         <View style={s.photoOpts}>
           <TouchableOpacity style={s.photoOptBtn} onPress={() => { setShowPhotoOptions(false); handleTakePhoto(); }}>
-            <Camera size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+            <Camera size={rs(16)} color={colors.click} strokeWidth={1.8} />
             <Text style={s.photoOptText}>{t('addPet.takePhoto')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.photoOptBtn} onPress={() => { setShowPhotoOptions(false); handlePickPhoto(); }}>
-            <Dog size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+            <Dog size={rs(16)} color={colors.click} strokeWidth={1.8} />
             <Text style={s.photoOptText}>{t('addPet.pickFromGallery')}</Text>
           </TouchableOpacity>
         </View>
@@ -284,7 +284,7 @@ export default function PetScreen() {
         >
           <AlertTriangle size={rs(16)} color={colors.danger} strokeWidth={2} />
           <Text style={s.vaccineAlertText}>{overdueCount} {t('health.vaccineOverdue')}</Text>
-          <ShieldCheck size={rs(14)} color={colors.accent} strokeWidth={1.8} />
+          <ShieldCheck size={rs(14)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       )}
 
@@ -327,7 +327,7 @@ export default function PetScreen() {
       {/* Header — back + pet name + PDF (diary tab only) */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} activeOpacity={0.7}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={s.headerTitle} numberOfLines={1}>{pet.name}</Text>
         <View style={s.headerRight}>
@@ -339,7 +339,7 @@ export default function PetScreen() {
             >
               <CalendarDays
                 size={rs(20)}
-                color={colors.accent}
+                color={colors.click}
                 strokeWidth={1.8}
               />
             </TouchableOpacity>
@@ -349,11 +349,11 @@ export default function PetScreen() {
             style={s.headerBtn}
             activeOpacity={0.7}
           >
-            <Users size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+            <Users size={rs(20)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           {activeTab === 'diario' && (
             <TouchableOpacity onPress={handleOpenPdf} style={s.headerBtn} activeOpacity={0.7}>
-              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
           {activeTab === 'ia' && (
@@ -362,7 +362,7 @@ export default function PetScreen() {
               style={s.headerBtn}
               activeOpacity={0.7}
             >
-              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
           {activeTab === 'agenda' && (
@@ -371,7 +371,7 @@ export default function PetScreen() {
               style={s.headerBtn}
               activeOpacity={0.7}
             >
-              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
           {activeTab === 'painel' && (
@@ -380,7 +380,7 @@ export default function PetScreen() {
               style={s.headerBtn}
               activeOpacity={0.7}
             >
-              <FileText size={rs(20)} color={colors.accent} strokeWidth={1.8} />
+              <FileText size={rs(20)} color={colors.click} strokeWidth={1.8} />
             </TouchableOpacity>
           )}
         </View>
@@ -476,7 +476,7 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: rs(16), paddingVertical: rs(8), gap: rs(12), borderBottomWidth: 1, borderBottomColor: colors.border },
   headerBtn: { width: rs(40), height: rs(40), borderRadius: rs(12), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  headerBtnActive: { borderColor: colors.accent + '50', backgroundColor: colors.accentGlow },
+  headerBtnActive: { borderColor: colors.click + '50', backgroundColor: colors.clickSoft },
   headerTitle: { flex: 1, fontFamily: 'Sora_700Bold', fontSize: fs(18), color: colors.text, textAlign: 'center' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
   tabContent: { flex: 1 },
@@ -504,8 +504,8 @@ const s = StyleSheet.create({
 
   // Photo options
   photoOpts: { flexDirection: 'row', gap: spacing.sm },
-  photoOptBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent + '30', borderRadius: radii.lg, paddingHorizontal: rs(14), paddingVertical: rs(10) },
-  photoOptText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.accent },
+  photoOptBtn: { flexDirection: 'row', alignItems: 'center', gap: rs(6), backgroundColor: colors.card, borderWidth: 1, borderColor: colors.click + '30', borderRadius: radii.lg, paddingHorizontal: rs(14), paddingVertical: rs(10) },
+  photoOptText: { fontFamily: 'Sora_600SemiBold', fontSize: fs(12), color: colors.click },
 
 
   // Vaccine alert

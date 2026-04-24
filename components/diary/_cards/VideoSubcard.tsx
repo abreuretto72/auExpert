@@ -72,7 +72,7 @@ export function VideoSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: st
       })()}
       {va && (va.energy_score != null || va.calm_score != null || va.locomotion_score != null) && (
         <View style={styles.subcardScores}>
-          {va.energy_score != null && <SubcardScore label={t('diary.energy')} value={va.energy_score} color={colors.gold} />}
+          {va.energy_score != null && <SubcardScore label={t('diary.energy')} value={va.energy_score} color={colors.warning} />}
           {va.calm_score != null && <SubcardScore label={t('diary.calm')} value={va.calm_score} color={colors.success} />}
           {va.locomotion_score != null && <SubcardScore label={t('diary.locomotion')} value={va.locomotion_score} color={colors.sky} />}
         </View>
@@ -81,7 +81,7 @@ export function VideoSubcard({ media, t }: { media: MediaAnalysisItem; t: (k: st
         <View style={{ paddingHorizontal: rs(10), paddingBottom: rs(8), gap: rs(4) }}>
           {va.health_observations.map((obs, i) => (
             <View key={i} style={styles.observationRow}>
-              <Lightbulb size={rs(12)} color={colors.gold} strokeWidth={1.8} />
+              <Lightbulb size={rs(12)} color={colors.warning} strokeWidth={1.8} />
               <Text style={styles.observationText}>{obs}</Text>
             </View>
           ))}

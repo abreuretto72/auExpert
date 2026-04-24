@@ -82,7 +82,7 @@ function PlansSummaryCard({
 
         {/* Monthly cost */}
         <View style={[styles.summaryBlock, styles.summaryBlockCenter]}>
-          <Text style={[styles.summaryValue, { color: colors.accent }]}>
+          <Text style={[styles.summaryValue, { color: colors.click }]}>
             {formatCurrency(totalMonthlyCost, currency)}
           </Text>
           <Text style={styles.summaryLabel}>{t('plans.monthlyTotal')}</Text>
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   planCost: {
     fontFamily: 'JetBrainsMono_700Bold',
     fontSize: fs(13),
-    color: colors.accent,
+    color: colors.click,
   },
   planRenewal: {
     fontFamily: 'JetBrainsMono_700Bold',

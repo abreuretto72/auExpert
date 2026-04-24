@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
             onPress={() => router.back()}
             style={styles.backBtn}
           >
-            <ChevronLeft size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+            <ChevronLeft size={rs(18)} color={colors.click} strokeWidth={1.8} />
           </TouchableOpacity>
           <View style={styles.headerText}>
             <Text style={styles.title}>{t('auth.resetPassword')}</Text>
@@ -75,7 +75,7 @@ export default function ForgotPasswordScreen() {
         {sent ? (
           <View style={styles.successSection}>
             <View style={styles.sentIconWrap}>
-              <Send size={rs(32)} color={colors.accent} strokeWidth={1.5} />
+              <Send size={rs(32)} color={colors.click} strokeWidth={1.5} />
             </View>
             <Text style={styles.sentTitle}>{t('auth.emailSentTitle')}</Text>
             <Text style={styles.sentText}>
@@ -121,7 +121,7 @@ export default function ForgotPasswordScreen() {
               style={styles.btnWrap}
             >
               <LinearGradient
-                colors={[colors.accent, colors.accentDark]}
+                colors={[colors.click, colors.clickDark]}
                 style={styles.btn}
               >
                 {loading ? (
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     width: rs(72),
     height: rs(72),
     borderRadius: rs(36),
-    backgroundColor: colors.accentGlow,
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(spacing.sm),
@@ -239,12 +239,12 @@ const styles = StyleSheet.create({
   backToLoginText: {
     fontFamily: 'Sora_700Bold',
     fontSize: fs(14),
-    color: colors.accent,
+    color: colors.click,
   },
   btnWrap: {
     borderRadius: rs(radii.xl),
     overflow: 'hidden',
-    shadowColor: colors.accent,
+    shadowColor: colors.click,
     shadowOffset: { width: 0, height: rs(8) },
     shadowOpacity: 0.25,
     shadowRadius: rs(30),

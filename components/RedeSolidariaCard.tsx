@@ -67,7 +67,7 @@ const RedeSolidariaCard: React.FC<RedeSolidariaCardProps> = ({
       </View>
 
       {/* Arrow */}
-      <ChevronRight size={rs(16)} color={colors.accent} strokeWidth={1.8} />
+      <ChevronRight size={rs(16)} color={colors.click} strokeWidth={1.8} />
     </TouchableOpacity>
   );
 };
@@ -138,7 +138,7 @@ const s = StyleSheet.create({
   newText: {
     fontFamily: 'Sora_600SemiBold',
     fontSize: fs(11),
-    color: colors.accent,
+    color: colors.click,
   },
 });
 

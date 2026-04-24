@@ -84,10 +84,10 @@ function buildBody(rows: ExpenseRow[], lang: string): string {
   // Summary — total + by-category breakdown
   const summaryHtml = `
     <section style="margin-bottom:18px;page-break-inside:avoid;">
-      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.accent};padding-bottom:3px;">
+      <h2 style="font-size:14px;color:#222;margin-bottom:10px;border-bottom:2px solid ${colors.click};padding-bottom:3px;">
         ${escHtml(t('expensesPdf.total'))}
       </h2>
-      <div style="font-size:24px;font-weight:800;color:${colors.accent};margin-bottom:10px;">
+      <div style="font-size:24px;font-weight:800;color:${colors.click};margin-bottom:10px;">
         ${escHtml(currencySample)} ${grandTotal.toFixed(2)}
       </div>
       <h3 style="font-size:12px;color:#222;margin-bottom:6px;">${escHtml(t('expensesPdf.byCategory'))}</h3>
@@ -108,7 +108,7 @@ function buildBody(rows: ExpenseRow[], lang: string): string {
     .sort((a, b) => b[1].total - a[1].total)
     .map(([cat, v]) => `
       <section style="margin-bottom:16px;page-break-inside:auto;">
-        <h3 style="font-size:12px;color:${colors.accent};margin-bottom:6px;border-bottom:1px solid ${colors.accent}44;padding-bottom:2px;">
+        <h3 style="font-size:12px;color:${colors.click};margin-bottom:6px;border-bottom:1px solid ${colors.click}44;padding-bottom:2px;">
           ${escHtml(cat)}
         </h3>
         ${v.rows.map((r) => `
@@ -123,7 +123,7 @@ function buildBody(rows: ExpenseRow[], lang: string): string {
       </section>
     `).join('');
 
-  return summaryHtml + `<h2 style="font-size:14px;color:#222;margin:18px 0 10px;border-bottom:2px solid ${colors.accent};padding-bottom:3px;">${escHtml(t('expensesPdf.itemsTable'))}</h2>` + itemsHtml;
+  return summaryHtml + `<h2 style="font-size:14px;color:#222;margin:18px 0 10px;border-bottom:2px solid ${colors.click};padding-bottom:3px;">${escHtml(t('expensesPdf.itemsTable'))}</h2>` + itemsHtml;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────

@@ -332,11 +332,11 @@ const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
     <View style={styles.stepContainer}>
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <Syringe size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <Syringe size={rs(22)} color={colors.click} strokeWidth={1.8} />
           <Text style={styles.title}>{t('health.addVaccine')}</Text>
         </View>
         <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -361,7 +361,7 @@ const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
           <Text style={styles.methodTitle}>{t('health.photoVaccineCard')}</Text>
           <Text style={styles.methodDesc}>{t('health.photoVaccineCardDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
 
       {/* OCR — Gallery */}
@@ -373,19 +373,19 @@ const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
           <Text style={styles.methodTitle}>{t('health.galleryVaccineCard')}</Text>
           <Text style={styles.methodDesc}>{t('health.galleryVaccineCardDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
 
       {/* Manual */}
       <TouchableOpacity style={styles.methodCard} onPress={handleManualEntry} activeOpacity={0.7}>
-        <View style={[styles.methodIconWrap, { backgroundColor: colors.accentGlow }]}>
-          <PenLine size={rs(28)} color={colors.accent} strokeWidth={1.8} />
+        <View style={[styles.methodIconWrap, { backgroundColor: colors.clickSoft }]}>
+          <PenLine size={rs(28)} color={colors.click} strokeWidth={1.8} />
         </View>
         <View style={styles.methodTextWrap}>
           <Text style={styles.methodTitle}>{t('health.manualVaccineEntry')}</Text>
           <Text style={styles.methodDesc}>{t('health.manualVaccineEntryDesc')}</Text>
         </View>
-        <ArrowRight size={rs(18)} color={colors.accent} strokeWidth={1.8} />
+        <ArrowRight size={rs(18)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
 
         <View style={{ height: rs(16) }} />
@@ -398,11 +398,11 @@ const AddVaccineModal: React.FC<AddVaccineModalProps> = ({
       {/* Header */}
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={handleBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <ChevronLeft size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <ChevronLeft size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
         <Text style={styles.title}>{t('health.vaccineDetails')}</Text>
         <TouchableOpacity onPress={handleClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <X size={rs(22)} color={colors.accent} strokeWidth={1.8} />
+          <X size={rs(22)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>
       </View>
 
@@ -748,8 +748,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   doseChipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentGlow,
+    borderColor: colors.click,
+    backgroundColor: colors.clickSoft,
   },
   doseChipText: {
     fontFamily: 'Sora_600SemiBold',
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
     color: colors.textSec,
   },
   doseChipTextActive: {
-    color: colors.accent,
+    color: colors.click,
   },
   // Disclaimer
   disclaimer: {
@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accent,
+    backgroundColor: colors.click,
     borderRadius: radii.xl,
     paddingVertical: rs(16),
     marginTop: spacing.md,
