@@ -1,8 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
+import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -109,39 +113,41 @@ Respond in ${lang}.`;
 
     const cfg = await getAIConfig();
     const t1 = Date.now();
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': cfg.anthropic_version,
-      },
-      body: JSON.stringify({
-        model: cfg.model_vision,
-        // OCR devolve JSON estruturado (vacina/exame/receita) — em prática
-        // fica em 400-1200 tokens. 1500 dá folga sem reservar budget desnecessário.
-        max_tokens: 1500,
-        temperature: 0,
-        // Prompt caching: system é estático → cache hit em scans subsequentes
-        // corta input tokens em ~90% e reduz TTFT.
-        system: [
-          { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-        ],
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: photo_base64 } },
-            { type: 'text', text: userPrompt },
-          ],
-        }],
-      }),
-    });
+    const reqId = Math.random().toString(36).slice(2, 10);
+    const diagClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('[ocr-document] API error:', response.status, errorBody);
+    let response: Response;
+    try {
+      const callResult = await callAnthropicWithFallback({
+        models: cfg.model_vision_chain,
+        apiKey: ANTHROPIC_API_KEY,
+        anthropicVersion: cfg.anthropic_version,
+        requestId: reqId,
+        diagClient,
+        functionName: 'ocr-document',
+        buildPayload: (model) => ({
+          model,
+          max_tokens: 1500,
+          // temperature removido: Opus 4.7+ deprecou. Self-heal cobre o caso
+          // legado, mas deixar o campo só gera latência extra de retry.
+          system: [
+            { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+          ],
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: photo_base64 } },
+              { type: 'text', text: userPrompt },
+            ],
+          }],
+        }),
+      });
+      response = callResult.response;
+    } catch (callErr) {
+      const err = callErr as AnthropicCallError;
+      console.error(`[ocr-document] [${reqId}] call failed:`, err.message);
       return new Response(
-        JSON.stringify({ error: 'OCR failed', status: response.status }),
+        JSON.stringify({ error: 'OCR failed', status: err.status ?? 502, details: err.body }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
       );
     }

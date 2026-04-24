@@ -77,6 +77,7 @@ Toda expressão temporal relativa DEVE ser resolvida contra esta âncora:
   "mês que vem" → mesmo dia do mês seguinte
   "no dia 5" (sem mês explícito) → dia 5 do mês corrente OU próximo dia 5 se já passou
   "em maio" (sem ano) → maio do ano corrente OU próximo maio se já passou
+  "8 de maio", "dia 8 de maio" (dia + mês, sem ano) → SEMPRE inferir o ano como ${now.getFullYear()} se a data ainda não passou, caso contrário ${now.getFullYear() + 1}. NUNCA emitir um ano passado quando o tutor usa "marquei", "agendei", "tenho", "vou". NUNCA usar um ano anterior a ${now.getFullYear()}.
 
 Sempre emita a data como "YYYY-MM-DD" no campo \`date\` do extracted_data.
 Se o tutor disser hora explícita ("às 10h", "10:30", "10hs", "10 horas"), emita
@@ -99,6 +100,90 @@ Se a data resolvida for > hoje (${todayIso}) → é compromisso futuro.
 
 Se a data resolvida for ≤ hoje → fato já ocorrido, sem \`time\` futuro.
   Ex.: "Fui ao vet hoje, tomou V10" → consultation + vaccine, sem \`time\` se tutor não disse hora.
+
+## HORÁRIO NÃO INFORMADO — AVISO OBRIGATÓRIO NA NARRAÇÃO (REGRA NOVA 2026-04-23)
+
+Quando o tutor agenda um compromisso futuro (verbo de intenção futura + data ≥ hoje)
+MAS NÃO menciona a hora, o persister do cliente aplica automaticamente **08:00 como
+horário padrão** no evento da agenda. A narração DEVE comunicar isso ao tutor
+explicitamente — nunca aplicar o padrão em silêncio.
+
+NESTE CASO:
+1. Emita a classificação com \`date\` preenchido e OMITA o campo \`time\` (não invente).
+2. A narração DEVE incluir uma frase explícita do tipo:
+   "Como você não mencionou a hora, agendei para as 8h como padrão.
+   Se quiser outro horário, é só editar a entrada."
+3. Essa frase é obrigatória sempre que o tutor usar verbo futuro sem hora — não é
+   estilo, é comunicação contratual com o tutor. Sem ela, o tutor não sabe que 08:00
+   foi assumido e pode achar que o evento ficou "órfão" na agenda.
+
+EXEMPLO:
+Input: "marquei consulta com a Dra. Ana pra sexta que vem" (sem hora mencionada)
+
+Saída:
+{
+  "classifications": [{
+    "type": "consultation",
+    "extracted_data": {
+      "date": "<próxima sexta em YYYY-MM-DD>",
+      "vet_name": "Dra. Ana",
+      "reason": "consulta"
+      // time: AUSENTE — persister aplica 08:00
+    }
+  }],
+  "narration": "O tutor agendou uma consulta com a Dra. Ana para <data> de <mês>. Como ele não mencionou a hora, agendei para as 8h como padrão. Se preferir outro horário, é só editar a entrada."
+}
+
+EXCEÇÃO: quando o tutor disser a hora explicitamente ("às 10h", "10:30", "10hs"),
+NÃO mencionar o padrão — apenas confirmar o horário informado.
+
+## CASO ESPECIAL — CONTRADIÇÃO ENTRE VERBO E DATA (REGRA DURA)
+
+Se o input contém verbo/construção de intenção FUTURA (marcar, marquei, agendar,
+agendei, vou levar, vou no, tenho marcado, tenho consulta, vai tomar, daqui a,
+amanhã, semana que vem, na próxima, ...) E a data resolvida for ≤ hoje (${todayIso}),
+NÃO classifique como fato histórico. Essa combinação é SEMPRE erro do tutor
+(erro de digitação, STT confuso, ano trocado).
+
+NESTE CASO ESPECÍFICO:
+1. Ainda emita a classificação (consultation / vaccine / exam / ...) com o
+   \`date\` original mencionado pelo tutor.
+2. ADICIONE dentro de \`extracted_data\` o objeto \`validation_warning\`:
+   {
+     "type": "past_date_with_future_intent",
+     "stated_date": "YYYY-MM-DD",      // data original (passada)
+     "suggested_date": "YYYY-MM-DD",   // mesma data, ano corrente (ou próximo se mês já passou)
+     "detected_verb": "marquei"        // verbo/expressão que disparou a regra
+   }
+3. A \`narration\` DEVE alertar o tutor explicitamente em texto claro:
+   "Atenção: a data mencionada (<data_passada>) já passou. Você quis dizer <data_sugerida>?
+   Edite a entrada para corrigir."
+4. NÃO adicione \`time\` nem \`return_date\` nem outros campos de agendamento quando
+   validation_warning estiver presente — o persister vai bloquear a escrita em
+   banco de qualquer modo até o tutor confirmar.
+
+EXEMPLO:
+Input: "Marquei consulta com o vet dia 8 de maio de 2016 às 14h"  (hoje: ${todayIso})
+
+Saída:
+{
+  "classifications": [{
+    "type": "consultation",
+    "confidence": 0.85,
+    "extracted_data": {
+      "date": "2016-05-08",
+      "reason": "consulta veterinária",
+      "validation_warning": {
+        "type": "past_date_with_future_intent",
+        "stated_date": "2016-05-08",
+        "suggested_date": "2026-05-08",
+        "detected_verb": "marquei"
+      }
+    }
+  }],
+  "primary_type": "consultation",
+  "narration": "Atenção: a data mencionada (8 de maio de 2016) já passou há vários anos. Você quis dizer 8 de maio de 2026? Edite a entrada para corrigir a data."
+}
 
 ## CONTEXTO DO PET
 - Nome: ${pet.name}

@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
 import { buildPetSystemContext } from '../_shared/petContext.ts';
+import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -146,32 +147,34 @@ ${content}`;
 
       const cfg = await getAIConfig();
       const t1 = Date.now();
-      const regResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': cfg.anthropic_version,
-        },
-        body: JSON.stringify({
-          model: cfg.model_narrate,
-          // Narração de registro: 60 palavras + JSON ≈ 250 tokens. 400 dá folga.
-          max_tokens: 400,
-          temperature: 0.7,
-          // Prompt caching: system é estático → cache hit entre tutores/pets
-          // corta input tokens em ~90% dentro da janela de 5 min.
-          system: [
-            { type: 'text', text: registrationSystemPrompt, cache_control: { type: 'ephemeral' } },
-          ],
-          messages: [{ role: 'user', content: registrationUserPrompt }],
-        }),
-      });
+      const reqId = Math.random().toString(36).slice(2, 10);
+      const diagClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      if (!regResponse.ok) {
-        const errorBody = await regResponse.text();
-        console.error('[generate-diary-narration] registration narration error:', regResponse.status, errorBody);
+      let regResponse: Response;
+      try {
+        const callResult = await callAnthropicWithFallback({
+          models: cfg.model_narrate_chain,
+          apiKey: ANTHROPIC_API_KEY,
+          anthropicVersion: cfg.anthropic_version,
+          requestId: reqId,
+          diagClient,
+          functionName: 'generate-diary-narration:registration',
+          buildPayload: (model) => ({
+            model,
+            max_tokens: 400,
+            temperature: 0.7,
+            system: [
+              { type: 'text', text: registrationSystemPrompt, cache_control: { type: 'ephemeral' } },
+            ],
+            messages: [{ role: 'user', content: registrationUserPrompt }],
+          }),
+        });
+        regResponse = callResult.response;
+      } catch (callErr) {
+        const err = callErr as AnthropicCallError;
+        console.error(`[generate-diary-narration] [${reqId}] registration call failed:`, err.message);
         return new Response(
-          JSON.stringify({ error: 'AI narration failed', status: regResponse.status }),
+          JSON.stringify({ error: 'AI narration failed', status: err.status ?? 502, details: err.body }),
           { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
         );
       }
@@ -268,33 +271,34 @@ Narrate this in third person about ${petName}, reflecting their ${moodDesc} mood
 
     const cfg2 = await getAIConfig();
     const t1 = Date.now();
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': cfg2.anthropic_version,
-      },
-      body: JSON.stringify({
-        model: cfg2.model_narrate,
-        // Narração: 50 palavras + JSON overhead ≈ 200 tokens. 400 dá folga sem
-        // reservar budget à toa.
-        max_tokens: 400,
-        temperature: 0.7,
-        // Prompt caching: system é estático → cache hit em narrações subsequentes
-        // corta input tokens em ~90% e reduz TTFT.
-        system: [
-          { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-        ],
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
+    const reqId2 = Math.random().toString(36).slice(2, 10);
+    const diagClient2 = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('[generate-diary-narration] Anthropic API error:', response.status, errorBody);
+    let response: Response;
+    try {
+      const callResult = await callAnthropicWithFallback({
+        models: cfg2.model_narrate_chain,
+        apiKey: ANTHROPIC_API_KEY,
+        anthropicVersion: cfg2.anthropic_version,
+        requestId: reqId2,
+        diagClient: diagClient2,
+        functionName: 'generate-diary-narration:diary',
+        buildPayload: (model) => ({
+          model,
+          max_tokens: 400,
+          temperature: 0.7,
+          system: [
+            { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+          ],
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      });
+      response = callResult.response;
+    } catch (callErr) {
+      const err = callErr as AnthropicCallError;
+      console.error(`[generate-diary-narration] [${reqId2}] diary call failed:`, err.message);
       return new Response(
-        JSON.stringify({ error: 'AI narration failed', status: response.status }),
+        JSON.stringify({ error: 'AI narration failed', status: err.status ?? 502, details: err.body }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
       );
     }

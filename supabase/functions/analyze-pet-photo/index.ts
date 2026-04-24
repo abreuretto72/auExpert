@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildPetSystemContext } from '../_shared/petContext.ts';
+import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -169,46 +170,100 @@ Requirements:
 Write all text fields in ${lang}.`;
 
     const cfg = await getAIConfig();
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': cfg.anthropic_version,
-      },
-      body: JSON.stringify({
-        model: cfg.model_vision,
-        // Resposta: description 2-3 frases + JSON schema (toxicity, sources até 3,
-        // alerts). Fica em ~1000-1800 tokens. 2500 dá folga sem reservar budget.
-        max_tokens: 2500,
-        temperature: 0,
-        // Prompt caching: o system inteiro é estático (~1800 tokens) → cache hit
-        // em fotos subsequentes corta input tokens em ~90% e reduz TTFT.
-        system: [
-          { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
-        ],
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: photo_base64 },
-            },
-            { type: 'text', text: userPrompt },
-          ],
-        }],
-      }),
-    });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('[analyze-pet-photo] Anthropic API error:', response.status, errorBody.slice(0, 500));
-      console.error('[analyze-pet-photo] prompt length chars:', userPrompt.length, '| systemPrompt length:', systemPrompt.length);
+    // ── Diagnostic tracing ────────────────────────────────────────────────
+    // Short request ID pra casar logs do EF com o erro que o cliente vê.
+    const reqId = Math.random().toString(36).slice(2, 10);
+    const t0 = Date.now();
+    console.log(`[analyze-pet-photo] [${reqId}] start | user=${user.id.slice(0, 8)} | species=${species} | lang=${lang} | mediaType=${mediaType} | photoKB=${Math.round(photo_base64.length * 0.75 / 1024)}`);
+    console.log(`[analyze-pet-photo] [${reqId}] config | chain=[${cfg.model_vision_chain.join(', ')}] | anthropic_version="${cfg.anthropic_version}"`);
+    console.log(`[analyze-pet-photo] [${reqId}] prompts | system=${systemPrompt.length}chars | user=${userPrompt.length}chars`);
+
+    const diagClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // Chamada com fallback automático: tenta cada modelo da cadeia em ordem.
+    // Se o primário (Opus 4.7) falhar com erro de modelo, cai pro secundário
+    // (Opus 4.6), depois Sonnet 4.6. O usuário nunca vê 502 por falha de modelo.
+    let callResult;
+    try {
+      callResult = await callAnthropicWithFallback({
+        models: cfg.model_vision_chain,
+        apiKey: ANTHROPIC_API_KEY,
+        anthropicVersion: cfg.anthropic_version,
+        requestId: reqId,
+        diagClient,
+        functionName: 'analyze-pet-photo',
+        buildPayload: (model) => ({
+          model,
+          max_tokens: 2500,
+          // temperature removido: Opus 4.7+ deprecou esse parâmetro (retorna 400
+          // com `invalid_request_error`). O prompt pede JSON estruturado, então
+          // o determinismo vem da estrutura do schema, não da temperatura.
+          // Prompt caching: o system inteiro é estático (~1800 tokens) → cache hit
+          // em fotos subsequentes corta input tokens em ~90% e reduz TTFT.
+          system: [
+            { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
+          ],
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mediaType, data: photo_base64 } },
+              { type: 'text', text: userPrompt },
+            ],
+          }],
+        }),
+      });
+    } catch (callErr) {
+      // Toda a cadeia falhou, OU erro não-model (auth/rate_limit/network).
+      // Log completo na tabela e 502 pro cliente.
+      const err = callErr as AnthropicCallError;
+      console.error(`[analyze-pet-photo] [${reqId}] call failed | exhausted=${err.exhausted ?? false} | attempts=${err.attempts?.length ?? 0}:`, err.message);
+
+      try {
+        await diagClient.from('edge_function_diag_logs').insert({
+          function_name: 'analyze-pet-photo',
+          request_id: reqId,
+          level: 'error',
+          message: err.message ?? 'Anthropic call failed',
+          payload: {
+            status: err.status ?? null,
+            body_raw: err.body ?? null,
+            body_parsed: err.parsed ?? null,
+            attempts: err.attempts ?? [],
+            exhausted: err.exhausted ?? false,
+            chain: cfg.model_vision_chain,
+            anthropic_version: cfg.anthropic_version,
+            system_prompt_chars: systemPrompt.length,
+            user_prompt_chars: userPrompt.length,
+            total_ms: Date.now() - t0,
+            media_type: mediaType,
+            photo_kb: Math.round(photo_base64.length * 0.75 / 1024),
+          },
+        });
+      } catch (logErr) {
+        console.error(`[analyze-pet-photo] [${reqId}] diag log insert failed:`, logErr);
+      }
+
       return new Response(
-        JSON.stringify({ error: 'AI analysis failed', status: response.status, details: errorBody }),
+        JSON.stringify({
+          error: 'AI analysis failed',
+          status: err.status ?? 502,
+          details: err.body ?? err.message,
+          parsed: err.parsed ?? null,
+          trace: {
+            request_id: reqId,
+            chain: cfg.model_vision_chain,
+            attempts: err.attempts ?? [],
+            exhausted: err.exhausted ?? false,
+            total_ms: Date.now() - t0,
+          },
+        }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
       );
     }
+
+    const { response, modelUsed, attempts: fallbackAttempts, strippedParams } = callResult;
+    console.log(`[analyze-pet-photo] [${reqId}] success | model_used="${modelUsed}" | fallbacks=${fallbackAttempts.length} | stripped=[${strippedParams.join(', ')}] | total_ms=${Date.now() - t0}`);
 
     const aiResponse = await response.json();
     const textContent = aiResponse.content?.find((c: { type: string }) => c.type === 'text');

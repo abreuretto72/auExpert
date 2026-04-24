@@ -1,15 +1,22 @@
 /**
- * Claude API call — wraps fetch to api.anthropic.com/v1/messages with the
- * configured model, timeout, prompt caching on the system prefix, and token
- * usage extraction. Returns { text, tokensUsed } on success; throws on
- * non-2xx responses or empty content blocks.
+ * Claude API call — usa o helper compartilhado callAnthropicWithFallback,
+ * ganhando automaticamente:
+ *   - Fallback entre modelos (chain de model_classify_chain)
+ *   - Self-healing de params deprecados (auto-strip + retry)
+ *   - Diag logs em edge_function_diag_logs
+ *   - Tratamento consistente de erros
+ *
+ * Assinatura preservada: { text, tokensUsed }. Throws em falha não recuperável.
  */
 
 import type { ClaudeMessage } from './types.ts';
 import { ANTHROPIC_API_KEY, MAX_TOKENS } from './constants.ts';
 import { getAIConfig } from './ai-config.ts';
+import { callAnthropicWithFallback, AnthropicCallError } from '../../../_shared/callAnthropicWithFallback.ts';
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// ── Claude API call ──
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 export async function callClaude(
   systemPrompt: string,
@@ -19,45 +26,48 @@ export async function callClaude(
   modelOverride?: string,
 ): Promise<{ text: string; tokensUsed: number }> {
   const cfg = await getAIConfig();
-  const model = modelOverride ?? cfg.model_classify;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), cfg.timeout_ms);
-  let response: Response;
+  // Usa chain se disponível, senão cai pro single model do local ai-config.
+  // Se modelOverride vier, ele tem prioridade (caller sabe o que quer).
+  const chain: string[] = modelOverride
+    ? [modelOverride]
+    // deno-lint-ignore no-explicit-any
+    : ((cfg as any).model_classify_chain as string[] | undefined) ?? [cfg.model_classify];
+
+  const reqId = Math.random().toString(36).slice(2, 10);
+  const diagClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+  let result;
   try {
-    response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': cfg.anthropic_version,
-        ...extraHeaders,
-      },
-      body: JSON.stringify({
+    result = await callAnthropicWithFallback({
+      models: chain,
+      apiKey: ANTHROPIC_API_KEY,
+      anthropicVersion: cfg.anthropic_version,
+      requestId: reqId,
+      diagClient,
+      functionName: 'classify-diary-entry',
+      buildPayload: (model) => ({
         model,
         max_tokens: maxTokens,
-        // Prompt caching: Claude cacheia o prefix do system (~5min TTL) e reaproveita
-        // em chamadas subsequentes com o mesmo prefixo. Para o mesmo pet em sessão
-        // ativa (tutor adiciona múltiplas entradas seguidas), dá hit e corta
-        // tokens de input em ~90% + reduz TTFT. Primeira chamada cria o cache
-        // (custo +25%), chamadas seguintes leem dele (custo −90%).
         system: [
           { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } },
         ],
         messages,
       }),
-      signal: controller.signal,
     });
-  } finally {
-    clearTimeout(timeoutId);
+  } catch (callErr) {
+    const err = callErr as AnthropicCallError;
+    console.error(`[classifier] [${reqId}] Claude call failed:`, err.message);
+    throw new Error(`Claude API error: ${err.status ?? 'network'}`);
   }
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('[classifier] Claude API error:', response.status, errorBody);
-    throw new Error(`Claude API error: ${response.status}`);
+  // Aplicar extraHeaders não é mais possível via helper, mas nenhum caller
+  // atual usa esse parâmetro com headers customizados (verificado no código).
+  // Se precisar no futuro, estender CallOpts do helper com `extraHeaders`.
+  if (Object.keys(extraHeaders).length > 0) {
+    console.warn('[callClaude] extraHeaders ignored — not supported via fallback helper');
   }
 
-  const aiResponse = await response.json();
+  const aiResponse = await result.response.json();
   const textContent = aiResponse.content?.find((c: { type: string }) => c.type === 'text');
 
   if (!textContent?.text) {
