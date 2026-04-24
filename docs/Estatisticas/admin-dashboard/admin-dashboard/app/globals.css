@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg:        #0D0E16;
+  --color-bg-deep:   #08090F;
+  --color-bg-card:   #161826;
+  --color-border:    #2A2D3E;
+  --color-text:      #F0EDF5;
+  --color-text-muted:#A89FB5;
+  --color-text-dim:  #6B6478;
+  --color-ametista:  #8F7FA8;
+  --color-jade:      #4FA89E;
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(143, 127, 168, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(79, 168, 158, 0.06) 0%, transparent 50%),
+    var(--color-bg);
+}
+
+::selection {
+  background: rgba(79, 168, 158, 0.3);
+  color: #fff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ametista); }
