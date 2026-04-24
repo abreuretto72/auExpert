@@ -4,11 +4,13 @@ import { Suspense, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// Componente interno que usa useSearchParams — precisa estar dentro de Suspense
+// Email padrão exibido na tela (pode ser sobrescrito pelo usuário)
+const DEFAULT_ADMIN_EMAIL = 'abreu@multiversodigital.com.br';
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -64,7 +66,8 @@ function LoginForm() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             className="w-full bg-bg-deep border border-border rounded-lg px-4 py-3 text-text focus:border-jade focus:outline-none"
-            placeholder="admin@auexpert.com.br"
+            placeholder="abreu@multiversodigital.com.br"
+            autoComplete="email"
           />
         </div>
 
@@ -78,6 +81,8 @@ function LoginForm() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             className="w-full bg-bg-deep border border-border rounded-lg px-4 py-3 text-text focus:border-jade focus:outline-none"
+            autoComplete="current-password"
+            autoFocus
           />
         </div>
 
@@ -103,7 +108,6 @@ function LoginForm() {
   );
 }
 
-// Página exportada com Suspense wrapper — resolve o erro de prerender
 export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
