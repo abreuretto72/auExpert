@@ -40,3 +40,16 @@ body {
 ::-webkit-scrollbar-track { background: var(--color-bg-deep); }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-ametista); }
+
+/* Reusable form input styling — used in /costs and forms in geral */
+@layer components {
+  .input {
+    @apply w-full bg-bg-deep border border-border rounded-lg px-3 py-2 text-sm text-text
+           placeholder:text-text-dim
+           focus:outline-none focus:border-jade focus:ring-1 focus:ring-jade/30
+           disabled:opacity-50;
+  }
+  .input:where(select) {
+    @apply pr-8 appearance-none cursor-pointer;
+  }
+}

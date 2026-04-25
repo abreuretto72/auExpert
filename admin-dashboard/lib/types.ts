@@ -127,6 +127,62 @@ export const FUNCTION_LABELS: Record<string, string> = {
   'generate-personality': 'Personalidade',
 };
 
+// ───── get_admin_total_costs ───────────────────────────────────────────────
+
+export type CostCategory =
+  | 'infrastructure'
+  | 'platform'
+  | 'development'
+  | 'labor'
+  | 'equipment'
+  | 'training'
+  | 'other';
+
+export type BillingCycle = 'monthly' | 'annual' | 'one_time';
+
+export type InfrastructureCostItem = {
+  id: string;
+  item: string;
+  vendor: string | null;
+  category: CostCategory;
+  amount_usd: number;
+  billing_cycle: BillingCycle;
+  monthly_equivalent_usd: number;
+  original_amount: number | null;
+  original_currency: string | null;
+  fx_rate_to_usd: number | null;
+  started_at: string;
+  ended_at: string | null;
+  notes: string | null;
+};
+
+export type AdminTotalCosts = {
+  period: { year: number; month: number; start: string; end: string };
+  fixed_monthly_usd: number;
+  one_time_paid_this_month_usd: number;
+  variable_ai_usd: number;
+  grand_total_usd: number;
+  by_category: Partial<Record<CostCategory, number>>;
+  by_vendor: Record<string, number>;
+  items: InfrastructureCostItem[];
+};
+
+export const CATEGORY_LABELS: Record<CostCategory, string> = {
+  infrastructure: 'Infraestrutura',
+  platform:       'Plataformas / Lojas',
+  development:    'Ferramentas de dev',
+  labor:          'Equipe / Mão de obra',
+  equipment:      'Equipamentos',
+  training:       'Treinamento',
+  other:          'Outros',
+};
+
+export const BILLING_LABELS: Record<BillingCycle, string> = {
+  monthly:  'Mensal',
+  annual:   'Anual',
+  one_time: 'Único',
+};
+
 export const ERROR_LABELS: Record<string, string> = {
   timeout: 'Timeout',
   network: 'Rede',
