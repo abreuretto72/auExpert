@@ -3,6 +3,12 @@ import { getAIConfig } from '../_shared/ai-config.ts';
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildPetSystemContext } from '../_shared/petContext.ts';
 import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -18,6 +24,18 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
   }
+
+  const t0 = Date.now();
+
+  // Telemetria — context capturado ao longo do handler. analyze-pet-photo nao
+  // recebe pet_id (e usado pra cadastro ou fotos sem associacao) — pet_id stays null.
+  const ctx: {
+    user_id: string | null;
+    model_used: string | null;
+    pet_name: string | null;
+    analysis_depth: string | null;
+  } = { user_id: null, model_used: null, pet_name: null, analysis_depth: null };
+  const telemetryClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
   try {
     // Auth enforcement — verify_jwt disabled at gateway (ES256/HS256 mismatch);
@@ -38,6 +56,7 @@ Deno.serve(async (req: Request) => {
         status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
+    ctx.user_id = user.id;
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(
@@ -47,6 +66,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const { photo_base64, species, language = 'pt-BR', media_type: inputMediaType, pet_name, pet_breed, pet_sex, analysis_depth = 'deep' } = await req.json();
+    ctx.pet_name = pet_name ?? null;
+    ctx.analysis_depth = analysis_depth ?? 'deep';
     console.log(`[analyze-pet-photo] body parsed | analysis_depth=${analysis_depth} | has_pet_name=${!!pet_name} | photoKB=${Math.round((photo_base64?.length ?? 0) * 0.75 / 1024)}`);
 
     if (!photo_base64) {
@@ -318,6 +339,27 @@ Write all text fields in ${lang}.`;
         console.error(`[analyze-pet-photo] [${reqId}] diag log insert failed:`, logErr);
       }
 
+      // ── Telemetria — Anthropic falhou (chain exausta ou erro non-model) ─
+      const cat = categorizeError(err);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'analyze-pet-photo',
+        user_id: ctx.user_id,
+        provider: 'anthropic',
+        model_used: ctx.model_used,
+        latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat),
+        error_category: cat,
+        error_message: err.message,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: {
+          analysis_depth: ctx.analysis_depth,
+          http_status: err.status,
+          attempts: err.attempts,
+          exhausted: err.exhausted,
+          request_id: reqId,
+        },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({
           error: 'AI analysis failed',
@@ -337,6 +379,7 @@ Write all text fields in ${lang}.`;
     }
 
     const { response, modelUsed, attempts: fallbackAttempts, strippedParams } = callResult;
+    ctx.model_used = modelUsed;
     console.log(`[analyze-pet-photo] [${reqId}] success | model_used="${modelUsed}" | fallbacks=${fallbackAttempts.length} | stripped=[${strippedParams.join(', ')}] | total_ms=${Date.now() - t0}`);
 
     const aiResponse = await response.json();
@@ -365,6 +408,27 @@ Write all text fields in ${lang}.`;
       } catch (logErr) {
         console.error(`[analyze-pet-photo] [${reqId}] empty-response diag log failed:`, logErr);
       }
+
+      // ── Telemetria — Anthropic respondeu mas sem texto (tokens cobrados) ─
+      const emptyUsage = extractAnthropicUsage(aiResponse);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'analyze-pet-photo',
+        user_id: ctx.user_id,
+        provider: 'anthropic',
+        model_used: emptyUsage.model ?? ctx.model_used,
+        tokens_in: emptyUsage.tokens_in,
+        tokens_out: emptyUsage.tokens_out,
+        cache_read_tokens: emptyUsage.cache_read_tokens,
+        cache_write_tokens: emptyUsage.cache_write_tokens,
+        image_count: 1,
+        latency_ms: Date.now() - t0,
+        status: 'error',
+        error_category: 'invalid_response',
+        error_message: `empty AI response | stop=${stopReason}`,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: { stop_reason: stopReason, request_id: reqId },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'Empty AI response' }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -405,6 +469,27 @@ Write all text fields in ${lang}.`;
       } catch (logErr) {
         console.error(`[analyze-pet-photo] [${reqId}] parse-failure diag log failed:`, logErr);
       }
+
+      // ── Telemetria — Anthropic respondeu mas JSON invalido (tokens cobrados) ─
+      const parseFailUsage = extractAnthropicUsage(aiResponse);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'analyze-pet-photo',
+        user_id: ctx.user_id,
+        provider: 'anthropic',
+        model_used: parseFailUsage.model ?? ctx.model_used,
+        tokens_in: parseFailUsage.tokens_in,
+        tokens_out: parseFailUsage.tokens_out,
+        cache_read_tokens: parseFailUsage.cache_read_tokens,
+        cache_write_tokens: parseFailUsage.cache_write_tokens,
+        image_count: 1,
+        latency_ms: Date.now() - t0,
+        status: 'error',
+        error_category: 'invalid_response',
+        error_message: `JSON parse failed | stop=${stopReason}`,
+        user_message: 'A analise nao foi conclusiva. Tente outra foto.',
+        payload: { stop_reason: stopReason, text_chars: jsonText.length, request_id: reqId },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({
           error: 'AI returned invalid JSON',
@@ -439,12 +524,49 @@ Write all text fields in ${lang}.`;
       color: pet_name ? null : (analysis.identification?.coat?.color ?? null),
     };
 
+    // ── Telemetria — sucesso ──────────────────────────────────────────────
+    const successUsage = extractAnthropicUsage(aiResponse);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'analyze-pet-photo',
+      user_id: ctx.user_id,
+      provider: 'anthropic',
+      model_used: successUsage.model ?? ctx.model_used,
+      tokens_in: successUsage.tokens_in,
+      tokens_out: successUsage.tokens_out,
+      cache_read_tokens: successUsage.cache_read_tokens,
+      cache_write_tokens: successUsage.cache_write_tokens,
+      image_count: 1,
+      latency_ms: Date.now() - t0,
+      status: 'success',
+      payload: {
+        analysis_depth: ctx.analysis_depth,
+        is_diary_photo: !!ctx.pet_name,
+        request_id: reqId,
+      },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify(compat),
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('[analyze-pet-photo] error:', err);
+
+    // ── Telemetria — erro de runtime ────────────────────────────────────
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'analyze-pet-photo',
+      user_id: ctx.user_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+      payload: { analysis_depth: ctx.analysis_depth },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

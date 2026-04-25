@@ -1,4 +1,15 @@
 {
+  "support": {
+    "title": "Suporte",
+    "statusAi": "Atendimento por IA",
+    "statusHuman": "Equipe humana acompanhando",
+    "statusQueued": "Aguardando equipe humana",
+    "callHuman": "Falar com humano",
+    "inputPlaceholder": "Escreva sua dúvida sobre o app…",
+    "sendFailed": "Não foi possível enviar agora. Verifique a conexão e tente de novo.",
+    "welcomeTitle": "Como posso ajudar?",
+    "welcomeBody": "A IA responde dúvidas sobre o auExpert — recursos, navegação, problemas conhecidos. Para questões de saúde do pet, use o assistente dentro do perfil dele."
+  },
   "common": {
     "save": "Salvar",
     "cancel": "Cancelar",
@@ -2115,8 +2126,10 @@
     "privacyDesc": "Como seus dados são protegidos",
     "terms": "Termos de Uso",
     "termsDesc": "Regras e condições",
-    "helpSupport": "Ajuda e Suporte",
-    "helpSupportDesc": "FAQ, tutoriais e contato",
+    "support": "Suporte",
+    "supportDesc": "Chat com a IA pra dúvidas sobre o app",
+    "helpSupport": "Ajuda e Tutoriais",
+    "helpSupportDesc": "FAQ e tutoriais offline",
     "backup": "Backup",
     "backupDesc": "Exportar dados do pet",
     "backupToast": "Seus dados já estão salvos na nuvem automaticamente. Nenhuma ação necessária!",
@@ -2129,7 +2142,9 @@
     "exitAppDescIos": "Minimiza o aplicativo",
     "exitIosHint": "Deslize para cima ou pressione o botão Home para sair",
     "comingSoon": "Em breve",
-    "auto": "Auto"
+    "auto": "Auto",
+    "stats": "Minhas Estatísticas",
+    "statsDesc": "Resumo do mês: pets, IA, atividade"
   },
   "toast": {
     "cameraPermission": "Ei, preciso da câmera pra te ver! Libera lá nas configurações?",
@@ -3354,5 +3369,43 @@
   },
   "hubPdf": {
     "icon": "Exportar meu perfil"
+  },
+  "stats": {
+    "title": "Minhas Estatísticas",
+    "errorTitle": "Não foi possível carregar.",
+    "sectionAiUsage": "Uso de inteligência artificial",
+    "sectionPets": "Meus pets",
+    "sectionPeople": "Pessoas vinculadas aos seus pets",
+    "sectionProfessionals": "Profissionais convidados",
+    "sectionActivity": "Sua atividade",
+    "aiImages": "Imagens analisadas",
+    "aiVideos": "Vídeos analisados",
+    "aiAudios": "Áudios analisados",
+    "aiScanners": "Scanners (OCR)",
+    "aiCardapios": "Cardápios criados",
+    "aiProntuarios": "Prontuários gerados",
+    "petsDogs": "Cães",
+    "petsCats": "Gatos",
+    "peopleCoParents": "Co-tutores",
+    "peopleCaregivers": "Cuidadores",
+    "peopleVisitors": "Visitantes",
+    "peopleTotal": "Total",
+    "professionalsEmpty": "Nenhum profissional convidado ainda.",
+    "professionalsPending": "Convites pendentes",
+    "professionalsPendingHint": "Aguardando aceite",
+    "activityDaysActive": "Dias ativos no mês",
+    "activityNoLogin": "Logue novamente para registrar",
+    "activityLastLogin": "Último login: {{date}}",
+    "profType_vet": "Veterinário",
+    "profType_groomer": "Banho & Tosa",
+    "profType_trainer": "Adestrador",
+    "profType_walker": "Passeador",
+    "profType_sitter": "Pet sitter",
+    "profType_nutritionist": "Nutricionista",
+    "profType_physio": "Fisioterapeuta",
+    "profType_dentist": "Dentista",
+    "profType_behaviorist": "Comportamentalista",
+    "profType_daycare": "Creche",
+    "profType_hotel": "Hotel"
   }
 }

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, DollarSign, AlertTriangle, LogOut, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, DollarSign, AlertTriangle, LogOut, Wallet, MessageCircle } from 'lucide-react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-client';
 import { cn } from '@/lib/utils';
 
 const nav = [
   { href: '/',          label: 'Visão geral',     icon: LayoutDashboard },
   { href: '/users',     label: 'Usuários',        icon: Users },
+  { href: '/support',   label: 'Suporte',         icon: MessageCircle },
   { href: '/costs',     label: 'Custo total',     icon: Wallet },
   { href: '/ai-costs',  label: 'Custos de IA',    icon: DollarSign },
   { href: '/errors',    label: 'Erros',           icon: AlertTriangle },

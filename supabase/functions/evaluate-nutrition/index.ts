@@ -15,6 +15,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from "../_shared/ai-config.ts";
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from "../_shared/recordAiInvocation.ts";
+import { extractAnthropicUsage } from "../_shared/extractAnthropicUsage.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -164,6 +170,14 @@ function buildFallback(): Record<string, unknown> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS_HEADERS });
 
+  const t0 = Date.now();
+  const ctx: {
+    user_id: string | null;
+    pet_id: string | null;
+    model_used: string | null;
+  } = { user_id: null, pet_id: null, model_used: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     // ── Auth ───────────────────────────────────────────────────────────────
     const authHeader = req.headers.get("authorization") ?? "";
@@ -174,9 +188,11 @@ Deno.serve(async (req) => {
     const { data: { user } } = await anonSb.auth.getUser(token);
     if (!user) return json({ error: "unauthorized" }, 401);
     const userId = user.id;
+    ctx.user_id = userId;
 
     const { pet_id, language = "pt-BR" } = await req.json();
     if (!pet_id) return json({ error: "pet_id required" }, 400);
+    ctx.pet_id = pet_id;
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -275,6 +291,7 @@ Deno.serve(async (req) => {
         language,
       });
 
+      ctx.model_used = aiConfig.model_insights;
       const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -291,15 +308,35 @@ Deno.serve(async (req) => {
       });
 
       if (!claudeRes.ok) {
+        const errBody = await claudeRes.text().catch(() => '');
         console.error("[evaluate-nutrition] Claude error:", claudeRes.status);
+        const cat = claudeRes.status === 429 ? 'quota_exceeded'
+                  : claudeRes.status === 401 || claudeRes.status === 403 ? 'auth_error'
+                  : claudeRes.status >= 500 ? 'api_error'
+                  : 'validation_error';
+        recordAiInvocation(telemetryClient, {
+          function_name: 'evaluate-nutrition',
+          user_id: ctx.user_id,
+          pet_id: ctx.pet_id,
+          provider: 'anthropic',
+          model_used: ctx.model_used,
+          latency_ms: Date.now() - t0,
+          status: statusFromCategory(cat),
+          error_category: cat,
+          error_message: `HTTP ${claudeRes.status} — ${errBody.slice(0, 500)}`,
+          user_message: 'Avaliação gerada em modo básico (IA indisponível).',
+          payload: { http_status: claudeRes.status, fallback: true },
+        }).catch(() => {});
         evaluation = buildFallback();
       } else {
         const claudeData = await claudeRes.json();
         const raw = claudeData?.content?.[0]?.text ?? "";
+        let parsedOK = false;
         try {
           // Strip potential markdown fences
           const cleaned = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
           evaluation = JSON.parse(cleaned);
+          parsedOK = true;
           // Clamp score
           if (typeof evaluation.score === "number") {
             evaluation.score = Math.max(0, Math.min(100, Math.round(evaluation.score)));
@@ -308,6 +345,25 @@ Deno.serve(async (req) => {
           console.error("[evaluate-nutrition] JSON parse failed:", raw.slice(0, 200));
           evaluation = buildFallback();
         }
+
+        // Telemetria — Claude respondeu (com tokens cobrados, parseado ou não)
+        const usage = extractAnthropicUsage(claudeData);
+        recordAiInvocation(telemetryClient, {
+          function_name: 'evaluate-nutrition',
+          user_id: ctx.user_id,
+          pet_id: ctx.pet_id,
+          provider: 'anthropic',
+          model_used: usage.model ?? ctx.model_used,
+          tokens_in: usage.tokens_in,
+          tokens_out: usage.tokens_out,
+          cache_read_tokens: usage.cache_read_tokens,
+          cache_write_tokens: usage.cache_write_tokens,
+          latency_ms: Date.now() - t0,
+          status: parsedOK ? 'success' : 'error',
+          error_category: parsedOK ? null : 'invalid_response',
+          error_message: parsedOK ? null : 'JSON parse failed',
+          payload: { language, fallback_used: !parsedOK },
+        }).catch(() => {});
       }
     }
 
@@ -341,6 +397,21 @@ Deno.serve(async (req) => {
     return json({ evaluation, generated_at: now });
   } catch (err) {
     console.error("[evaluate-nutrition] error:", err);
+
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'evaluate-nutrition',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+    }).catch(() => {});
+
     return json({ error: "internal error" }, 500);
   }
 });

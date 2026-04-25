@@ -15,6 +15,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from "../_shared/ai-config.ts";
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from "../_shared/recordAiInvocation.ts";
+import { extractAnthropicUsage } from "../_shared/extractAnthropicUsage.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -236,6 +242,14 @@ Deno.serve(async (req) => {
   const timings: Record<string, number> = {};
   const t_start = Date.now();
 
+  // Telemetria
+  const ctx: {
+    user_id: string | null;
+    pet_id: string | null;
+    model_used: string | null;
+  } = { user_id: null, pet_id: null, model_used: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     // ── Auth ────────────────────────────────────────────────────────────────────
     const authHeader = req.headers.get("authorization") ?? "";
@@ -246,10 +260,12 @@ Deno.serve(async (req) => {
     const { data: { user } } = await anonSb.auth.getUser(token);
     if (!user) return json({ error: "unauthorized" }, 401);
     const userId = user.id;
+    ctx.user_id = userId;
     timings.auth = Date.now() - t_start;
 
     const { pet_id, force = false, language = "pt-BR" } = await req.json();
     if (!pet_id) return json({ error: "pet_id required" }, 400);
+    ctx.pet_id = pet_id;
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -358,6 +374,7 @@ Deno.serve(async (req) => {
         const timeoutId = setTimeout(() => controller.abort(), 120_000);
 
         const t_claude = Date.now();
+        ctx.model_used = aiConfig.model_insights;
         let claudeResp: Response;
         try {
           claudeResp = await fetch("https://api.anthropic.com/v1/messages", {
@@ -427,9 +444,43 @@ Deno.serve(async (req) => {
         (cardapio as Record<string, unknown>).modalidade_label =
           computeModalidadeLabel(modalidade, naturalPct, isPortuguese);
         (cardapio as Record<string, unknown>).generated_at = new Date().toISOString();
+
+        // ── Telemetria — sucesso ────────────────────────────────────────
+        const usage = extractAnthropicUsage(claudeData);
+        recordAiInvocation(telemetryClient, {
+          function_name: 'generate-cardapio',
+          user_id: ctx.user_id,
+          pet_id: ctx.pet_id,
+          provider: 'anthropic',
+          model_used: usage.model ?? ctx.model_used,
+          tokens_in: usage.tokens_in,
+          tokens_out: usage.tokens_out,
+          cache_read_tokens: usage.cache_read_tokens,
+          cache_write_tokens: usage.cache_write_tokens,
+          latency_ms: Date.now() - t_start,
+          status: 'success',
+          payload: { modalidade, natural_pct: naturalPct, language },
+        }).catch(() => {});
       } catch (aiErr) {
         fallbackReason = String(aiErr);
         console.error("[generate-cardapio] FALLBACK REASON:", fallbackReason);
+
+        // ── Telemetria — IA falhou (caiu no fallback) ────────────────────
+        const cat = categorizeError(aiErr);
+        recordAiInvocation(telemetryClient, {
+          function_name: 'generate-cardapio',
+          user_id: ctx.user_id,
+          pet_id: ctx.pet_id,
+          provider: 'anthropic',
+          model_used: ctx.model_used,
+          latency_ms: Date.now() - t_start,
+          status: statusFromCategory(cat),
+          error_category: cat,
+          error_message: String(aiErr).slice(0, 1000),
+          user_message: 'Cardápio gerado em modo básico (IA indisponível).',
+          payload: { fallback: true, modalidade, natural_pct: naturalPct },
+        }).catch(() => {});
+
         cardapio = buildFallbackCardapio(pet.name, modalidade, naturalPct, weekdays, isPortuguese);
       }
     }
@@ -484,6 +535,22 @@ Deno.serve(async (req) => {
     return json({ cardapio, cached: false, fallback_reason: fallbackReason });
   } catch (err) {
     console.error("[generate-cardapio] error:", err, "| timings:", JSON.stringify(timings));
+
+    // Telemetria — erro de runtime
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'generate-cardapio',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t_start,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+    }).catch(() => {});
+
     return json({ error: "internal error" }, 500);
   }
 });

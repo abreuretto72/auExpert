@@ -4,6 +4,12 @@ import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
 import { buildPetSystemContext } from '../_shared/petContext.ts';
 import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -28,9 +34,20 @@ Deno.serve(async (req: Request) => {
   }
 
   const t0 = Date.now();
+
+  // Telemetria — context capturado ao longo do handler
+  const ctx: {
+    user_id: string | null;
+    pet_id: string | null;
+    narration_ctx: string | null;  // 'pet_registration' | 'diary'
+    model_used: string | null;
+  } = { user_id: null, pet_id: null, narration_ctx: null, model_used: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
+    ctx.user_id = authResult.userId;
 
     if (!ANTHROPIC_API_KEY) {
       console.error('[generate-diary-narration] ANTHROPIC_API_KEY not configured');
@@ -41,6 +58,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const { pet_id, content, mood_id, language = 'pt-BR', context = 'diary', analysis_depth = 'balanced' } = await req.json();
+    ctx.pet_id = pet_id ?? null;
+    ctx.narration_ctx = context ?? 'diary';
     console.log('[generate-diary-narration] pet_id:', pet_id, 'mood:', mood_id, 'lang:', language, 'context:', context, 'content length:', content?.length);
 
     if (!pet_id || !content) {
@@ -173,9 +192,30 @@ ${content}`;
           }),
         });
         regResponse = callResult.response;
+        ctx.model_used = callResult.modelUsed;
       } catch (callErr) {
         const err = callErr as AnthropicCallError;
         console.error(`[generate-diary-narration] [${reqId}] registration call failed:`, err.message);
+
+        const cat = categorizeError(err);
+        recordAiInvocation(telemetryClient, {
+          function_name: 'generate-diary-narration',
+          user_id: ctx.user_id,
+          pet_id: ctx.pet_id,
+          provider: 'anthropic',
+          model_used: ctx.model_used,
+          latency_ms: Date.now() - t0,
+          status: statusFromCategory(cat),
+          error_category: cat,
+          error_message: err.message,
+          user_message: 'Algo nao saiu como esperado. Tente novamente.',
+          payload: {
+            narration_ctx: 'pet_registration',
+            http_status: err.status,
+            attempts: err.attempts,
+          },
+        }).catch(() => {});
+
         return new Response(
           JSON.stringify({ error: 'AI narration failed', status: err.status ?? 502, details: err.body }),
           { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -210,6 +250,23 @@ ${content}`;
         output_tokens: regTokens,
         ctx: 'pet_registration',
       }));
+
+      // ── Telemetria — sucesso registration ─────────────────────────────
+      const regUsage = extractAnthropicUsage(regAiResponse);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'generate-diary-narration',
+        user_id: ctx.user_id,
+        pet_id: ctx.pet_id,
+        provider: 'anthropic',
+        model_used: regUsage.model ?? ctx.model_used,
+        tokens_in: regUsage.tokens_in,
+        tokens_out: regUsage.tokens_out,
+        cache_read_tokens: regUsage.cache_read_tokens,
+        cache_write_tokens: regUsage.cache_write_tokens,
+        latency_ms: Date.now() - t0,
+        status: 'success',
+        payload: { narration_ctx: 'pet_registration', request_id: reqId },
+      }).catch(() => {});
 
       return new Response(
         JSON.stringify({
@@ -313,9 +370,31 @@ Length target: ${depthCfg.hint}`;
         }),
       });
       response = callResult.response;
+      ctx.model_used = callResult.modelUsed;
     } catch (callErr) {
       const err = callErr as AnthropicCallError;
       console.error(`[generate-diary-narration] [${reqId2}] diary call failed:`, err.message);
+
+      const cat = categorizeError(err);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'generate-diary-narration',
+        user_id: ctx.user_id,
+        pet_id: ctx.pet_id,
+        provider: 'anthropic',
+        model_used: ctx.model_used,
+        latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat),
+        error_category: cat,
+        error_message: err.message,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: {
+          narration_ctx: 'diary',
+          analysis_depth,
+          http_status: err.status,
+          attempts: err.attempts,
+        },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'AI narration failed', status: err.status ?? 502, details: err.body }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -357,6 +436,27 @@ Length target: ${depthCfg.hint}`;
       ctx: 'diary',
     }));
 
+    // ── Telemetria — sucesso diary ──────────────────────────────────────
+    const usage = extractAnthropicUsage(aiResponse);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'generate-diary-narration',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: usage.model ?? ctx.model_used,
+      tokens_in: usage.tokens_in,
+      tokens_out: usage.tokens_out,
+      cache_read_tokens: usage.cache_read_tokens,
+      cache_write_tokens: usage.cache_write_tokens,
+      latency_ms: Date.now() - t0,
+      status: 'success',
+      payload: {
+        narration_ctx: 'diary',
+        analysis_depth,
+        request_id: reqId2,
+      },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({
         narration: result.narration,
@@ -370,6 +470,23 @@ Length target: ${depthCfg.hint}`;
     );
   } catch (err) {
     console.error('[generate-diary-narration] error:', err);
+
+    // ── Telemetria — erro de runtime (parse, etc.) ──────────────────────
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'generate-diary-narration',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+      payload: { narration_ctx: ctx.narration_ctx },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

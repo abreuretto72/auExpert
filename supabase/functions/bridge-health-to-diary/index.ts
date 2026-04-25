@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -24,6 +30,11 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
   }
+
+  const t0 = Date.now();
+  const ctx: { user_id: string | null; pet_id: string | null; model_used: string | null } =
+    { user_id: null, pet_id: null, model_used: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
     // ── JWT validation — must be an authenticated user ────────────────────────
@@ -59,6 +70,8 @@ Deno.serve(async (req: Request) => {
     const { pet_id, user_id: _user_id, event_type, event_summary, language = 'pt-BR' } = await req.json();
     // Always use the authenticated user's ID — never trust client-supplied user_id
     const user_id = authUser.id;
+    ctx.user_id = user_id;
+    ctx.pet_id = pet_id ?? null;
     console.log('[bridge-health-to-diary] pet:', pet_id, 'type:', event_type, 'lang:', language);
 
     if (!pet_id || !event_type || !event_summary) {
@@ -118,6 +131,7 @@ RULES:
 - Return ONLY valid JSON: {"narration": "your text here"}`;
 
     const cfg = await getAIConfig();
+    ctx.model_used = cfg.model_narrate;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -139,6 +153,20 @@ RULES:
     if (!response.ok) {
       const errBody = await response.text();
       console.error('[bridge-health-to-diary] AI error:', response.status, errBody);
+
+      const cat = response.status === 429 ? 'quota_exceeded'
+                : response.status === 401 || response.status === 403 ? 'auth_error'
+                : response.status >= 500 ? 'api_error'
+                : 'validation_error';
+      recordAiInvocation(telemetryClient, {
+        function_name: 'bridge-health-to-diary',
+        user_id: ctx.user_id, pet_id: ctx.pet_id, provider: 'anthropic',
+        model_used: ctx.model_used, latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat), error_category: cat,
+        error_message: `HTTP ${response.status} — ${errBody.slice(0, 500)}`,
+        payload: { event_type, http_status: response.status },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'AI narration failed' }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -146,6 +174,20 @@ RULES:
     }
 
     const aiResponse = await response.json();
+
+    // Telemetria — sucesso da chamada IA (independente do parse JSON)
+    {
+      const usage = extractAnthropicUsage(aiResponse);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'bridge-health-to-diary',
+        user_id: ctx.user_id, pet_id: ctx.pet_id, provider: 'anthropic',
+        model_used: usage.model ?? ctx.model_used,
+        tokens_in: usage.tokens_in, tokens_out: usage.tokens_out,
+        cache_read_tokens: usage.cache_read_tokens, cache_write_tokens: usage.cache_write_tokens,
+        latency_ms: Date.now() - t0, status: 'success',
+        payload: { event_type, language },
+      }).catch(() => {});
+    }
     const textContent = aiResponse.content?.find((c: { type: string }) => c.type === 'text');
     let narration = '';
 
@@ -203,6 +245,16 @@ RULES:
     );
   } catch (err) {
     console.error('[bridge-health-to-diary] error:', err);
+
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'bridge-health-to-diary',
+      user_id: ctx.user_id, pet_id: ctx.pet_id, provider: 'anthropic',
+      model_used: ctx.model_used, latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat), error_category: cat,
+      error_message: String(err).slice(0, 1000),
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

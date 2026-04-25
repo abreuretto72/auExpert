@@ -20,7 +20,13 @@ import { queryClient } from '../lib/queryClient';
 import { colors } from '../constants/colors';
 import { rs } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { initRemoteErrorReporting } from '../lib/initRemoteErrorReporting';
 import { ToastProvider, useToast } from '../components/Toast';
+
+// Conecta errorReporter ao backend report-app-error já no carregamento
+// do módulo — todo reportError() em qualquer lugar do app vai pra app_errors.
+// Idempotente: chamadas adicionais são no-op.
+initRemoteErrorReporting();
 import { NetworkGuard } from '../components/NetworkGuard';
 import { supabase } from '../lib/supabase';
 import { restoreQueryCache } from '../lib/offlineCache';

@@ -1,8 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -15,9 +24,15 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: CORS_HEADERS });
   }
 
+  const t0 = Date.now();
+  const ctx: { user_id: string | null; model_used: string | null; target_language: string | null } =
+    { user_id: null, model_used: null, target_language: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
+    ctx.user_id = authResult.userId;
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(
@@ -27,6 +42,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { strings, targetLanguage, targetLanguageName } = await req.json();
+    ctx.target_language = targetLanguage ?? null;
 
     if (!strings || !targetLanguage) {
       return new Response(
@@ -55,6 +71,7 @@ TRANSLATION RULES:
 - Do NOT add any explanation, markdown, or text outside the JSON`;
 
     const cfg = await getAIConfig();
+    ctx.model_used = cfg.model_simple;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -76,6 +93,19 @@ TRANSLATION RULES:
     if (!response.ok) {
       const errorBody = await response.text();
       console.error('Anthropic API error:', response.status, errorBody);
+
+      const cat = response.status === 429 ? 'quota_exceeded'
+                : response.status === 401 || response.status === 403 ? 'auth_error'
+                : response.status >= 500 ? 'api_error' : 'validation_error';
+      recordAiInvocation(telemetryClient, {
+        function_name: 'translate-strings',
+        user_id: ctx.user_id, provider: 'anthropic',
+        model_used: ctx.model_used, latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat), error_category: cat,
+        error_message: `HTTP ${response.status} — ${errorBody.slice(0, 500)}`,
+        payload: { target_language: ctx.target_language, http_status: response.status },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'Translation failed', status: response.status }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -100,12 +130,35 @@ TRANSLATION RULES:
 
     const translated = JSON.parse(jsonText);
 
+    // Telemetria — sucesso
+    const usage = extractAnthropicUsage(aiResponse);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'translate-strings',
+      user_id: ctx.user_id, provider: 'anthropic',
+      model_used: usage.model ?? ctx.model_used,
+      tokens_in: usage.tokens_in, tokens_out: usage.tokens_out,
+      cache_read_tokens: usage.cache_read_tokens, cache_write_tokens: usage.cache_write_tokens,
+      latency_ms: Date.now() - t0, status: 'success',
+      payload: { target_language: ctx.target_language, keys_count: Object.keys(strings ?? {}).length },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ translations: translated, language: targetLanguage }),
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('translate-strings error:', err);
+
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'translate-strings',
+      user_id: ctx.user_id, provider: 'anthropic',
+      model_used: ctx.model_used, latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat), error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      payload: { target_language: ctx.target_language },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

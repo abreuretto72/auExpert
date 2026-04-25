@@ -15,6 +15,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from "../_shared/ai-config.ts";
 import { validateAuth } from "../_shared/validate-auth.ts";
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from "../_shared/recordAiInvocation.ts";
+import { extractAnthropicUsage } from "../_shared/extractAnthropicUsage.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -168,10 +174,22 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: CORS_HEADERS });
   }
 
+  const t0 = Date.now();
+
+  // Telemetria — context capturado ao longo do handler
+  const ctx: {
+    user_id: string | null;
+    pet_id: string | null;
+    model_used: string | null;
+    cached: boolean;
+  } = { user_id: null, pet_id: null, model_used: null, cached: false };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
+    ctx.user_id = userId;
 
     if (!ANTHROPIC_API_KEY) {
       console.error("[generate-prontuario] ANTHROPIC_API_KEY not configured");
@@ -186,6 +204,7 @@ Deno.serve(async (req: Request) => {
     };
 
     if (!pet_id) return json({ error: "pet_id is required" }, 400);
+    ctx.pet_id = pet_id;
 
     console.log(
       "[generate-prontuario] START | pet_id:",
@@ -577,6 +596,7 @@ Rules:
     const aiConfig = await getAIConfig(sb);
     console.log("[generate-prontuario] calling Claude | model:", aiConfig.model_insights, "| anthropic_version:", aiConfig.anthropic_version);
 
+    ctx.model_used = aiConfig.model_insights;
     const claudeResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -595,12 +615,52 @@ Rules:
     if (!claudeResp.ok) {
       const errText = await claudeResp.text();
       console.error("[generate-prontuario] Claude error status:", claudeResp.status, "body:", errText.slice(0, 500));
+
+      // ── Telemetria — erro Anthropic ──────────────────────────────────
+      const cat = claudeResp.status === 429 ? 'quota_exceeded'
+                : claudeResp.status === 401 || claudeResp.status === 403 ? 'auth_error'
+                : claudeResp.status >= 500 ? 'api_error'
+                : 'validation_error';
+      recordAiInvocation(telemetryClient, {
+        function_name: 'generate-prontuario',
+        user_id: ctx.user_id,
+        pet_id: ctx.pet_id,
+        provider: 'anthropic',
+        model_used: ctx.model_used,
+        latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat),
+        error_category: cat,
+        error_message: `HTTP ${claudeResp.status} — ${errText.slice(0, 500)}`,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: { http_status: claudeResp.status },
+      }).catch(() => {});
+
       return json({ error: "AI generation failed: HTTP " + claudeResp.status + " — " + errText.slice(0, 200) }, 502);
     }
 
     const claudeData = await claudeResp.json();
     const rawText = claudeData.content?.[0]?.text?.trim() ?? "{}";
     console.log("[generate-prontuario] Claude response tokens:", claudeData.usage?.output_tokens, "| raw preview:", rawText.slice(0, 100));
+
+    // ── Telemetria — sucesso (registra antes de continuar para cache/DB
+    // updates, garantindo que o INSERT sai mesmo se algo a jusante falhar) ──
+    {
+      const usage = extractAnthropicUsage(claudeData);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'generate-prontuario',
+        user_id: ctx.user_id,
+        pet_id: ctx.pet_id,
+        provider: 'anthropic',
+        model_used: usage.model ?? ctx.model_used,
+        tokens_in: usage.tokens_in,
+        tokens_out: usage.tokens_out,
+        cache_read_tokens: usage.cache_read_tokens,
+        cache_write_tokens: usage.cache_write_tokens,
+        latency_ms: Date.now() - t0,
+        status: 'success',
+        payload: { language },
+      }).catch(() => {});
+    }
 
     // Strip markdown code fences (```json ... ```) before parsing — Claude sometimes wraps JSON in them.
     let jsonText = rawText;
@@ -1134,6 +1194,22 @@ Rules:
     const msg = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : "";
     console.error("[generate-prontuario] UNEXPECTED ERROR:", msg, "\nStack:", stack);
+
+    // ── Telemetria — erro de runtime ────────────────────────────────────
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'generate-prontuario',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: msg.slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+    }).catch(() => {});
+
     return json({ error: "Internal server error: " + msg }, 500);
   }
 });

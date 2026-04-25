@@ -25,6 +25,8 @@ import {
   User,
   X,
   ChevronRight,
+  BarChart3,
+  MessageCircle,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -143,6 +145,12 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       route: '/settings',
     },
     {
+      icon: <BarChart3 size={rs(20)} color={colors.click} strokeWidth={1.8} />,
+      label: t('menu.stats'),
+      sublabel: t('menu.statsDesc'),
+      route: '/stats',
+    },
+    {
       icon: <Shield size={rs(20)} color={colors.click} strokeWidth={1.8} />,
       label: t('menu.privacy'),
       sublabel: t('menu.privacyDesc'),
@@ -153,6 +161,12 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       label: t('menu.terms'),
       sublabel: t('menu.termsDesc'),
       onPress: () => Linking.openURL('https://abreuretto72.github.io/auExpert/legal/terms.html'),
+    },
+    {
+      icon: <MessageCircle size={rs(20)} color={colors.click} strokeWidth={1.8} />,
+      label: t('menu.support'),
+      sublabel: t('menu.supportDesc'),
+      route: '/support',
     },
     {
       icon: <HelpCircle size={rs(20)} color={colors.click} strokeWidth={1.8} />,

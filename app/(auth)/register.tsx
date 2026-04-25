@@ -27,6 +27,7 @@ import { Input } from '../../components/ui/Input';
 import PasswordMeter from '../../components/PasswordMeter';
 import * as auth from '../../lib/auth';
 import { supabase } from '../../lib/supabase';
+import { recordUserLogin } from '../../lib/recordUserLogin';
 import {
   formatDateInput,
   getDatePlaceholder,
@@ -124,6 +125,13 @@ export default function RegisterScreen() {
             document_version: '1.0',
           },
         ]);
+      }
+
+      // Signup do Supabase já cria a sessão (auto-login). Registrar como
+      // primeiro login do tutor — alimenta o card "Dias ativos no mês"
+      // de Minhas Estatísticas. Best-effort: não bloqueia, não lança.
+      if (data.session) {
+        await recordUserLogin('password');
       }
 
       router.replace('/(app)');

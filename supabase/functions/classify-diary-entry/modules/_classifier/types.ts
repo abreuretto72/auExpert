@@ -68,6 +68,26 @@ export interface ClassifyResult {
   tags_suggested: string[];
   language: string;
   tokens_used: number;
+  /**
+   * Telemetria do call IA real — usage detalhado para recordAiInvocation.
+   * Sempre presente (best-effort): claude OU gemini, exclusivo.
+   */
+  _telemetry?: {
+    provider: 'anthropic' | 'google';
+    actual_model: string | null;
+    claude_usage?: {
+      input_tokens: number;
+      output_tokens: number;
+      cache_read_input_tokens: number;
+      cache_creation_input_tokens: number;
+    };
+    gemini_usage?: {
+      prompt_tokens: number;
+      candidates_tokens: number;
+      cached_tokens: number;
+      total_tokens: number;
+    };
+  };
   // OCR-specific (only present when input_type === 'ocr_scan')
   document_type?: string;
   ocr_data?: OCRData;

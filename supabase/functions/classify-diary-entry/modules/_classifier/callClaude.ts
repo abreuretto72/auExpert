@@ -18,13 +18,27 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+export interface ClaudeUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_input_tokens: number;
+  cache_creation_input_tokens: number;
+}
+
 export async function callClaude(
   systemPrompt: string,
   messages: ClaudeMessage[],
   maxTokens: number = MAX_TOKENS,
   extraHeaders: Record<string, string> = {},
   modelOverride?: string,
-): Promise<{ text: string; tokensUsed: number }> {
+): Promise<{
+  text: string;
+  tokensUsed: number;
+  /** Usage completo da Anthropic — usado pra recordAiInvocation. */
+  usage: ClaudeUsage;
+  /** Modelo efetivamente usado (apos fallback). */
+  modelUsed: string;
+}> {
   const cfg = await getAIConfig();
   // modelOverride tem prioridade (caller sabe o que quer);
   // senão usa a chain (array normalizado do ai-config).
@@ -96,8 +110,16 @@ export async function callClaude(
     throw new Error('Empty AI response');
   }
 
+  const u = aiResponse.usage ?? {};
   return {
     text: textContent.text,
-    tokensUsed: aiResponse.usage?.output_tokens ?? 0,
+    tokensUsed: u.output_tokens ?? 0,
+    usage: {
+      input_tokens:                u.input_tokens                ?? 0,
+      output_tokens:               u.output_tokens               ?? 0,
+      cache_read_input_tokens:     u.cache_read_input_tokens     ?? 0,
+      cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+    },
+    modelUsed: result.modelUsed,
   };
 }

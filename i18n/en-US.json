@@ -1,4 +1,15 @@
 {
+  "support": {
+    "title": "Support",
+    "statusAi": "Assisted by AI",
+    "statusHuman": "Human team handling",
+    "statusQueued": "Waiting for human team",
+    "callHuman": "Talk to human",
+    "inputPlaceholder": "Ask your question about the app…",
+    "sendFailed": "Could not send right now. Check your connection and try again.",
+    "welcomeTitle": "How can I help?",
+    "welcomeBody": "The AI answers questions about auExpert — features, navigation, known issues. For pet health questions, use the assistant inside the pet profile."
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -2095,8 +2106,10 @@
     "privacyDesc": "How your data is protected",
     "terms": "Terms of Use",
     "termsDesc": "Rules and conditions",
-    "helpSupport": "Help & Support",
-    "helpSupportDesc": "FAQ, tutorials and contact",
+    "support": "Support",
+    "supportDesc": "Chat with AI for questions about the app",
+    "helpSupport": "Help & Tutorials",
+    "helpSupportDesc": "FAQ and offline tutorials",
     "backup": "Backup",
     "backupDesc": "Export pet data",
     "backupToast": "Your data is already saved to the cloud automatically. No action needed!",
@@ -2109,7 +2122,9 @@
     "exitAppDescIos": "Minimize the application",
     "exitIosHint": "Swipe up or press the Home button to exit",
     "comingSoon": "Soon",
-    "auto": "Auto"
+    "auto": "Auto",
+    "stats": "My Statistics",
+    "statsDesc": "Monthly summary: pets, AI, activity"
   },
   "toast": {
     "cameraPermission": "Camera permission required. Enable it in settings.",
@@ -3442,5 +3457,43 @@
   },
   "hubPdf": {
     "icon": "Export my profile"
+  },
+  "stats": {
+    "title": "My Statistics",
+    "errorTitle": "Could not load.",
+    "sectionAiUsage": "AI usage",
+    "sectionPets": "My pets",
+    "sectionPeople": "People linked to your pets",
+    "sectionProfessionals": "Invited professionals",
+    "sectionActivity": "Your activity",
+    "aiImages": "Images analyzed",
+    "aiVideos": "Videos analyzed",
+    "aiAudios": "Audios analyzed",
+    "aiScanners": "Scanners (OCR)",
+    "aiCardapios": "Meal plans created",
+    "aiProntuarios": "Medical reports generated",
+    "petsDogs": "Dogs",
+    "petsCats": "Cats",
+    "peopleCoParents": "Co-parents",
+    "peopleCaregivers": "Caregivers",
+    "peopleVisitors": "Visitors",
+    "peopleTotal": "Total",
+    "professionalsEmpty": "No professionals invited yet.",
+    "professionalsPending": "Pending invites",
+    "professionalsPendingHint": "Awaiting acceptance",
+    "activityDaysActive": "Active days this month",
+    "activityNoLogin": "Log in again to register",
+    "activityLastLogin": "Last login: {{date}}",
+    "profType_vet": "Veterinarian",
+    "profType_groomer": "Bath & Grooming",
+    "profType_trainer": "Trainer",
+    "profType_walker": "Dog Walker",
+    "profType_sitter": "Pet Sitter",
+    "profType_nutritionist": "Nutritionist",
+    "profType_physio": "Physiotherapist",
+    "profType_dentist": "Dentist",
+    "profType_behaviorist": "Behaviorist",
+    "profType_daycare": "Daycare",
+    "profType_hotel": "Hotel"
   }
 }

@@ -183,6 +183,133 @@ export const BILLING_LABELS: Record<BillingCycle, string> = {
   one_time: 'Único',
 };
 
+// ───── get_admin_app_errors_list ───────────────────────────────────────────
+
+export type AppErrorSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type AppErrorCategory =
+  | 'crash' | 'unhandled' | 'network' | 'ai_failure'
+  | 'validation' | 'permission' | 'manual_report' | 'other';
+export type AppErrorStatus =
+  | 'open' | 'investigating' | 'resolved' | 'wont_fix' | 'duplicate';
+
+export type AppErrorRow = {
+  id: string;
+  severity: AppErrorSeverity;
+  category: AppErrorCategory;
+  message: string;
+  route: string | null;
+  component: string | null;
+  app_version: string | null;
+  platform: 'ios' | 'android' | 'web' | null;
+  os_version: string | null;
+  device_model: string | null;
+  is_online: boolean | null;
+  user_message: string | null;
+  status: AppErrorStatus;
+  fingerprint: string | null;
+  occurrence_count: number;
+  created_at: string;
+  resolved_at: string | null;
+  resolution_note: string | null;
+  user_email: string | null;
+};
+
+export type AdminAppErrorsList = {
+  page: number;
+  per_page: number;
+  total: number;
+  pages: number;
+  totals: { open: number; critical_30d: number; today: number };
+  by_severity: Partial<Record<AppErrorSeverity, number>>;
+  by_category: Partial<Record<AppErrorCategory, number>>;
+  items: AppErrorRow[];
+};
+
+export const APP_ERROR_SEVERITY_LABELS: Record<AppErrorSeverity, string> = {
+  info:     'Info',
+  warning:  'Aviso',
+  error:    'Erro',
+  critical: 'Crítico',
+};
+
+export const APP_ERROR_CATEGORY_LABELS: Record<AppErrorCategory, string> = {
+  crash:         'Crash',
+  unhandled:     'Promise não-tratada',
+  network:       'Rede',
+  ai_failure:    'Falha de IA (vista pelo tutor)',
+  validation:    'Validação',
+  permission:    'Permissão / RLS',
+  manual_report: 'Relato manual',
+  other:         'Outros',
+};
+
+export const APP_ERROR_STATUS_LABELS: Record<AppErrorStatus, string> = {
+  open:          'Aberto',
+  investigating: 'Investigando',
+  resolved:      'Resolvido',
+  wont_fix:      'Won\'t fix',
+  duplicate:     'Duplicado',
+};
+
+// ───── get_admin_support_conversations ─────────────────────────────────────
+
+export type SupportConvStatus = 'open' | 'closed' | 'archived';
+export type SupportSender = 'user' | 'ai' | 'admin';
+
+export type SupportConversationRow = {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  user_name: string | null;
+  status: SupportConvStatus;
+  ia_active: boolean;
+  escalated_to_human: boolean;
+  escalated_at: string | null;
+  subject: string | null;
+  last_message_at: string;
+  last_sender: SupportSender | null;
+  message_count: number;
+  app_version: string | null;
+  platform: string | null;
+  locale: string | null;
+  created_at: string;
+  unread_admin_count: number;
+};
+
+export type AdminSupportConversations = {
+  page: number;
+  per_page: number;
+  total: number;
+  pages: number;
+  totals: {
+    open: number;
+    escalated: number;
+    unread_admin: number;
+  };
+  items: SupportConversationRow[];
+};
+
+export type SupportMessageRow = {
+  id: string;
+  sender: SupportSender;
+  sender_user_id: string | null;
+  content: string;
+  attachments: unknown;
+  ai_model: string | null;
+  ai_tokens_in: number | null;
+  ai_tokens_out: number | null;
+  read_by_user: boolean;
+  read_by_admin: boolean;
+  created_at: string;
+};
+
+export type AdminSupportMessages = {
+  conversation: SupportConversationRow;
+  messages: SupportMessageRow[];
+};
+
+// ───── Error labels (legacy — usado pela tela /errors antiga) ──────────────
+
 export const ERROR_LABELS: Record<string, string> = {
   timeout: 'Timeout',
   network: 'Rede',

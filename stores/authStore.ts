@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Platform } from 'react-native';
 import type { User } from '../types/database';
 import * as auth from '../lib/auth';
+import { recordUserLogin } from '../lib/recordUserLogin';
 
 // SecureStore — criptografado pelo hardware (Keychain/Keystore)
 export const getSecureStore = () => {
@@ -56,6 +57,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     await store.setItemAsync(BIO_EMAIL_KEY, email);
     await store.setItemAsync(BIO_PASS_KEY, password);
 
+    // Registrar login em audit_log — best-effort, alimenta o card "Dias ativos
+    // no mês" da tela de estatísticas. Não bloqueia nem lança em caso de falha.
+    await recordUserLogin('password');
+
     set({
       user: { id: data.user?.id, email: data.user?.email, ...data.user?.user_metadata } as User | null,
       session: data.session ? { access_token: data.session.access_token } : null,
@@ -104,6 +109,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ hasBioCredentials: false });
       throw new Error('SESSION_EXPIRED');
     }
+
+    // Login biométrico bem-sucedido → registrar em audit_log. Best-effort,
+    // alimenta o card "Dias ativos no mês". Não bloqueia, não lança.
+    await recordUserLogin('biometric');
 
     // Atualizar credenciais salvas (caso o token tenha rotacionado)
     set({

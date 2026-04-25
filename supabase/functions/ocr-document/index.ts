@@ -3,6 +3,12 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
 import { callAnthropicWithFallback, AnthropicCallError } from '../_shared/callAnthropicWithFallback.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -20,9 +26,20 @@ Deno.serve(async (req: Request) => {
   }
 
   const t0 = Date.now();
+
+  // Telemetria — context capturado ao longo do handler para alimentar
+  // recordAiInvocation tanto no caminho de sucesso quanto no de erro.
+  const ctx: {
+    user_id: string | null;
+    model_used: string | null;
+    document_type: string | null;
+  } = { user_id: null, model_used: null, document_type: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     const authResult = await validateAuth(req, CORS_HEADERS);
     if (authResult instanceof Response) return authResult;
+    ctx.user_id = authResult.userId;
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(
@@ -32,6 +49,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { photo_base64, document_type, language = 'pt-BR', media_type: inputMediaType } = await req.json();
+    ctx.document_type = document_type ?? null;
 
     if (!photo_base64) {
       return new Response(
@@ -143,9 +161,31 @@ Respond in ${lang}.`;
         }),
       });
       response = callResult.response;
+      ctx.model_used = callResult.modelUsed;
     } catch (callErr) {
       const err = callErr as AnthropicCallError;
       console.error(`[ocr-document] [${reqId}] call failed:`, err.message);
+
+      // Telemetria — Anthropic falhou (apos exaustao de fallback chain)
+      const cat = categorizeError(err);
+      recordAiInvocation(telemetryClient, {
+        function_name: 'ocr-document',
+        user_id: ctx.user_id,
+        provider: 'anthropic',
+        model_used: ctx.model_used,
+        latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat),
+        error_category: cat,
+        error_message: err.message,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: {
+          document_type: ctx.document_type,
+          http_status: err.status,
+          attempts: err.attempts,
+          exhausted: err.exhausted,
+        },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'OCR failed', status: err.status ?? 502, details: err.body }),
         { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
@@ -183,12 +223,48 @@ Respond in ${lang}.`;
       doc_type: document_type ?? 'general',
     }));
 
+    // ── Telemetria — sucesso ──────────────────────────────────────────────
+    const usage = extractAnthropicUsage(aiResponse);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'ocr-document',
+      user_id: ctx.user_id,
+      provider: 'anthropic',
+      model_used: usage.model ?? ctx.model_used,
+      tokens_in: usage.tokens_in,
+      tokens_out: usage.tokens_out,
+      cache_read_tokens: usage.cache_read_tokens,
+      cache_write_tokens: usage.cache_write_tokens,
+      image_count: 1, // OCR sempre processa 1 imagem
+      latency_ms: Date.now() - t0,
+      status: 'success',
+      payload: {
+        document_type: ctx.document_type ?? 'general',
+        request_id: reqId,
+      },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify(result),
       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('[ocr-document] error:', err);
+
+    // ── Telemetria — erro de runtime (auth, parse, etc.) ──────────────────
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'ocr-document',
+      user_id: ctx.user_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+      payload: { document_type: ctx.document_type },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },

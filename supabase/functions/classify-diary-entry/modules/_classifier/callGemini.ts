@@ -16,6 +16,13 @@ interface GeminiPart {
   inlineData?: { mimeType: string; data: string };
 }
 
+export interface GeminiUsageDetail {
+  /** promptTokenCount - cached. */
+  prompt_tokens: number;
+  candidates_tokens: number;
+  cached_tokens: number;
+  total_tokens: number;
+}
 
 /** Call Gemini generateContent with inline media parts. */
 export async function callGemini(
@@ -23,7 +30,7 @@ export async function callGemini(
   parts: GeminiPart[],
   model: string,
   maxTokens: number = MAX_TOKENS,
-): Promise<{ text: string; tokensUsed: number }> {
+): Promise<{ text: string; tokensUsed: number; usage: GeminiUsageDetail; modelUsed: string }> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
 
   const mediaParts = parts.filter(p => p.inlineData);
@@ -62,7 +69,13 @@ export async function callGemini(
       finishReason?: string;
       safetyRatings?: unknown[];
     }>;
-    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
+    usageMetadata?: {
+      promptTokenCount?: number;
+      candidatesTokenCount?: number;
+      totalTokenCount?: number;
+      cachedContentTokenCount?: number;
+    };
+    modelVersion?: string;
     error?: { code?: number; message?: string; status?: string };
   };
 
@@ -85,7 +98,18 @@ export async function callGemini(
   }
 
   console.log('[gemini:api] Response text length:', text.length, '| first 300:', text.slice(0, 300));
-  return { text, tokensUsed: data.usageMetadata?.totalTokenCount ?? 0 };
+  const um = data.usageMetadata ?? {};
+  return {
+    text,
+    tokensUsed: um.totalTokenCount ?? 0,
+    usage: {
+      prompt_tokens:     um.promptTokenCount     ?? 0,
+      candidates_tokens: um.candidatesTokenCount ?? 0,
+      cached_tokens:     um.cachedContentTokenCount ?? 0,
+      total_tokens:      um.totalTokenCount      ?? 0,
+    },
+    modelUsed: data.modelVersion ?? model,
+  };
 }
 
 /** Fetch media URL → base64 → Gemini analysis. */
@@ -96,7 +120,7 @@ export async function callGeminiMedia(
   tutorText: string | undefined,
   model: string,
   maxTokens: number,
-): Promise<{ rawText: string; tokensUsed: number }> {
+): Promise<{ rawText: string; tokensUsed: number; usage: GeminiUsageDetail; modelUsed: string }> {
   const t0 = Date.now();
   console.log(`[gemini:${mediaKind}] ▶ START | model:`, model, '| hasTutorText:', !!(tutorText?.trim()), '| url:', mediaUrl.slice(0, 100));
 
@@ -110,8 +134,8 @@ export async function callGeminiMedia(
   parts.push({ text: 'Return ONLY the JSON object as specified in the system prompt.' });
 
   console.log(`[gemini:${mediaKind}] Calling Gemini API...`);
-  const { text, tokensUsed } = await callGemini(systemPrompt, parts, model, maxTokens);
+  const { text, tokensUsed, usage, modelUsed } = await callGemini(systemPrompt, parts, model, maxTokens);
 
   console.log(`[gemini:${mediaKind}] ✅ DONE | tokens:`, tokensUsed, '| total time:', Date.now() - t0, 'ms');
-  return { rawText: text, tokensUsed };
+  return { rawText: text, tokensUsed, usage, modelUsed };
 }

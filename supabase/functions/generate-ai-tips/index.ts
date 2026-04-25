@@ -18,6 +18,12 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -92,7 +98,12 @@ Return ONLY the JSON array.`;
 
 interface TipOut { category: string; text: string; }
 
-async function generateBatch(species: string, language: string): Promise<{ tips: TipOut[]; inTok: number; outTok: number }> {
+async function generateBatch(species: string, language: string): Promise<{
+  tips: TipOut[];
+  inTok: number;
+  outTok: number;
+  rawResponse: unknown;
+}> {
   const { system, user } = buildPrompt(species, language, BATCH_SIZE);
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -145,6 +156,7 @@ async function generateBatch(species: string, language: string): Promise<{ tips:
     tips,
     inTok: data.usage?.input_tokens ?? 0,
     outTok: data.usage?.output_tokens ?? 0,
+    rawResponse: data,
   };
 }
 
@@ -187,10 +199,25 @@ Deno.serve(async (req: Request) => {
       // Gera e insere
       let inserted = 0;
       let generationError: string | null = null;
+      const tBatchStart = Date.now();
       try {
-        const { tips, inTok, outTok } = await generateBatch(species, language);
+        const { tips, inTok, outTok, rawResponse } = await generateBatch(species, language);
         totalInTok += inTok;
         totalOutTok += outTok;
+
+        // Telemetria — sucesso da batch
+        const usage = extractAnthropicUsage(rawResponse);
+        recordAiInvocation(sb, {
+          function_name: 'generate-ai-tips',
+          user_id: null, pet_id: null, // CRON sistêmico
+          provider: 'anthropic',
+          model_used: usage.model ?? MODEL,
+          tokens_in: usage.tokens_in, tokens_out: usage.tokens_out,
+          cache_read_tokens: usage.cache_read_tokens, cache_write_tokens: usage.cache_write_tokens,
+          latency_ms: Date.now() - tBatchStart,
+          status: 'success',
+          payload: { species, language, tips_returned: tips.length },
+        }).catch(() => {});
 
         if (tips.length === 0) {
           generationError = "zero valid tips returned";
@@ -223,6 +250,18 @@ Deno.serve(async (req: Request) => {
         }
       } catch (genErr) {
         generationError = String(genErr);
+
+        // Telemetria — falha da batch (Anthropic ou parse)
+        const cat = categorizeError(genErr);
+        recordAiInvocation(sb, {
+          function_name: 'generate-ai-tips',
+          user_id: null, pet_id: null,
+          provider: 'anthropic',
+          model_used: MODEL, latency_ms: Date.now() - tBatchStart,
+          status: statusFromCategory(cat), error_category: cat,
+          error_message: generationError.slice(0, 1000),
+          payload: { species, language },
+        }).catch(() => {});
       }
 
       results.push({

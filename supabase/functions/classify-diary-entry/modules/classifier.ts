@@ -31,8 +31,8 @@ import {
   buildOCRMessages,
   buildMessages,
 } from './_classifier/messages.ts';
-import { callClaude } from './_classifier/callClaude.ts';
-import { callGeminiMedia } from './_classifier/callGemini.ts';
+import { callClaude, type ClaudeUsage } from './_classifier/callClaude.ts';
+import { callGeminiMedia, type GeminiUsageDetail } from './_classifier/callGemini.ts';
 import { parseClassification } from './_classifier/parseClassification.ts';
 import { inferExpenseCategory } from './_classifier/inferExpenseCategory.ts';
 
@@ -107,13 +107,19 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
   console.log('[classifier] depth:', depth, '| isGeminiPath:', isGeminiPath, '| suffixApplied:', !isGeminiPath, '| maxTokens:', depthMax);
   let rawText: string;
   let tokensUsed: number;
+  // Telemetria de usage real (input/output/cache) pra recordAiInvocation.
+  // claudeUsage e setado quando o caminho passa por callClaude;
+  // geminiUsage idem para callGeminiMedia. Sao mutuamente exclusivos.
+  let claudeUsage: ClaudeUsage | null = null;
+  let geminiUsage: GeminiUsageDetail | null = null;
+  let actualModel: string | null = null;
 
   if (input.input_type === 'pdf_upload' && input.pdf_base64) {
     // ── Claude: PDF ──
     messages = buildPDFMessages(input.pdf_base64, input.text);
     maxTokens = 3000;
     console.log('[classifier] Calling Claude (PDF) | lang:', lang);
-    ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+    ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
 
   } else if (input.input_type === 'ocr_scan') {
     // ── Claude: OCR ──
@@ -122,14 +128,14 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
     console.log('[classifier] OCR branch | photo present:', !!ocrPhoto, '| photo KB:', ocrPhoto ? Math.round(ocrPhoto.length * 0.75 / 1024) : 0);
     messages = buildOCRMessages(ocrPhoto);
     console.log('[classifier] Calling Claude (OCR) | lang:', lang);
-    ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+    ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
 
   } else if (input.input_type === 'pet_audio') {
     // ── pet_audio: Gemini (if key+url available) or text-Claude fallback ──
     console.log('[classifier] pet_audio | audio_url:', !!input.audio_url, '| GEMINI_API_KEY:', !!GEMINI_API_KEY, '| model_audio:', aiConfig.model_audio);
     if (input.audio_url && GEMINI_API_KEY) {
       try {
-        ;({ rawText, tokensUsed } = await callGeminiMedia(
+        ;({ rawText, tokensUsed, usage: geminiUsage, modelUsed: actualModel } = await callGeminiMedia(
           systemPrompt, input.audio_url, 'audio', input.text, aiConfig.model_audio, maxTokens,
         ));
       } catch (err) {
@@ -138,7 +144,7 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
         const durationNote = durationSec != null && durationSec > 0 ? `[Audio recording: ${durationSec}s]` : '[Audio recording]';
         const audioCtx = input.text?.trim() ? `${durationNote}\nTutor's description: "${input.text.trim()}"` : durationNote;
         messages = buildMessages(audioCtx, undefined);
-        ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+        ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
       }
     } else {
       const reason = !input.audio_url ? 'no audio_url' : 'no GEMINI_API_KEY';
@@ -147,7 +153,7 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
       const audioCtx = input.text?.trim() ? `${durationNote}\nTutor's description: "${input.text.trim()}"` : durationNote;
       messages = buildMessages(audioCtx, undefined);
       console.log('[classifier] pet_audio — text-Claude (reason:', reason, ') | duration:', durationSec, '| hasTutorDesc:', !!(input.text?.trim()));
-      ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+      ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
     }
 
   } else if (input.input_type === 'video') {
@@ -155,21 +161,21 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
     console.log('[classifier] video | video_url:', !!input.video_url, '| GEMINI_API_KEY:', !!GEMINI_API_KEY, '| model_video:', aiConfig.model_video);
     if (input.video_url && GEMINI_API_KEY) {
       try {
-        ;({ rawText, tokensUsed } = await callGeminiMedia(
+        ;({ rawText, tokensUsed, usage: geminiUsage, modelUsed: actualModel } = await callGeminiMedia(
           systemPrompt, input.video_url, 'video', input.text, aiConfig.model_video, maxTokens,
         ));
       } catch (err) {
         console.warn('[classifier] video — ❌ Gemini FAILED → Claude thumbnail fallback | error:', String(err));
         const allPhotos = input.photos_base64?.length ? input.photos_base64 : input.photo_base64 ? [input.photo_base64] : undefined;
         messages = buildMessages(input.text, allPhotos?.slice(0, 1));
-        ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+        ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
       }
     } else {
       const reason = !input.video_url ? 'no video_url' : 'no GEMINI_API_KEY';
       const allPhotos = input.photos_base64?.length ? input.photos_base64 : input.photo_base64 ? [input.photo_base64] : undefined;
       messages = buildMessages(input.text, allPhotos?.slice(0, 1));
       console.log('[classifier] video — Claude thumbnail (reason:', reason, ') | hasThumb:', !!(allPhotos?.length));
-      ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+      ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
     }
 
   } else {
@@ -180,7 +186,7 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
     const photos = allPhotos?.slice(0, 2);
     messages = buildMessages(input.text, photos);
     console.log('[classifier] Calling Claude | lang:', lang, '| maxTokens:', maxTokens, '| input_type:', input.input_type, '| photos:', photos?.length ?? 0);
-    ;({ text: rawText, tokensUsed } = await callClaude(systemPrompt, messages, maxTokens));
+    ;({ text: rawText, tokensUsed, usage: claudeUsage, modelUsed: actualModel } = await callClaude(systemPrompt, messages, maxTokens));
   }
 
   // ── RAW RESPONSE TRACE ──
@@ -215,6 +221,13 @@ export async function classifyEntry(input: ClassifyInput): Promise<ClassifyResul
     tags_suggested: (result.tags_suggested as string[]) ?? [],
     language: input.language,
     tokens_used: tokensUsed,
+    // Telemetria — usage real para recordAiInvocation no handler.
+    _telemetry: {
+      provider: geminiUsage ? 'google' : 'anthropic',
+      actual_model: actualModel,
+      ...(claudeUsage ? { claude_usage: claudeUsage } : {}),
+      ...(geminiUsage ? { gemini_usage: geminiUsage } : {}),
+    },
     // OCR fields (only populated when input_type === 'ocr_scan')
     ...(input.input_type === 'ocr_scan' && (() => {
       const doc_type = (result.document_type as string) ?? 'other';

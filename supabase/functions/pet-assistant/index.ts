@@ -21,6 +21,12 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getAIConfig } from '../_shared/ai-config.ts';
 import { validateAuth } from '../_shared/validate-auth.ts';
 import { buildPetSystemContext } from '../_shared/petContext.ts';
+import {
+  recordAiInvocation,
+  categorizeError,
+  statusFromCategory,
+} from '../_shared/recordAiInvocation.ts';
+import { extractAnthropicUsage } from '../_shared/extractAnthropicUsage.ts';
 
 const ANTHROPIC_API_KEY    = Deno.env.get('ANTHROPIC_API_KEY')!;
 const SUPABASE_URL         = Deno.env.get('SUPABASE_URL')!;
@@ -50,10 +56,19 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: CORS });
   }
 
+  const t0 = Date.now();
+  const ctx: {
+    user_id: string | null;
+    pet_id: string | null;
+    model_used: string | null;
+  } = { user_id: null, pet_id: null, model_used: null };
+  const telemetryClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
   try {
     const authResult = await validateAuth(req, CORS);
     if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
+    ctx.user_id = userId;
 
     if (!ANTHROPIC_API_KEY) {
       return new Response(
@@ -71,6 +86,7 @@ Deno.serve(async (req: Request) => {
         { status: 400, headers: { ...CORS, 'Content-Type': 'application/json' } },
       );
     }
+    ctx.pet_id = pet_id;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const cfg      = await getAIConfig(supabase);
@@ -267,6 +283,7 @@ IMPORTANT RULES:
     // ── Call Claude ───────────────────────────────────────────────────────────
     const history = (Array.isArray(conversation_history) ? conversation_history : []).slice(-10);
 
+    ctx.model_used = cfg.model_chat;
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -288,6 +305,25 @@ IMPORTANT RULES:
     if (!response.ok) {
       const errBody = await response.text();
       console.error('[pet-assistant] Anthropic error:', response.status, errBody);
+
+      const cat = response.status === 429 ? 'quota_exceeded'
+                : response.status === 401 || response.status === 403 ? 'auth_error'
+                : response.status >= 500 ? 'api_error'
+                : 'validation_error';
+      recordAiInvocation(telemetryClient, {
+        function_name: 'pet-assistant',
+        user_id: ctx.user_id,
+        pet_id: ctx.pet_id,
+        provider: 'anthropic',
+        model_used: ctx.model_used,
+        latency_ms: Date.now() - t0,
+        status: statusFromCategory(cat),
+        error_category: cat,
+        error_message: `HTTP ${response.status} — ${errBody.slice(0, 500)}`,
+        user_message: 'Algo nao saiu como esperado. Tente novamente.',
+        payload: { http_status: response.status, history_len: history.length },
+      }).catch(() => {});
+
       return new Response(
         JSON.stringify({ error: 'AI request failed', details: errBody }),
         { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } },
@@ -311,6 +347,23 @@ IMPORTANT RULES:
       console.warn('[pet-assistant] Failed to save conversation:', e);
     });
 
+    // ── Telemetria — sucesso ──────────────────────────────────────────────
+    const usage = extractAnthropicUsage(aiResponse);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'pet-assistant',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: usage.model ?? ctx.model_used,
+      tokens_in: usage.tokens_in,
+      tokens_out: usage.tokens_out,
+      cache_read_tokens: usage.cache_read_tokens,
+      cache_write_tokens: usage.cache_write_tokens,
+      latency_ms: Date.now() - t0,
+      status: 'success',
+      payload: { history_len: history.length, message_chars: message.length },
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ reply, tokens_used: aiResponse.usage }),
       { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } },
@@ -318,6 +371,21 @@ IMPORTANT RULES:
 
   } catch (err) {
     console.error('[pet-assistant] error:', err);
+
+    const cat = categorizeError(err);
+    recordAiInvocation(telemetryClient, {
+      function_name: 'pet-assistant',
+      user_id: ctx.user_id,
+      pet_id: ctx.pet_id,
+      provider: 'anthropic',
+      model_used: ctx.model_used,
+      latency_ms: Date.now() - t0,
+      status: statusFromCategory(cat),
+      error_category: cat,
+      error_message: String(err).slice(0, 1000),
+      user_message: 'Algo nao saiu como esperado. Tente novamente.',
+    }).catch(() => {});
+
     return new Response(
       JSON.stringify({ error: 'Internal error', message: String(err) }),
       { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } },
