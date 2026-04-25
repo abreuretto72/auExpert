@@ -308,6 +308,44 @@ export type AdminSupportMessages = {
   messages: SupportMessageRow[];
 };
 
+// ───── get_admin_team_list ─────────────────────────────────────────────────
+
+export type AdminRole = 'admin' | 'admin_financial' | 'admin_support';
+
+export type AdminTeamMember = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: AdminRole;
+  is_active: boolean;
+  created_at: string;
+  last_login_at: string | null;
+};
+
+export type AdminInviteRow = {
+  id: string;
+  email: string;
+  role: AdminRole;
+  expires_at: string;
+  created_at: string;
+  invited_by_email: string | null;
+  status?: 'pending' | 'accepted' | 'expired' | 'revoked';
+  accepted_at?: string | null;
+  revoked_at?: string | null;
+};
+
+export type AdminTeamList = {
+  members: AdminTeamMember[];
+  pending_invites: AdminInviteRow[];
+  history: AdminInviteRow[];
+};
+
+export const ADMIN_ROLE_LABELS: Record<AdminRole, string> = {
+  admin:           'Super-admin (acesso total)',
+  admin_financial: 'Financeiro (custos)',
+  admin_support:   'Suporte (chat + erros)',
+};
+
 // ───── Error labels (legacy — usado pela tela /errors antiga) ──────────────
 
 export const ERROR_LABELS: Record<string, string> = {

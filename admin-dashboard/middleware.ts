@@ -43,21 +43,55 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Se está logado, verifica se é admin
-  if (user && !isLoginPage && !isAuthRoute) {
+  // Página pública: aceitar convite (não exige sessão)
+  const isAcceptInvite = pathname === '/accept-invite';
+
+  // Se está logado, verifica se é admin (qualquer perfil admin*)
+  if (user && !isLoginPage && !isAuthRoute && !isAcceptInvite) {
     const { data: userRow } = await supabase
       .from('users')
       .select('role, is_active')
       .eq('id', user.id)
       .single();
 
-    if (!userRow || userRow.role !== 'admin' || !userRow.is_active) {
+    const ADMIN_ROLES = ['admin', 'admin_financial', 'admin_support'];
+    const isActiveAdmin = !!userRow && userRow.is_active && ADMIN_ROLES.includes(userRow.role);
+
+    if (!isActiveAdmin) {
       await supabase.auth.signOut();
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       url.searchParams.set('error', 'not_admin');
       return NextResponse.redirect(url);
     }
+
+    // Gating por rota — só super-admin acessa /team e /users
+    if (userRow.role !== 'admin' && (pathname === '/team' || pathname.startsWith('/team/') ||
+                                      pathname === '/users' || pathname.startsWith('/users/'))) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      url.searchParams.set('error', 'forbidden');
+      return NextResponse.redirect(url);
+    }
+    // Financeiro não acessa /support nem /errors
+    if (userRow.role === 'admin_financial' &&
+        (pathname.startsWith('/support') || pathname.startsWith('/errors'))) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/costs';
+      return NextResponse.redirect(url);
+    }
+    // Suporte não acessa /costs nem /ai-costs
+    if (userRow.role === 'admin_support' &&
+        (pathname.startsWith('/costs') || pathname.startsWith('/ai-costs'))) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/support';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Permite /accept-invite mesmo sem estar logado
+  if (!user && isAcceptInvite) {
+    return response;
   }
 
   return response;
