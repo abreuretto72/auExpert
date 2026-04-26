@@ -1,0 +1,162 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  .easignore — exclusões do upload pro EAS Build                    ║
+# ║                                                                    ║
+# ║  Funciona como .gitignore mas só pro tarball que o eas-cli envia  ║
+# ║  pros servidores da Expo. Reduz tempo de upload e contamina menos ║
+# ║  o build remoto com cache local.                                  ║
+# ║                                                                    ║
+# ║  Docs: https://expo.fyi/eas-build-archive                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+# ──────────────────────────────────────────────────────────────────────
+#  APKs/AABs/IPAs antigos — builds gerados localmente não vão de novo
+# ──────────────────────────────────────────────────────────────────────
+*.apk
+*.aab
+*.ipa
+auexpert-dev.apk
+
+# ──────────────────────────────────────────────────────────────────────
+#  Pastas nativas inteiras — Expo managed: o EAS Build faz `expo prebuild`
+#  na nuvem, então qualquer android/ ou ios/ local é só lixo de build
+#  prebuilt anterior. Se o projeto virar bare/prebuilt customizado depois,
+#  re-avalie estas duas linhas (NÃO ignore android/ se tiver código Java
+#  customizado fora do que o prebuild regenera).
+# ──────────────────────────────────────────────────────────────────────
+android/
+ios/
+
+# Caso preserve android/ ou ios/ no futuro, estes ainda devem sair:
+android/app/build/
+android/build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+ios/build/
+ios/Pods/
+ios/DerivedData/
+ios/.xcode.env.local
+*.xcworkspace/xcuserdata/
+
+# ──────────────────────────────────────────────────────────────────────
+#  Projeto admin Next.js — fica em pasta separada, não faz parte do app
+# ──────────────────────────────────────────────────────────────────────
+admin-dashboard/
+
+# ──────────────────────────────────────────────────────────────────────
+#  Web exports — não servem pro APK/IPA mobile
+# ──────────────────────────────────────────────────────────────────────
+dist/
+web-build/
+.next/
+.turbo/
+
+# ──────────────────────────────────────────────────────────────────────
+#  Caches gerais
+# ──────────────────────────────────────────────────────────────────────
+.expo/
+.expo-shared/
+__pycache__/
+.pytest_cache/
+.cache/
+.parcel-cache/
+.metro-health-check*
+
+# ──────────────────────────────────────────────────────────────────────
+#  Testes / cobertura
+# ──────────────────────────────────────────────────────────────────────
+coverage/
+__tests__/
+__mocks__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# ──────────────────────────────────────────────────────────────────────
+#  Assets pesados não-usados (confirmado via grep — zero referências)
+# ──────────────────────────────────────────────────────────────────────
+videos/                                 # 29 MB · 4 .mp4 não importados
+assets/images/old/                      # 5.7 MB · pasta marcada como "old"
+assets/images/m_confirma.png            # 5.6 MB · mascote não-usado
+assets/images/m_erro.png                # 5.4 MB · mascote não-usado
+assets/images/m_sucesso.png             # 4.8 MB · mascote não-usado
+assets/images/m_aviso.png               # 4.8 MB · mascote não-usado
+assets/images/m_info.png                # 4.7 MB · mascote não-usado
+assets/images/logo_petau.png            # 3.4 MB · logo do nome antigo (descontinuado)
+assets/images/icon_app_ok_old.png       # 896 KB · ícone antigo
+
+# ──────────────────────────────────────────────────────────────────────
+#  Documentação / planos / análises — nada disso roda em runtime
+# ──────────────────────────────────────────────────────────────────────
+*.pdf
+*.pptx
+*.docx
+docs/
+ai-compare/
+comparacao_analise_*.json
+auExpert_descricao_profunda*
+auExpert_plano_profissionais.md
+ADMIN_DASHBOARD_AI_INVOCATIONS.md
+DOCUMENTATION_CHANGES_*.md
+DOCUMENTATION_UPDATE_SUMMARY.md
+MIGRATION-GUIDE.md
+START_HERE.md
+STATS_IMPLEMENTATION.md
+audit-v9.md
+README.md
+
+# Mantém: CLAUDE.md, app.json, eas.json, package.json (esses precisam)
+
+# ──────────────────────────────────────────────────────────────────────
+#  Site da landing — está em pasta separada do app
+# ──────────────────────────────────────────────────────────────────────
+auexpert.com.br/
+
+# ──────────────────────────────────────────────────────────────────────
+#  Skills / scripts auxiliares
+# ──────────────────────────────────────────────────────────────────────
+.claude/
+scripts/
+
+# ──────────────────────────────────────────────────────────────────────
+#  Segurança CRÍTICA — nunca subir credenciais
+# ──────────────────────────────────────────────────────────────────────
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+@abreuretto__auexpert.jks
+.env
+.env.local
+.env.development
+.env.production
+.env.*.local
+
+# ──────────────────────────────────────────────────────────────────────
+#  Editor / OS
+# ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ──────────────────────────────────────────────────────────────────────
+#  Git (o EAS já ignora .git, mas reforçamos)
+# ──────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ──────────────────────────────────────────────────────────────────────
+#  Logs
+# ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+metro-bundler.log
