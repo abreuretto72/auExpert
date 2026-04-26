@@ -35,9 +35,21 @@ export default function CardapioDetailScreen() {
   let cardapio: Cardapio | null = null;
   try {
     cardapio = historyData ? (JSON.parse(historyData) as Cardapio) : null;
-  } catch {
+  } catch (e) {
+    console.warn('[cardapio-detail] JSON.parse failed', { err: String(e), len: historyData?.length });
     cardapio = null;
   }
+
+  // Data de geração formatada — fix do bug onde `generatedDate` era usada
+  // sem ter sido declarada. Renderizava ReferenceError e a tela ficava em branco.
+  const generatedDate = generatedAt
+    ? new Date(generatedAt).toLocaleDateString()
+    : null;
+
+  console.log('[cardapio-detail] render', {
+    petId, hasData: !!historyData, hasCardapio: !!cardapio,
+    days: cardapio?.days?.length ?? 0, generatedDate,
+  });
 
   const handleViewRecipe = (day: CardapioDia, recipeName: string) => {
     const recipe = day.recipes?.find((r) => r.name === recipeName);

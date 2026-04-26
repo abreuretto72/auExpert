@@ -30,3 +30,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Silencia o `Invalid Refresh Token: Refresh Token Not Found` no startup.
+// Esse erro é cosmético: o supabase-js tenta auto-refresh ao boot mesmo quando
+// não há token salvo, joga AuthApiError no console.error, mas o cliente
+// recupera sozinho (event INITIAL_SESSION com session:true ou SIGNED_OUT).
+// Nada quebrou; o erro só polui o log e assusta o desenvolvedor. Filtro:
+// preserva qualquer outro erro de auth.
+// ─────────────────────────────────────────────────────────────────────────────
+const _origConsoleError = console.error;
+console.error = (...args: unknown[]) => {
+  const first = args[0];
+  const msg = typeof first === 'string' ? first
+    : first instanceof Error ? first.message
+    : (first && typeof first === 'object' && 'message' in first
+        ? String((first as { message: unknown }).message)
+        : '');
+  if (
+    msg.includes('Invalid Refresh Token: Refresh Token Not Found') ||
+    msg.includes('Refresh Token Not Found')
+  ) {
+    return; // silencia
+  }
+  _origConsoleError(...args);
+};

@@ -111,6 +111,13 @@ export async function finalize(opts: {
   generateEmbedding(petId, 'diary', entryId, embeddingText, 0.5, userId).catch(() => {});
   updatePetRAG(petId, userId, entryId, classification.classifications ?? []).catch(() => {});
 
+  // Embedding RICO (texto + narração + photo/video/audio analyses + media_analyses + tags).
+  // Roda em paralelo — esse cria/atualiza o registro `category='diary_full'` com importance 0.85,
+  // dominando o ranking RAG sobre o `diary` mínimo (importance 0.5) acima.
+  supabase.functions.invoke('reembed-diary-rich', {
+    body: { diary_entry_id: entryId },
+  }).catch(() => {});
+
   // Mark SQLite pending entry as synced
   updatePendingStatus(tempId, 'synced');
 

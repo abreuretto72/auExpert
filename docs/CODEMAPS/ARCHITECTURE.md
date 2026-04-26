@@ -1,7 +1,7 @@
 # auExpert Architecture Codemap
 
-**Last Updated:** 2026-04-23
-**Status:** MVP Phase — Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Nutrition Module + Prontuário Vet-Grade + Health Modals Input-First + Invite System + iOS Font Fixes + AI Chat PDF Export + Partnerships + Professional Module Fase 1 + Component Refactoring (Diary, Health) + Agenda Actions + Pet Deletion
+**Last Updated:** 2026-04-26
+**Status:** MVP Phase — Diário Inteligente + Co-Tutores + OCR + Audio/Video Analysis + Nutrition Module + Prontuário Vet-Grade + Health Modals Input-First + Invite System + iOS Font Fixes + AI Chat PDF Export + Partnerships + Professional Module (Fase 1: Acesso + Invites + Fase 2: 7 AI Agents) + Component Refactoring (Diary, Health) + Agenda Actions + Pet Deletion + TCI Digital Signing + Reminders Management + Breed Intelligence Elite (8 EFs) + Pet Documents + Professional Credential Scanning
 
 ---
 
@@ -2336,6 +2336,563 @@ const { invite_token, pet_id } = verify(token, process.env.JWT_SECRET);
 - Todo CREATE, ACCEPT, READ (opt-in), REVOKE, EXPIRE → access_audit_log
 - Timestamp, event_type, actor_id, actor_type (tutor|prof|system), grant_id, reason (se apply)
 - Nunca deletado (append-only table)
+
+---
+
+## TCI (Termo de Consentimento Informado) Digital Signing (NEW 2026-04-26)
+
+### Visão Geral
+
+Sistema de assinatura digital de TCIs entre tutores e profissionais veterinários. Tutor recebe push notification, abre `/tci-sign?id={tciId}`, revisa procedimento/riscos/alternativas, e assina com biometria.
+
+### Fluxo
+
+```
+1. Profissional cria TCI (via professional/agents/tci.tsx)
+   ↓
+2. Trigger no banco enfileira push: type='tci_pending_tutor', route='/tci-sign?id={tciId}'
+   ↓
+3. Tutor recebe push → toca → `/tci-sign?id=...` abre
+   ↓
+4. Tutor lê procedure_type, description, risks_described, alternatives_described
+   ↓
+5. Tutor toca [Assinar com Biometria]
+   ↓
+6. expo-local-authentication.authenticateAsync() → biometria confirmada
+   ↓
+7. Call RPC tutor_sign_tci(p_tci_id) → UPDATE termos_consentimento SET tutor_signed_at=NOW()
+   ↓
+8. Trigger enfileira push pro profissional: type='tci_tutor_signed'
+   ↓
+9. UI mostra "Assinado em {timestamp}" (read-only estado)
+```
+
+### Telas
+
+| Tela | Arquivo | Responsabilidade |
+|------|---------|-----------------|
+| **Pending List** | `app/(app)/pending-signatures.tsx` | Listar TCIs pendentes/assinados/todos, filtrar, tap → `/tci-sign?id=...` |
+| **Review & Sign** | `app/(app)/tci-sign.tsx` | Mostrar TCI completo, biometric confirm, call RPC, show success |
+
+### Hooks
+
+**`useProSignature()` (NEW)**
+```typescript
+export function useProSignature(tciId: string) {
+  return {
+    tci: TciDoc | null,              // Fetched via useQuery
+    isLoading: boolean,
+    sign: async () => {              // Call RPC tutor_sign_tci
+      const ok = await biometricConfirm();
+      if (ok) await supabase.rpc('tutor_sign_tci', { p_tci_id: tciId });
+    },
+    isSigning: boolean,
+  };
+}
+```
+
+### Database Tables
+
+**`termos_consentimento` (existing, used in Professional Fase 1):**
+```sql
+id UUID PRIMARY KEY
+pet_id UUID REFERENCES pets(id)
+procedure_type VARCHAR              -- "Castração", "Ultrassom", etc.
+procedure_description TEXT
+risks_described TEXT
+alternatives_described TEXT
+tutor_user_id UUID REFERENCES users(id)
+professional_user_id UUID REFERENCES users(id)
+tutor_signed_at TIMESTAMPTZ
+professional_signed_at TIMESTAMPTZ
+status VARCHAR ('pending' | 'tutor_signed' | 'fully_signed' | 'cancelled')
+created_at TIMESTAMPTZ DEFAULT NOW()
+updated_at TIMESTAMPTZ DEFAULT NOW()
+is_active BOOLEAN DEFAULT true
+```
+
+### i18n Keys
+
+```
+agents.tci.tutor.title                        "Revisar Consentimento"
+agents.tci.tutor.reviewBeforeSigning          "Revise as informações antes de assinar"
+agents.tci.tutor.reviewDesc                   "Leia todos os detalhes do procedimento"
+agents.tci.tutor.procedureLabel               "Procedimento"
+agents.tci.tutor.risksLabel                   "Riscos"
+agents.tci.tutor.alternativesLabel            "Alternativas"
+agents.tci.tutor.signWithBio                  "Assinar com Biometria"
+agents.tci.tutor.biometricFailed              "Biometria não confirmada. Tente de novo."
+agents.tci.tutor.signed                       "Consentimento assinado com sucesso."
+agents.tci.tutor.alreadySigned                "Já assinado"
+agents.tci.tutor.signedAt                     "Assinado em {date}"
+agents.tci.tutor.notFound                     "TCI não encontrado"
+agents.tci.tutor.noTciSelected                "Nenhum TCI selecionado"
+
+pendingSignatures.title                       "Termos de Consentimento"
+pendingSignatures.filter.pending               "Pendentes"
+pendingSignatures.filter.signed                "Assinados"
+pendingSignatures.filter.all                   "Todos"
+pendingSignatures.pending                      "Pendente"
+pendingSignatures.signed                       "Assinado"
+pendingSignatures.createdAt                    "Criado em {date}"
+pendingSignatures.empty.pending.title          "Nenhum TCI pendente"
+pendingSignatures.empty.pending.desc           "Você não tem termos pendentes de assinatura"
+pendingSignatures.empty.signed.title           "Nenhum TCI assinado"
+pendingSignatures.empty.signed.desc            "Você ainda não assinou nenhum termo"
+pendingSignatures.empty.all.title              "Nenhum TCI"
+pendingSignatures.empty.all.desc               "Nenhum termo de consentimento encontrado"
+```
+
+---
+
+## Reminders Management (NEW 2026-04-26)
+
+### Visão Geral
+
+Central hub para gerenciar todos os lembretes do tutor (remédios, acompanhamentos, TCIs pendentes, vacinas). Integrado com `notifications_queue` table.
+
+### Tela
+
+| Tela | Arquivo | Responsabilidade |
+|------|---------|-----------------|
+| **Reminders List** | `app/(app)/reminders.tsx` | Listar reminders não-lidos, ordenar por scheduled_for, mark as read, tap → navigate to resource |
+
+### Tipos de Reminders
+
+| Tipo | Ícone | Ação ao Tap |
+|------|-------|-----------|
+| `medication_reminder` | Pill | Navigate to `/pet/[id]/health` |
+| `vaccine_reminder` | Syringe | Navigate to `/pet/[id]/health` |
+| `followup_reminder` | Calendar | Navigate based on `data.route` |
+| `tci_pending_tutor` | FileSignature | Navigate to `/tci-sign?id={data.tci_id}` |
+
+### Database Table
+
+**`notifications_queue` (existing):**
+```sql
+id UUID PRIMARY KEY
+user_id UUID REFERENCES users(id)
+pet_id UUID REFERENCES pets(id) (nullable)
+type VARCHAR ('medication_reminder' | 'vaccine_reminder' | 'followup_reminder' | 'tci_pending_tutor' | ...)
+title VARCHAR
+body TEXT
+scheduled_for TIMESTAMPTZ
+is_read BOOLEAN DEFAULT false
+is_active BOOLEAN DEFAULT true
+data JSONB                           -- { route?: string, tci_id?: string, ... }
+created_at TIMESTAMPTZ DEFAULT NOW()
+```
+
+### i18n Keys
+
+```
+reminders.title                       "Lembretes"
+reminders.emptyTitle                  "Nenhum lembrete"
+reminders.emptyDesc                   "Você está em dia com tudo"
+```
+
+---
+
+## Breed Intelligence Elite (NEW 2026-04-26)
+
+### Visão Geral
+
+Feed personalizado por raça com conteúdo editorial, posts de tutores, e recomendações IA. Feature elite-gated (requer `feature_breed_intelligence = true` em subscription_plans).
+
+### Fluxo
+
+```
+1. Tutor seleciona pet com raça X (ex: Chihuahua)
+   ↓
+2. App fetches breed-feed EF com pet_id
+   ↓
+3. Servidor busca raça/espécie do pet, retorna posts ordenados:
+   urgency DESC → ai_relevance_score DESC → published_at DESC
+   ↓
+4. Tutor scrolls (infinite query com cursor pagination)
+   ↓
+5. Tutor toca post → `/pet/[id]/breed-intelligence/[postId]` → view details + comments
+   ↓
+6. Tutor pode:
+   - Criar post (STT input)
+   - Comentar em post (STT input)
+   - React (like/heart)
+   - Traduzir post (breed-translate-post EF)
+```
+
+### Telas
+
+| Tela | Arquivo | Responsabilidade |
+|------|---------|-----------------|
+| **Breed Feed** | `app/(app)/pet/[id]/breed-intelligence/index.tsx` | Infinite scroll feed, filter by post_type, elite gating (403 → paywall) |
+| **Post Detail** | `app/(app)/pet/[id]/breed-intelligence/[postId].tsx` | Show post + comments, create comment, reactions |
+
+### Hooks
+
+**`useBreedIntelligence()` (NEW)**
+```typescript
+export function useBreedIntelligence(petId: string) {
+  return {
+    // Feed
+    feed: useInfiniteQuery({
+      queryKey: ['breed-feed', petId],
+      queryFn: ({ pageParam }) => 
+        supabase.functions.invoke('breed-feed', {
+          body: { pet_id: petId, cursor: pageParam }
+        }),
+    }),
+    
+    // Create post (STT input, media pre-uploaded)
+    createPost: useMutation(async (input) => 
+      supabase.functions.invoke('breed-post-create', { body: input })
+    ),
+    
+    // Create comment
+    createComment: useMutation(async (input) =>
+      supabase.functions.invoke('breed-comment-create', { body: input })
+    ),
+    
+    // React (like/heart) — direct upsert, no EF
+    react: useMutation(async ({ postId, type }) =>
+      supabase.from('breed_post_reactions')
+        .upsert({ post_id: postId, user_id, reaction_type: type })
+    ),
+  };
+}
+```
+
+### Edge Functions (See EDGE_FUNCTIONS.md § Breed Intelligence)
+
+- `breed-feed` — Fetch feed (elite-gated)
+- `breed-post-create` — Create post
+- `breed-comment-create` — Add comment
+- `breed-translate-post` — Translate to user's language
+- `breed-editorial-generate` — Admin: generate editorial content
+
+### Database Tables
+
+**`breed_feed_posts` (new):**
+```sql
+id UUID PRIMARY KEY
+pet_id UUID REFERENCES pets(id) (nullable, null for editorial)
+created_by UUID REFERENCES users(id)
+post_type VARCHAR ('editorial' | 'tutor' | 'recommendation')
+source VARCHAR (nullable, URL if external)
+title VARCHAR (nullable)
+body TEXT
+ai_caption TEXT (required — summary by IA)
+ai_tags TEXT[] (detected topics)
+urgency VARCHAR ('none' | 'low' | 'medium' | 'high' | 'critical')
+ai_relevance_score DECIMAL (0-1, for pet breed matching)
+media_urls TEXT[] (URLs to images/videos in Storage)
+media_thumbnails TEXT[]
+target_breeds TEXT[] (which breeds this applies to)
+target_species VARCHAR ('dog' | 'cat' | 'all')
+published_at TIMESTAMPTZ
+is_active BOOLEAN DEFAULT true
+```
+
+**`breed_post_reactions` (new):**
+```sql
+id UUID PRIMARY KEY
+post_id UUID REFERENCES breed_feed_posts(id)
+user_id UUID REFERENCES users(id)
+reaction_type VARCHAR ('like' | 'heart' | 'helpful' | 'concerns')
+created_at TIMESTAMPTZ
+UNIQUE (post_id, user_id, reaction_type)
+```
+
+**`breed_post_comments` (new):**
+```sql
+id UUID PRIMARY KEY
+post_id UUID REFERENCES breed_feed_posts(id)
+created_by UUID REFERENCES users(id)
+body TEXT
+media_urls TEXT[] (optional)
+published_at TIMESTAMPTZ
+is_active BOOLEAN DEFAULT true
+```
+
+### Elite Gating
+
+Breed-feed EF returns 403 if:
+```sql
+NOT (SELECT feature_breed_intelligence FROM subscription_plans WHERE user_id = auth.uid)
+```
+
+UI also checks via `subscription_plans` query to hide entry point (Breed tab) before user clicks.
+
+### i18n Keys
+
+```
+breed.feedTitle                       "Inteligência de Raça"
+breed.feedDesc                        "Conteúdo personalizado para sua raça"
+breed.filterAll                       "Todos"
+breed.filterEditorial                 "Editorial"
+breed.filterTutor                     "Tutores"
+breed.filterRecommendation            "Recomendado"
+breed.postCreatePlaceholder           "Compartilhe uma experiência com sua {breed}..."
+breed.commentPlaceholder              "Escreva um comentário..."
+breed.urgencyCritical                 "Crítico"
+breed.urgencyHigh                     "Alto"
+breed.urgencyMedium                   "Médio"
+breed.urgencyLow                       "Baixo"
+breed.reactionLike                    "Útil"
+breed.reactionHeart                   "Amei"
+breed.reactionConcerns                "Preocupa"
+```
+
+---
+
+## Pet Documents (NEW 2026-04-26)
+
+### Visão Geral
+
+Central repository de todos os documentos do pet (carteira de vacina, exames, receitas, TCIs, carteira de identidade). Download, share, view metadata.
+
+### Tela
+
+| Tela | Arquivo | Responsabilidade |
+|------|---------|-----------------|
+| **Documents List** | `app/(app)/pet/[id]/documents.tsx` | Aggregate view of documents from multiple tables, download, share, scan new |
+
+### Document Types
+
+| Tipo | Tabela | Campos |
+|------|--------|--------|
+| Carteira Vacina | `vaccines` | name, date, lote, vet_name |
+| Exame | `exams` | exam_type, date, result, vet_name |
+| Receita | `medications` | medication_name, dosage, frequency, issued_date |
+| TCI | `termos_consentimento` | procedure_type, tutor_signed_at, professional_signed_at |
+| Identidade | Gerado PDF | microchip, photo, tutor contact |
+| Consulta | `consultations` | consultation_type, date, vet_name, notes |
+
+### PDF Export
+
+**`lib/petDocumentsPdf.ts` (new)**
+```typescript
+export async function generatePetDocumentsPDF(petId: string): Promise<string> {
+  // Aggregate documents from all sources
+  // Generate multi-page PDF with cover + all documents
+  // Return base64 for sharing
+}
+```
+
+### Scan New Document
+
+**`components/DocumentScanner.tsx` (new)**
+```typescript
+// Camera → capture photo of document
+// Invoke ocr-document EF (or classify-diary-entry with input_type='ocr_scan')
+// Parse structured data
+// Show form for manual correction
+// Save to appropriate table
+```
+
+### i18n Keys
+
+```
+documents.title                       "Documentos"
+documents.emptyTitle                  "Nenhum documento"
+documents.emptyDesc                   "Carregue seus primeiros documentos"
+documents.scanNew                     "Escanear Novo"
+documents.downloadAll                 "Baixar Todos"
+documents.shareAll                    "Compartilhar"
+documents.dateAdded                   "Adicionado em {date}"
+```
+
+---
+
+## Professional Module — Fase 2: AI Agents (NEW 2026-04-26)
+
+### Visão Geral
+
+7 AI agents que ajudam profissionais a gerar documentos clínicos (TCI, anamnese, prontuário, receituario, alta, ASA, notificações). Cada agent:
+- Receives pet clinical context (RAG-enriched)
+- Generates draft document via IA
+- Professional reviews + edits
+- Saves + e-signature
+
+### Agents
+
+| Agent | Arquivo | Entrada | Saída | Exemplo |
+|-------|---------|---------|-------|---------|
+| **TCI** | `professional/agents/tci.tsx` | Procedimento desc | TCI completo | Castração, Ultrassom, Biópsia |
+| **Anamnese** | `professional/agents/anamnese.tsx` | Pet history | Anamnese estruturada | Histórico de queixa, sinais clínicos |
+| **Prontuário** | `professional/agents/prontuario.tsx` | Exame físico notes | Prontuário estruturado | Exame cardiopulmonar, abdômen, neurológico |
+| **Receituario** | `professional/agents/receituario.tsx` | Diagnóstico + medicações | Receita formatada | Doses, frequência, duração |
+| **Alta** | `professional/agents/alta.tsx` | Tratamento summary | Documento de alta | Repouso, medicações, acompanhamento |
+| **ASA** | `professional/agents/asa.tsx` | Medical history | ASA score (I-V) | Avaliação de risco anestésico |
+| **Notificação** | `professional/agents/notificacao.tsx` | Pet clinical status | Alert/reminder | Vacinação atrasada, acompanhamento pendente |
+
+### Telas
+
+| Tela | Arquivo | Responsabilidade |
+|------|---------|-----------------|
+| **Agents Index** | `professional/agents/index.tsx` | Grid of 7 agents, tap → agent detail |
+| **Agent Detail** | `professional/agents/{agent}.tsx` | Form with STT input, IA draft generation, review + edit, save + sign |
+
+### Hooks
+
+**`useProAgent(agentType: 'tci' | 'anamnese' | ...) (NEW)`**
+```typescript
+export function useProAgent(agentType: string, petId: string) {
+  return {
+    // Draft generation
+    generate: useMutation(async (input) =>
+      supabase.functions.invoke(`pro-agent-${agentType}`, { body: { pet_id: petId, ...input } })
+    ),
+    isDrafting: boolean,
+    
+    // Save + sign
+    save: useMutation(async (content) =>
+      supabase.rpc(`professional_save_${agentType}`, { p_pet_id: petId, p_content: content })
+    ),
+    isSaving: boolean,
+    
+    // Get clinical context (RAG)
+    context: PetClinicalContext,
+    isLoadingContext: boolean,
+  };
+}
+```
+
+### Edge Functions (7 new)
+
+Each agent-specific EF:
+1. Validates professional has pet access (via `has_pet_access()`)
+2. Fetches clinical context (pet profile + RAG top K memories)
+3. Calls Claude with agent-specific prompt
+4. Returns draft (not saved until professional confirms)
+
+Example: `pro-agent-tci` (hypothetical naming):
+```typescript
+Input:
+{
+  pet_id: string;
+  procedure_type: string;         // "Castração"
+  procedure_description: string;  // Details from professional
+}
+
+Output:
+{
+  draft: {
+    procedure_type: string;
+    procedure_description: string;
+    risks_described: string;       // Generated by IA
+    alternatives_described: string; // Generated by IA
+  }
+}
+```
+
+### Professional Registration
+
+**`professional/register.tsx` (new)**
+```
+1. Scan credential via camera (expo-camera)
+2. Call scan-professional-document EF → extract metadata
+3. Show form pre-filled with: full_name, council_number, specialties, valid_until
+4. Professional can edit/correct
+5. Save to professionals table
+6. Accept T&C + submit for verification
+```
+
+### Database Tables
+
+**`professionals` (existing from Fase 1):**
+```sql
+id UUID PRIMARY KEY
+user_id UUID REFERENCES users(id) UNIQUE
+display_name VARCHAR
+council_name VARCHAR (CRMV, CRP, etc.)
+council_number VARCHAR
+council_uf VARCHAR
+country VARCHAR
+specialties TEXT[]
+valid_until DATE
+verification_status VARCHAR ('pending' | 'verified' | 'rejected')
+verified_at TIMESTAMPTZ
+credential_document_url VARCHAR (Storage path)
+is_active BOOLEAN DEFAULT true
+```
+
+**`professional_documents` (new, for saved agent outputs):**
+```sql
+id UUID PRIMARY KEY
+professional_id UUID REFERENCES professionals(id)
+pet_id UUID REFERENCES pets(id)
+agent_type VARCHAR ('tci' | 'anamnese' | 'prontuario' | 'receituario' | 'alta' | 'asa' | 'notificacao')
+title VARCHAR
+content TEXT (markdown or structured)
+is_signed BOOLEAN DEFAULT false
+signed_at TIMESTAMPTZ (nullable)
+signature_data JSONB (e-signature metadata)
+created_at TIMESTAMPTZ DEFAULT NOW()
+updated_at TIMESTAMPTZ DEFAULT NOW()
+is_active BOOLEAN DEFAULT true
+```
+
+### i18n Keys
+
+```
+professional.title                    "Profissional"
+professional.registerTitle            "Registro Profissional"
+professional.scanCredential           "Escanear Credencial"
+professional.fullName                 "Nome Completo"
+professional.councilNumber            "Número do Conselho"
+professional.specialties              "Especialidades"
+professional.validUntil               "Válido Até"
+
+agents.index.title                    "Assistentes de Documentação"
+agents.index.desc                     "IA-powered document generation"
+agents.tci.label                      "TCI"
+agents.tci.desc                       "Termo de Consentimento Informado"
+agents.anamnese.label                 "Anamnese"
+agents.anamnese.desc                  "História Clínica"
+agents.prontuario.label               "Prontuário"
+agents.prontuario.desc                "Registro Clínico"
+agents.receituario.label              "Receituário"
+agents.receituario.desc               "Prescrição"
+agents.alta.label                     "Alta"
+agents.alta.desc                      "Documento de Alta"
+agents.asa.label                      "ASA"
+agents.asa.desc                       "Score de Risco Anestésico"
+agents.notificacao.label              "Notificação"
+agents.notificacao.desc               "Alertas e Lembretes"
+
+agents.generating                     "Gerando rascunho..."
+agents.draft                          "Rascunho"
+agents.saveAndSign                    "Salvar e Assinar"
+agents.editDraft                      "Editar Rascunho"
+```
+
+---
+
+## Professional Document Scanning (NEW 2026-04-26)
+
+### Visão Geral
+
+Helper Edge Function `scan-professional-document` para OCR de credenciais profissionais (carteira de conselho, diploma). Usado na tela de registro e na app-side medical document scanning.
+
+**Decisão arquitetural:** Separado de `analyze-pet-photo` (protected file, motor central). Segue CLAUDE.md: "criar arquivo SEPARADO que reuse o protegido — não mexer no original".
+
+### Features
+
+- Claude Vision (model chain: opus-4-7 → opus-4-6 → sonnet-4-6)
+- Extracts: document_type, full_name, council_name, council_number, council_uf, specialties, valid_until, institution, confidence
+- Self-contained (não importa de `_shared`)
+- Inline telemetria (minimal logging)
+
+### Usage
+
+**Professional Registration:**
+```typescript
+const photo_base64 = await captureCredentialPhoto();
+const result = await supabase.functions.invoke('scan-professional-document', {
+  body: { photo_base64, language: i18n.language }
+});
+// Pre-fill form with result.full_name, result.council_number, etc.
+```
 
 ---
 

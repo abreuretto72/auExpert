@@ -211,6 +211,52 @@ Deno.serve(async (req: Request) => {
       content: m.content,
     }));
 
+    // ── Busca semântica na KB dinâmica (RAG) ──────────────────────────────
+    // Gera embedding da pergunta via Gemini gemini-embedding-001 (1536 dims)
+    // e busca chunks similares em support_kb_chunks. Falha silenciosa: KB
+    // estática (SUPPORT_KNOWLEDGE_BASE) ainda cobre o caso.
+    let ragContext = '';
+    try {
+      const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+      if (GEMINI_API_KEY) {
+        const embedRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: { parts: [{ text: String(message).slice(0, 2000) }] },
+              taskType: 'RETRIEVAL_QUERY',
+              outputDimensionality: 1536,
+            }),
+          },
+        );
+        if (embedRes.ok) {
+          const embedJson = await embedRes.json();
+          const queryEmbedding = embedJson.embedding?.values as number[] | undefined;
+          if (queryEmbedding && queryEmbedding.length > 0) {
+            const { data: kbChunks } = await sb.rpc('search_kb_chunks', {
+              query_embedding: `[${queryEmbedding.join(',')}]`,
+              match_threshold: 0.70,
+              match_count: 5,
+              filter_language: (conversation.locale as string) ?? 'pt-BR',
+            });
+            if (Array.isArray(kbChunks) && kbChunks.length > 0) {
+              ragContext = '\n\n## INFORMAÇÕES ADICIONAIS RELEVANTES (RAG)\n\n'
+                + kbChunks.map((c: { title: string; content: string; similarity: number }) =>
+                    `### ${c.title} (relevância: ${(c.similarity * 100).toFixed(0)}%)\n${c.content}`
+                  ).join('\n\n---\n\n');
+              console.log('[support-assistant] RAG chunks:', kbChunks.length);
+            }
+          }
+        } else {
+          console.warn('[support-assistant] gemini embed failed:', embedRes.status);
+        }
+      }
+    } catch (e) {
+      console.warn('[support-assistant] RAG falhou (não crítico):', e);
+    }
+
     // ── Prompt sistema em 2 blocos: KB cacheável + diretivas dinâmicas ────
     const lang = LANG_NAMES[(conversation.locale ?? 'pt-BR') as string]
               ?? LANG_NAMES[String(conversation.locale ?? 'pt-BR').split('-')[0]]
@@ -237,7 +283,7 @@ Deno.serve(async (req: Request) => {
 - Se você não tem a resposta na knowledge base, diga "Não tenho essa informação confirmada — posso encaminhar para a equipe humana?".
 - Se o tutor demonstrar frustração ou pedir explicitamente humano, sugira: "Posso encaminhar para a equipe humana?" — a EF processa o pedido.
 - NUNCA invente recursos, telas, fluxos ou rotas que não estão na knowledge base.
-- Resposta = só o texto do assistente. Sem JSON, sem code fences.`,
+- Resposta = só o texto do assistente. Sem JSON, sem code fences.${ragContext}`,
       },
     ];
 

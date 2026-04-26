@@ -48,7 +48,12 @@ import {
   ChevronLeft, Dog, Cat, Shield, Stethoscope, Syringe,
   AlertTriangle, Pill, FileText, Scissors, Activity,
   BookOpen, User, MapPin, Wallet, CalendarClock, Eye, Smile,
+  Sparkles, Lock,
 } from 'lucide-react-native';
+
+import { DocumentsList } from '../../../../components/professional/DocumentsList';
+import { AgentsTabEmbed } from '../../../../components/professional/AgentsTabEmbed';
+import { useProfessionalCapabilities } from '../../../../hooks/useProfessionalCapabilities';
 
 import { colors } from '../../../../constants/colors';
 import { radii, spacing } from '../../../../constants/spacing';
@@ -67,7 +72,7 @@ import type {
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
-type TabId = 'overview' | 'clinical' | 'diary';
+type TabId = 'overview' | 'clinical' | 'diary' | 'documents' | 'agents';
 
 interface TabDef {
   id: TabId;
@@ -76,9 +81,11 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'overview', labelKey: 'pro.petView.tabOverview', icon: (p) => <Eye {...p} /> },
-  { id: 'clinical', labelKey: 'pro.petView.tabClinical', icon: (p) => <Stethoscope {...p} /> },
-  { id: 'diary',    labelKey: 'pro.petView.tabDiary',    icon: (p) => <BookOpen {...p} /> },
+  { id: 'overview',  labelKey: 'pro.petView.tabOverview',  icon: (p) => <Eye {...p} /> },
+  { id: 'clinical',  labelKey: 'pro.petView.tabClinical',  icon: (p) => <Stethoscope {...p} /> },
+  { id: 'diary',     labelKey: 'pro.petView.tabDiary',     icon: (p) => <BookOpen {...p} /> },
+  { id: 'documents', labelKey: 'pro.petView.tabDocuments', icon: (p) => <FileText {...p} /> },
+  { id: 'agents',    labelKey: 'pro.petView.tabAgents',    icon: (p) => <Sparkles {...p} /> },
 ];
 
 // ── Badge persistente "Visualizando como profissional" (2.5.4.4) ──────────────
@@ -99,11 +106,18 @@ function ProContextBadge({ role }: { role: string }) {
 
 // ── Tab bar horizontal ────────────────────────────────────────────────────────
 
-function TabsBar({ active, onChange }: { active: TabId; onChange: (id: TabId) => void }) {
+function TabsBar({
+  active, onChange, visibleTabs,
+}: {
+  active: TabId;
+  onChange: (id: TabId) => void;
+  visibleTabs: readonly TabId[];
+}) {
   const { t } = useTranslation();
+  const tabs = TABS.filter((t) => visibleTabs.includes(t.id));
   return (
     <View style={styles.tabsBar}>
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = tab.id === active;
         const tint = isActive ? colors.click : colors.textDim;
         return (
@@ -775,6 +789,9 @@ export default function ProPetViewScreen() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Capabilities por professional_type (esconde abas/botoes que esse role nao deve ver)
+  const { data: caps } = useProfessionalCapabilities(id);
+
   // Patient metadata (grant, tutor, role, scope_notes) — do cache de /pro
   const { patients } = useMyPatients();
   const patient = useMemo(
@@ -866,7 +883,18 @@ export default function ProPetViewScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {patient.pet_name}
         </Text>
-        <View style={styles.headerRight} />
+        {(caps?.analyze_image || caps?.read_clinical) ? (
+          <TouchableOpacity
+            onPress={() => router.push(`/(app)/professional/agents?petId=${id}` as never)}
+            style={styles.headerRight}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Sparkles size={rs(22)} color={colors.click} strokeWidth={1.8} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerRight} />
+        )}
       </View>
 
       {/* Pet summary row (avatar + name + breed + tutor) */}
@@ -903,10 +931,24 @@ export default function ProPetViewScreen() {
       <ProContextBadge role={patient.role} />
 
       {/* Tabs */}
-      <TabsBar active={activeTab} onChange={setActiveTab} />
+      <TabsBar
+        active={activeTab}
+        onChange={setActiveTab}
+        visibleTabs={[
+          'overview',
+          ...(caps?.read_clinical ? ['clinical' as const] : []),
+          ...(caps?.read_diary ? ['diary' as const] : []),
+          'documents',
+          ...(caps?.analyze_image || caps?.read_clinical ? ['agents' as const] : []),
+        ]}
+      />
 
       {/* Content */}
-      {activeTab === 'diary' ? (
+      {activeTab === 'documents' ? (
+        <DocumentsList petId={id!} />
+      ) : activeTab === 'agents' ? (
+        <AgentsTabEmbed petId={id!} />
+      ) : activeTab === 'diary' ? (
         // Diary usa FlatList próprio (scroll virtual pra paginação)
         <DiaryTab
           entries={diaryEntries}

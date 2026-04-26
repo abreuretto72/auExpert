@@ -418,14 +418,22 @@ export default function HubScreen() {
           onSelectRecent={(name) => setQuery(name)}
           isSearching={isSearching}
         >
-          {/* Rede Solidária */}
+          {/* Breed Intelligence — conteúdo clínico exclusivo por raça (Elite) */}
           <RedeSolidariaCard
             city={tutorProfile?.city ?? undefined}
             aldeiaName={tutorProfile?.city ? t('rede.village') : undefined}
             tutorCount={0}
             sosCount={0}
             newRequests={0}
-            onPress={() => toast(t('rede.comingSoon'), 'info')}
+            onPress={() => {
+              // Navega pra Breed Intelligence do primeiro pet com raça definida
+              const firstPet = pets?.find(p => !!p.breed) ?? pets?.[0];
+              if (firstPet) {
+                router.push(`/pet/${firstPet.id}/breed-intelligence`);
+              } else {
+                toast(t('rede.comingSoon'), 'info');
+              }
+            }}
           />
 
           {/* Tutor card */}

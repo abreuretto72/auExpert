@@ -5,8 +5,11 @@ import ptBR from '../i18n/pt-BR.json';
 
 const CACHE_PREFIX = 'auexpert_i18n_';
 const CACHE_VERSION_KEY = 'auexpert_i18n_version';
-// Incrementar ao alterar pt-BR.json para forçar retradução
-const CURRENT_VERSION = '1';
+// Incrementar ao alterar pt-BR.json para forçar retradução.
+// v2 (2026-04-25): bloco professional.* + 2 novos professional types
+// (nutritionist, zootechnist). Sem isso, users em es/fr/de/etc. veriam
+// fallback en-US nas chaves novas até trocar de idioma.
+const CURRENT_VERSION = '2';
 
 // Mapa de códigos de idioma para nomes legíveis (ajuda a IA traduzir melhor)
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -133,6 +136,7 @@ export async function getTranslation(lang: string): Promise<Record<string, unkno
   const translated = await fetchTranslation(lang);
 
   if (translated) {
+
     // 3. Salvar no cache para próximas vezes
     await setCachedTranslation(lang, translated);
     return translated;

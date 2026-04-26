@@ -1,7 +1,7 @@
 # auExpert Edge Functions Codemap
 
-**Last Updated:** 2026-04-23
-**Status:** Production — 4 Core Functions + 3 Utility Functions + 1 Admin Function (delete-pet)
+**Last Updated:** 2026-04-26
+**Status:** Production — 4 Core Functions + 6 Utility Functions + 1 Admin Function (delete-pet) + 2 Professional-grade Functions (scan-professional-document, reembed-pet-multi) + 8 Breed Intelligence Functions
 
 ---
 
@@ -635,6 +635,288 @@ supabase functions logs delete-pet --live
 
 ---
 
+---
+
+## Professional-Grade Functions (NEW 2026-04-25)
+
+### `scan-professional-document` — OCR de Credenciais Profissionais
+
+**Location:** `supabase/functions/scan-professional-document/`
+
+**Purpose:** Extrair campos de documento profissional (carteira de conselho, diploma, certificado) via Claude Vision. Usado no cadastro de profissionais.
+
+**Architectural Decision:** Separado de `analyze-pet-photo` (protected file) seguindo CLAUDE.md: "criar arquivo SEPARADO que reuse o protegido — não mexer no original".
+
+**Input:**
+```typescript
+{
+  photo_base64: string;              // Base64 da carteira/diploma
+  media_type?: 'image/jpeg' | 'image/png' | 'image/webp';
+  language: string;                  // Response language (pt-BR, en-US, etc.)
+}
+```
+
+**Output:**
+```typescript
+{
+  document_type: string;             // 'council_card' | 'diploma' | 'certificate'
+  full_name: string;
+  council_name?: string;             // Ex: CRMV, CRP, CRTR
+  council_number?: string;
+  council_uf?: string;               // Estado (para Brasil)
+  country?: string;
+  specialties: string[];
+  valid_until?: string;              // ISO date se houver validade
+  institution?: string;              // Instituição emissora
+  confidence: number;                // 0-1 (0.8+ = confiável para pré-preenchimento)
+}
+```
+
+**Vision Model Chain:** `['claude-opus-4-7', 'claude-opus-4-6', 'claude-sonnet-4-6']` — fallback automático em case de overload.
+
+**Auth:** Bearer JWT obrigatório.
+
+**Self-Contained:** Não importa de `_shared` para simplificar deploy e isolar do motor central de análise de pets.
+
+---
+
+### `reembed-diary-rich` — Regenerar Embeddings Enriched
+
+**Location:** `supabase/functions/reembed-diary-rich/`
+
+**Purpose:** Recalcular embeddings de diário com contexto enriched (RAG + metadados do pet). Para manutenção/retraining quando mudar o modelo de embedding.
+
+**Input:**
+```typescript
+{
+  entry_id: string;
+  entry_text: string;
+  pet_name: string;
+  breed: string;
+  age_years: number;
+}
+```
+
+**Output:**
+```typescript
+{
+  embedding: number[];               // 1536-dim vector
+  model: string;
+  tokens: number;
+  enriched_text: string;             // Prompt final enviado para Anthropic
+}
+```
+
+**Use Case:** Background job para re-embedar diário quando modelo muda ou RAG precisa de refresh. Usa `batch_reembed_diary` RPC para atualizar multiplas entradas em paralelo.
+
+---
+
+### `reembed-pet-multi` — Batch Embedding por Pet
+
+**Location:** `supabase/functions/reembed-pet-multi/`
+
+**Purpose:** Atualizar embeddings de TODAS as entradas de um pet em paralelo (sem timeout). Útil para migração de modelo ou reindexação de RAG.
+
+**Input:**
+```typescript
+{
+  pet_id: string;
+  limit?: number;                    // Máximo de entradas (default 100, max 1000)
+  skip?: number;                     // Para paginação (default 0)
+}
+```
+
+**Output:**
+```typescript
+{
+  success: true,
+  processed: number;                 // Quantas entradas foram re-embeddadas
+  skipped: number;                   // Quantas falharam
+  next_skip?: number;               // Para próxima batch (se >1000)
+}
+```
+
+**Concurrency:** Processa em paralelo via `Promise.all()` com timeout de 25s por embedding.
+
+**Auth:** SERVICE_ROLE apenas (admin function).
+
+---
+
+## Breed Intelligence Functions (NEW 2026-04-26)
+
+### 1. `breed-feed` — Feed Personalizado por Raça (Elite)
+
+**Location:** `supabase/functions/breed-feed/`
+
+**Purpose:** Retornar feed de posts personalizados pela raça dos pets do tutor. Mix de conteúdo editorial, posts de tutores e recomendações IA.
+
+**Elite Gating:** Retorna 403 se tutor não tem `feature_breed_intelligence = true` em `subscription_plans`.
+
+**Input:**
+```typescript
+{
+  pet_id: string;                    // Pet ativo (define raça/espécie do filtro)
+  cursor?: string;                   // ISO datetime — published_at do último item
+  limit?: number;                    // Default 20, max 50
+  filter?: 'all' | 'editorial' | 'tutor' | 'recommendation';
+}
+```
+
+**Output:**
+```typescript
+{
+  items: BreedPost[];
+  next_cursor: string | null;        // Para próxima página
+  has_more: boolean;
+}
+```
+
+**Ordering:** urgency DESC (critical primeiro) → ai_relevance_score DESC → published_at DESC.
+
+**Post Fields:**
+```typescript
+interface BreedPost {
+  id: string;
+  post_type: 'editorial' | 'tutor' | 'recommendation';
+  source?: string;                   // URL se external content
+  title?: string;
+  body?: string;
+  ai_caption: string;                // Resumo IA
+  ai_tags: string[];                 // Tags detectadas
+  urgency: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  ai_relevance_score: number;        // 0-1 (relevância para raça/espécie)
+  media_urls: string[];
+  media_thumbnails: string[];
+  target_breeds: string[];           // Raças alvo
+  target_species: 'dog' | 'cat';
+  pet_id?: string;                   // Se tutor post, qual pet
+  pet_name?: string;
+  created_by?: string;               // user_id do criador
+  reaction_count: number;
+  comment_count: number;
+}
+```
+
+---
+
+### 2. `breed-post-create` — Criar Post no Feed
+
+**Location:** `supabase/functions/breed-post-create/`
+
+**Purpose:** Criar novo post no feed de raça (tutor → breed_feed_posts).
+
+**Philosophy:** Zero digitação. Texto vem de STT (useSimpleSTT) ou entrada de diário existente. Mídia já upada via Storage.
+
+**Input:**
+```typescript
+{
+  pet_id: string;
+  post_type: 'tutor' | 'recommendation';
+  body: string;                      // Texto do post (via STT)
+  media_urls?: string[];             // URLs já upadas no Storage
+  ai_caption: string;                // Gerado por IA a partir do body
+  ai_tags?: string[];
+}
+```
+
+**Output:**
+```typescript
+{
+  success: true,
+  post_id: string;
+  created_at: string;
+}
+```
+
+**Auth:** Bearer JWT — cria como `created_by = auth.uid`.
+
+---
+
+### 3. `breed-comment-create` — Criar Comentário
+
+**Location:** `supabase/functions/breed-comment-create/`
+
+**Purpose:** Adicionar comentário em post de raça.
+
+**Input:**
+```typescript
+{
+  post_id: string;
+  body: string;                      // Comentário texto
+  media_urls?: string[];
+}
+```
+
+**Output:**
+```typescript
+{
+  success: true,
+  comment_id: string;
+  created_at: string;
+}
+```
+
+---
+
+### 4. `breed-translate-post` — Traduzir Post
+
+**Location:** `supabase/functions/breed-translate-post/`
+
+**Purpose:** Traduzir post para o idioma do tutor (pt-BR, en-US, etc.).
+
+**Input:**
+```typescript
+{
+  post_id: string;
+  target_language: string;           // pt-BR, en-US, es-MX, etc.
+}
+```
+
+**Output:**
+```typescript
+{
+  translated_body: string;
+  translated_caption: string;
+  language: string;
+}
+```
+
+**Cache:** 5 min (mesma tradução para múltiplas requisições).
+
+---
+
+### 5. `breed-editorial-generate` — Gerar Editorial IA
+
+**Location:** `supabase/functions/breed-editorial-generate/`
+
+**Purpose:** Gerar conteúdo editorial IA sobre raça (criado pelos admins para aparecer no feed).
+
+**Administrative.** Invocado via CRON semanal por admin. Retorna post tipo `editorial`.
+
+**Input:**
+```typescript
+{
+  breed: string;
+  species: 'dog' | 'cat';
+  topic?: string;                    // Ex: 'health', 'training', 'nutrition'
+  language: string;
+  urgency?: 'none' | 'low' | 'medium' | 'high' | 'critical';
+}
+```
+
+**Output:**
+```typescript
+{
+  post_id: string;
+  title: string;
+  body: string;
+  ai_caption: string;
+  ai_tags: string[];
+}
+```
+
+---
+
 ## Related Docs
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — System design + JWT auth details
@@ -645,4 +927,4 @@ supabase functions logs delete-pet --live
 ---
 
 **Maintained by:** Development team  
-**Last Reviewed:** 2026-04-23
+**Last Reviewed:** 2026-04-26

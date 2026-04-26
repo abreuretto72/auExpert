@@ -124,9 +124,24 @@ function errorHtml(msg: string): string {
 </div></body></html>`;
 }
 
+/**
+ * Resolve token via querystring (?token=X) OU path (/invite/X)
+ * \u2014 o email do auExpert pode usar qualquer um dos dois formatos.
+ */
+function extractToken(url: URL): string {
+  const qs = url.searchParams.get('token');
+  if (qs) return qs;
+  // path: /functions/v1/invite-web/<token> OU /invite/<token>
+  const parts = url.pathname.split('/').filter(Boolean);
+  // pega o \u00faltimo segmento se n\u00e3o for o nome da fun\u00e7\u00e3o
+  const last = parts[parts.length - 1];
+  if (last && last !== 'invite-web' && last !== 'invite') return last;
+  return '';
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
-  const token = url.searchParams.get('token') ?? '';
+  const token = extractToken(url);
 
   if (!token) {
     return new Response(errorHtml('Link inv\u00e1lido ou expirado. Pe\u00e7a um novo convite.'), {
@@ -136,38 +151,69 @@ Deno.serve(async (req) => {
 
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-  const { data: invite, error } = await db
-    .from('pet_members')
-    .select('role, invited_by, expires_at, is_active, accepted_at, pets(name)')
-    .eq('invite_token', token)
-    .maybeSingle();
+  // 1) Tenta pet_members (legado co-tutor/cuidador)
+  let petName = '';
+  let inviterId: string | null = null;
+  let role = 'co_parent';
+  let isAcceptedOrInactive = false;
+  let isExpired = false;
+  let found = false;
 
-  if (error || !invite) {
+  {
+    const { data: pm } = await db
+      .from('pet_members')
+      .select('role, invited_by, expires_at, is_active, accepted_at, pets(name)')
+      .eq('invite_token', token)
+      .maybeSingle();
+    if (pm) {
+      found = true;
+      role = pm.role ?? 'co_parent';
+      inviterId = pm.invited_by ?? null;
+      petName = (pm.pets as { name: string } | null)?.name ?? 'seu pet';
+      if (!pm.is_active || pm.accepted_at) isAcceptedOrInactive = true;
+      if (pm.expires_at && new Date(pm.expires_at) < new Date()) isExpired = true;
+    }
+  }
+
+  // 2) Fallback: access_invites (sistema profissional novo \u2014 vet_full/vet_read/co_parent)
+  if (!found) {
+    const { data: ai } = await db
+      .from('access_invites')
+      .select('role, invited_by, expires_at, status, accepted_at, pets(name)')
+      .eq('token', token)
+      .maybeSingle();
+    if (ai) {
+      found = true;
+      role = ai.role ?? 'vet_full';
+      inviterId = ai.invited_by ?? null;
+      petName = (ai.pets as { name: string } | null)?.name ?? 'seu pet';
+      if (ai.status !== 'pending' || ai.accepted_at) isAcceptedOrInactive = true;
+      if (ai.expires_at && new Date(ai.expires_at) < new Date()) isExpired = true;
+    }
+  }
+
+  if (!found) {
     return new Response(errorHtml('Convite n\u00e3o encontrado. Pe\u00e7a um novo convite ao tutor.'), {
       status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
-
-  if (!invite.is_active || invite.accepted_at) {
+  if (isAcceptedOrInactive) {
     return new Response(errorHtml('Este convite j\u00e1 foi usado ou expirou. Pe\u00e7a um novo convite ao tutor.'), {
       status: 410, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
-
-  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+  if (isExpired) {
     return new Response(errorHtml('Este convite expirou. Pe\u00e7a um novo convite ao tutor.'), {
       status: 410, headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   }
 
-  const petName = (invite.pets as { name: string } | null)?.name ?? 'seu pet';
-
   let inviterName = 'Tutor';
-  if (invite.invited_by) {
+  if (inviterId) {
     const { data: inviter } = await db
       .from('users')
       .select('full_name, email')
-      .eq('id', invite.invited_by)
+      .eq('id', inviterId)
       .maybeSingle();
     inviterName =
       (inviter as { full_name: string | null; email: string } | null)?.full_name ??
@@ -175,7 +221,7 @@ Deno.serve(async (req) => {
       'Tutor';
   }
 
-  const html = buildHtml(token, petName, inviterName, invite.role ?? 'co_parent');
+  const html = buildHtml(token, petName, inviterName, role);
 
   return new Response(html, {
     status: 200,

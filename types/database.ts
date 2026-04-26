@@ -390,7 +390,16 @@ export type ProfessionalType =
   | 'boarding'
   | 'shop_employee'
   | 'ong_member'
-  | 'breeder';
+  | 'breeder'
+  | 'nutritionist'
+  | 'zootechnist'
+  | 'transport'
+  | 'pet_photographer'
+  | 'pet_designer'
+  | 'vet_dispatcher'
+  | 'adoption_consultant'
+  | 'show_judge'
+  | 'sport_instructor';
 
 export type AccessRole =
   | 'vet_full'
@@ -560,6 +569,6 @@ export interface AccessInvite {
 export interface AccessInviteCreateResult {
   invite_id: string;
   token: string;
-  invite_link: string;
+    invite_link: string;
   expires_at: string;
 }

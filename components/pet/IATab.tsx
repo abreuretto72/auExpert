@@ -17,6 +17,7 @@ import {
 import { MessageCircle, Send, Sparkles, ChevronRight, Mic, Square } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { getLocales } from 'expo-localization';
+import { useRouter } from 'expo-router';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { spacing, radii } from '../../constants/spacing';
@@ -140,6 +141,7 @@ const InsightCard = React.memo(function InsightCard({
   onToggle: () => void;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const u = URGENCY_STYLE[insight.urgency];
 
   const dateLabel = useMemo(() => {
@@ -149,6 +151,16 @@ const InsightCard = React.memo(function InsightCard({
     if (diffDays === 1) return t('insights.yesterday');
     return d.toLocaleDateString();
   }, [insight.created_at, t]);
+
+  const handleAction = useCallback(() => {
+    const route = insight.action_route;
+    if (!route) {
+      console.warn('[InsightCard] action_label sem action_route', { id: insight.id });
+      return;
+    }
+    console.log('[InsightCard] navigate', { id: insight.id, route });
+    router.push(route as never);
+  }, [insight.action_route, insight.id, router]);
 
   return (
     <TouchableOpacity
@@ -188,11 +200,20 @@ const InsightCard = React.memo(function InsightCard({
         <View style={styles.cardBody}>
           <Text style={styles.cardBodyText}>{insight.body}</Text>
           {insight.action_label && (
-            <View style={[styles.actionBtn, { backgroundColor: u.badgeBg }]}>
+            <TouchableOpacity
+              style={[
+                styles.actionBtn,
+                { backgroundColor: u.badgeBg },
+                !insight.action_route && { opacity: 0.5 },
+              ]}
+              onPress={handleAction}
+              disabled={!insight.action_route}
+              activeOpacity={0.75}
+            >
               <Text style={[styles.actionBtnText, { color: u.badgeColor }]}>
                 {insight.action_label} →
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
         </View>
       )}

@@ -1,7 +1,7 @@
 # auExpert Codemaps Index
 
-**Last Updated:** 2026-04-23
-**Scope:** MVP Phase (+ Nutrition Module + Prontuário Vet-Grade + Health Modals Input-First + Invite System + iOS Font Fixes + STT Improvements + AI Chat Redesign + PDF Exports + Partnerships + Professional Module Fase 1 + Diary & Health Component Refactor + Agenda Actions + Pet Deletion)
+**Last Updated:** 2026-04-26
+**Scope:** MVP Phase (+ Nutrition Module + Prontuário Vet-Grade + Health Modals Input-First + Invite System + iOS Font Fixes + STT Improvements + AI Chat Redesign + PDF Exports + Partnerships + Professional Module Fase 1 + Diary & Health Component Refactor + Agenda Actions + Pet Deletion + Breed Intelligence Elite + TCI Signing Flow + Reminders & Pending Signatures + Professional Agents Dashboard + Pet Documents + Professional Document Scanning)
 
 ---
 
@@ -13,7 +13,87 @@ This directory contains comprehensive architectural documentation for the auExpe
 
 ---
 
-## Latest Changes (2026-04-23)
+## Latest Changes (2026-04-26)
+
+### New Screens & Modules
+
+**TCI (Termo de Consentimento Informado) Digital Signing:**
+- `app/(app)/pending-signatures.tsx` — List of TCIs awaiting tutor signature (pending/signed/all filters)
+- `app/(app)/tci-sign.tsx` — Full TCI review + biometric signature (expo-local-authentication)
+- **Features:** Procedimento type, description, risks, alternatives, tutor signature timestamp
+- **Integration:** Triggered via push notification with tci_id parameter
+- **Related Hook:** `useProSignature()` — manage TCI signature state
+- **RPC:** `tutor_sign_tci(p_tci_id)` — atomically update tutor_signed_at + trigger professional notification
+
+**Reminders Management Screen:**
+- `app/(app)/reminders.tsx` — Central hub for all reminders (medication_reminder, followup_reminder, tci_pending_tutor, vaccine_reminder)
+- **Features:** Filter by status (read/unread), icon mapping per type, tap to navigate to related resource, mark as read
+- **Data Source:** `notifications_queue` table (is_active=true, is_read=false)
+- **Related Hook:** `useNotifications()` — fetch + mark as read mutations
+
+**Breed Intelligence (Elite Feature):**
+- `app/(app)/pet/[id]/breed-intelligence/index.tsx` — Infinite scroll feed of breed-specific posts (editorial/tutor/recommendation)
+- `app/(app)/pet/[id]/breed-intelligence/[postId].tsx` — Detailed post view + comments
+- **Features:** Filter by post type, urgency-based ordering, elite gating (403 if not Elite), STT input for posts/comments
+- **Related Hook:** `useBreedIntelligence()` — useInfiniteQuery (breed-feed), createPost, createComment, react mutations
+- **Related Edge Functions:** `breed-feed`, `breed-post-create`, `breed-comment-create`, `breed-translate-post`, `breed-editorial-generate`
+
+**Pet Documents Screen:**
+- `app/(app)/pet/[id]/documents.tsx` — Aggregate view of all pet documents (carteira vacina, exames, receitas, TCIs)
+- **Features:** Download PDFs, share, view metadata, scan new document via camera
+- **Related Hook:** `usePetDocuments()` — fetch documents from multiple tables
+
+**Professional Dashboard & Agents:**
+- `app/(app)/professional/dashboard.tsx` — Professional view of patients (read-only clinical view vs tutor view)
+- `app/(app)/professional/agents/index.tsx` — Index/overview of 7 AI agents
+- `app/(app)/professional/agents/tci.tsx` — TCI creation agent (AI generates TCI from procedure description)
+- `app/(app)/professional/agents/anamnese.tsx` — Anamnese (patient history) agent
+- `app/(app)/professional/agents/prontuario.tsx` — Clinical record agent
+- `app/(app)/professional/agents/receituario.tsx` — Prescription agent
+- `app/(app)/professional/agents/alta.tsx` — Discharge/conclusion agent
+- `app/(app)/professional/agents/asa.tsx` — ASA (anesthetic risk) score agent
+- `app/(app)/professional/agents/notificacao.tsx` — Notification/alert agent
+- **Features:** AI-assisted document generation, STT input, clinical context from RAG, professional e-signature
+- **Related Hooks:** `useProAgent()`, `useProfessionalCapabilities()` — manage agent state + permissions
+- **Related Edge Functions:** `scan-professional-document` (OCR credentials), 7 agent-specific EFs
+
+**Professional Registration:**
+- `app/(app)/professional/register.tsx` — Onboarding flow for professionals (scan credentials, verify council, accept T&C)
+
+### New Edge Functions (2026-04-26)
+
+**Professional-Grade:**
+- `scan-professional-document` — OCR of council credentials (self-contained, separate from analyze-pet-photo)
+- `reembed-diary-rich` — Regenerate embeddings with enriched context
+- `reembed-pet-multi` — Batch re-embed all diary entries for a pet (admin function)
+- `send-invite-email` — Send professional/tutor invite links via email
+
+**Breed Intelligence (8 functions):**
+- `breed-feed` — Personalized breed-specific content feed (elite-gated)
+- `breed-post-create` — Create post in breed feed
+- `breed-comment-create` — Add comment to breed post
+- `breed-translate-post` — Translate post to tutor's language
+- `breed-editorial-generate` — Generate editorial AI content (admin CRON)
+
+### New Hooks (2026-04-26)
+
+- `useBreedIntelligence()` — Feed + post/comment creation + reactions
+- `useProAgent()` — Manage AI agent state (TCI, anamnese, prontuário, receituario, alta, ASA, notificação)
+- `useProSignature()` — TCI signature state + biometric confirmation
+- `usePetAgentAccess()` — Check if professional has pet access + permissions
+- `useProfessionalCapabilities()` — Available agents + capabilities based on role/subscription
+
+### i18n Additions (2026-04-26)
+
+- `pendingSignatures.*` — Filter labels, empty states, status badges
+- `reminders.*` — Title, empty states, reminder type labels
+- `agents.tci.tutor.*` — TCI signing flow (review, biometric, confirmation)
+- `breed.*` — Feed titles, post creation, comment prompts
+- `professional.*` — Dashboard, agent names, role labels
+
+---
+
+## Previous Changes (2026-04-23)
 
 ### Component Architecture Refactoring
 - **Diary New Entry:** Moved from `app/(app)/pet/[id]/diary/_new/` to `components/diary/new/`

@@ -1,11 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Users, MapPin, Zap, ChevronRight } from 'lucide-react-native';
+import { Newspaper, ChevronRight, Sparkles } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { rs, fs } from '../hooks/useResponsive';
 import { colors } from '../constants/colors';
 import { radii, spacing } from '../constants/spacing';
 
+/**
+ * Card de entrada do Breed Intelligence no Hub.
+ * (Substitui a antiga "Aldeia Solidária" — Breed Intelligence é o sucessor:
+ * conteúdo clínico exclusivo por raça do pet, com fontes verificáveis.)
+ *
+ * O nome do arquivo + props ficaram herdados pra não quebrar imports antigos,
+ * mas o card visualmente é Breed Intelligence.
+ */
 interface RedeSolidariaCardProps {
   aldeiaName?: string;
   city?: string;
@@ -15,54 +23,30 @@ interface RedeSolidariaCardProps {
   onPress: () => void;
 }
 
-const RedeSolidariaCard: React.FC<RedeSolidariaCardProps> = ({
-  aldeiaName,
-  city,
-  tutorCount = 0,
-  sosCount = 0,
-  newRequests = 0,
-  onPress,
-}) => {
+const RedeSolidariaCard: React.FC<RedeSolidariaCardProps> = ({ onPress }) => {
   const { t } = useTranslation();
 
   return (
     <TouchableOpacity style={s.card} activeOpacity={0.7} onPress={onPress}>
       {/* Icon */}
       <View style={s.iconWrap}>
-        <Users size={rs(24)} color={colors.petrol} strokeWidth={1.8} />
+        <Newspaper size={rs(24)} color={colors.click} strokeWidth={1.8} />
       </View>
 
       {/* Info */}
       <View style={s.info}>
         <View style={s.titleRow}>
-          <Text style={s.title}>{t('rede.title')}</Text>
-          {sosCount > 0 && (
-            <View style={s.sosBadge}>
-              <Zap size={rs(10)} color={colors.danger} strokeWidth={2} />
-              <Text style={s.sosText}>{sosCount} SOS</Text>
-            </View>
-          )}
+          <Text style={s.title}>{t('breedIntel.title')}</Text>
+          <View style={s.eliteBadge}>
+            <Sparkles size={rs(10)} color={colors.click} strokeWidth={2} />
+            <Text style={s.eliteText}>Elite</Text>
+          </View>
         </View>
 
         <View style={s.metaRow}>
-          {city && (
-            <>
-              <MapPin size={rs(10)} color={colors.petrol} strokeWidth={1.8} />
-              <Text style={s.metaText}>{aldeiaName ?? t('rede.village')} {city}</Text>
-            </>
-          )}
-          {tutorCount > 0 && (
-            <>
-              <Text style={s.metaDot}>·</Text>
-              <Text style={s.metaText}>{tutorCount} {t('rede.tutors')}</Text>
-            </>
-          )}
-          {newRequests > 0 && (
-            <>
-              <Text style={s.metaDot}>·</Text>
-              <Text style={s.newText}>{newRequests} {t('rede.newRequests')}</Text>
-            </>
-          )}
+          <Text style={s.metaText} numberOfLines={1} ellipsizeMode="tail">
+            {t('breedIntel.cardSubtitle')}
+          </Text>
         </View>
       </View>
 
@@ -78,7 +62,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.petrol + '20',
+    borderColor: colors.click + '30',
     borderRadius: radii.card,
     padding: rs(14),
     gap: rs(12),
@@ -88,9 +72,23 @@ const s = StyleSheet.create({
     width: rs(44),
     height: rs(44),
     borderRadius: rs(14),
-    backgroundColor: colors.petrol + '12',
+    backgroundColor: colors.clickSoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  eliteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: rs(3),
+    backgroundColor: colors.clickSoft,
+    borderRadius: rs(6),
+    paddingHorizontal: rs(6),
+    paddingVertical: rs(2),
+  },
+  eliteText: {
+    fontFamily: 'JetBrainsMono_600SemiBold',
+    fontSize: fs(9),
+    color: colors.click,
   },
   info: {
     flex: 1,

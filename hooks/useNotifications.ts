@@ -13,7 +13,20 @@ export function useNotifications() {
   const responseListener = useRef<EventSubscription | null>(null);
 
   useEffect(() => {
-    registerForPushNotifications();
+    // Pega o token do device e persiste em users.expo_push_token (best-effort).
+    // Sem token registrado, send-queue-notifications nao tem como enviar push.
+    (async () => {
+      try {
+        const token = await registerForPushNotifications();
+        if (!token) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        // UPDATE silencioso — se falhar (RLS, coluna ausente), nao quebra o app
+        await supabase.from('users').update({ expo_push_token: token }).eq('id', user.id);
+      } catch (e) {
+        console.warn('[useNotifications] register/persist token failed:', e);
+      }
+    })();
 
     notificationListener.current = addNotificationListener((_notification) => {
       // handle foreground notification

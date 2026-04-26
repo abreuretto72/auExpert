@@ -2,10 +2,10 @@
   "meta": {
     "brand": "auExpert",
     "tagline": "Gestor de Pets com Inteligência Artificial",
-    "company": "Multiverso Digital",
+    "company": "auExpert",
     "version": "Versão 1.0",
     "effectiveDate": "Data de vigência: 20 de abril de 2026",
-    "developedBy": "Desenvolvido por Multiverso Digital"
+    "developedBy": "Desenvolvido por auExpert"
   },
   "nav": {
     "home": "Início",
@@ -32,8 +32,8 @@
     }
   },
   "footer": {
-    "copyright": "© 2026 Multiverso Digital. Todos os direitos reservados.",
-    "contact": "contato@multiversodigital.com.br"
+    "copyright": "© 2026 auExpert. Todos os direitos reservados.",
+    "contact": "contato@auexpert.com.br"
   },
   "privacy": {
     "pageTitle": "Política de Privacidade — auExpert",
@@ -45,11 +45,11 @@
       {
         "number": "1",
         "title": "Introdução e Identificação do Controlador",
-        "intro": "Bem-vindo ao auExpert, um aplicativo gestor de pets com inteligência artificial exclusiva para cada pet, desenvolvido e operado pela Multiverso Digital, empresa brasileira registrada sob as leis da República Federativa do Brasil.\n\nEsta Política de Privacidade descreve como coletamos, usamos, armazenamos, compartilhamos e protegemos as informações pessoais dos usuários do aplicativo auExpert, disponível nas plataformas iOS (Apple App Store) e Android (Google Play Store). O aplicativo requer conexão com a internet para funcionar em sua totalidade.\n\nAo utilizar o auExpert, você concorda com os termos desta Política de Privacidade. Caso não concorde com qualquer disposição aqui prevista, recomendamos que não utilize o aplicativo.",
+        "intro": "Bem-vindo ao auExpert, um aplicativo gestor de pets com inteligência artificial exclusiva para cada pet, desenvolvido e operado pela auExpert, empresa brasileira registrada sob as leis da República Federativa do Brasil.\n\nEsta Política de Privacidade descreve como coletamos, usamos, armazenamos, compartilhamos e protegemos as informações pessoais dos usuários do aplicativo auExpert, disponível nas plataformas iOS (Apple App Store) e Android (Google Play Store). O aplicativo requer conexão com a internet para funcionar em sua totalidade.\n\nAo utilizar o auExpert, você concorda com os termos desta Política de Privacidade. Caso não concorde com qualquer disposição aqui prevista, recomendamos que não utilize o aplicativo.",
         "items": [
-          "Razão Social: Multiverso Digital",
+          "Razão Social: auExpert",
           "País de operação: Brasil",
-          "E-mail para contato: contato@multiversodigital.com.br",
+          "E-mail para contato: contato@auexpert.com.br",
           "Canal de atendimento: Disponível dentro do aplicativo auExpert"
         ]
       },

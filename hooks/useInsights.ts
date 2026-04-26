@@ -27,6 +27,7 @@ export interface PetInsight {
   body: string;
   source: string | null;
   action_label: string | null;
+  action_route: string | null;
   read_at: string | null;
   is_active: boolean;
   created_at: string;
@@ -42,7 +43,7 @@ export function useInsights(petId: string) {
     queryFn: async (): Promise<PetInsight[]> => {
       const { data, error } = await supabase
         .from('pet_insights')
-        .select('id, pet_id, user_id, type, urgency, category, title, body, source, action_label, read_at, is_active, created_at')
+        .select('id, pet_id, user_id, type, urgency, category, title, body, source, action_label, action_route, read_at, is_active, created_at')
         .eq('pet_id', petId)
         .eq('is_active', true)
         .order('created_at', { ascending: false })

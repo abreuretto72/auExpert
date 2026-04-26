@@ -12,6 +12,7 @@ import {
   ChevronLeft, User, Mail, MapPin, Calendar,
   Camera, Heart, BookOpen, ScanEye, ShieldCheck, Trophy,
   ChevronRight, Phone, Navigation, Dog, Cat, FileText,
+  Briefcase,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { colors } from '../../constants/colors';
@@ -21,6 +22,7 @@ import { Input } from '../../components/ui/Input';
 import { useToast } from '../../components/Toast';
 import { useAuthStore } from '../../stores/authStore';
 import { usePets } from '../../hooks/usePets';
+import { useMyProfessional } from '../../hooks/useProfessional';
 import { supabase } from '../../lib/supabase';
 import { withTimeout } from '../../lib/withTimeout';
 import { getErrorMessage } from '../../utils/errorMessages';
@@ -73,6 +75,7 @@ export default function ProfileScreen() {
   const { toast } = useToast();
   const user = useAuthStore((s) => s.user);
   const { pets } = usePets();
+  const { professional: myProfessional } = useMyProfessional();
   const [loading, setLoading] = useState(true);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [data, setData] = useState<TutorData>(EMPTY);
@@ -269,6 +272,28 @@ export default function ProfileScreen() {
           <View style={{ flex: 1 }}>
             <Text style={s.proofTitle}>{t('tutor.proofOfLove')}</Text>
             <Text style={s.proofSub}>{t(`tutor.proofTier.${data.proof_of_love_tier}`)} — {t('tutor.proofDiscount', { percent: discount })}</Text>
+          </View>
+          <ChevronRight size={rs(14)} color={colors.click} strokeWidth={1.8} />
+        </TouchableOpacity>
+
+        {/* ── Conta profissional (entrada para /professional/register ou /professional/dashboard) ── */}
+        <TouchableOpacity
+          style={s.proofCard}
+          activeOpacity={0.7}
+          onPress={() => router.push(
+            (myProfessional ? '/(app)/professional/dashboard' : '/(app)/professional/register') as never,
+          )}
+        >
+          <View style={[s.proofIcon, { backgroundColor: colors.click + '14' }]}>
+            <Briefcase size={rs(20)} color={colors.click} strokeWidth={1.8} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.proofTitle}>
+              {myProfessional ? t('professional.dashboardTitle') : t('professional.entryTitle')}
+            </Text>
+            <Text style={s.proofSub}>
+              {myProfessional ? t('professional.entrySubActive') : t('professional.entrySubInactive')}
+            </Text>
           </View>
           <ChevronRight size={rs(14)} color={colors.click} strokeWidth={1.8} />
         </TouchableOpacity>

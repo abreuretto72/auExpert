@@ -73,14 +73,15 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('error', 'forbidden');
       return NextResponse.redirect(url);
     }
-    // Financeiro não acessa /support nem /errors
+    // Financeiro não acessa /support nem /errors nem /invites
     if (userRow.role === 'admin_financial' &&
-        (pathname.startsWith('/support') || pathname.startsWith('/errors'))) {
+        (pathname.startsWith('/support') || pathname.startsWith('/errors') ||
+         pathname.startsWith('/invites'))) {
       const url = request.nextUrl.clone();
       url.pathname = '/costs';
       return NextResponse.redirect(url);
     }
-    // Suporte não acessa /costs nem /ai-costs
+    // Suporte não acessa /costs nem /ai-costs (mas acessa /invites)
     if (userRow.role === 'admin_support' &&
         (pathname.startsWith('/costs') || pathname.startsWith('/ai-costs'))) {
       const url = request.nextUrl.clone();
