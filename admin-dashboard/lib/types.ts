@@ -100,6 +100,10 @@ export type AdminRecentError = {
   user_message: string | null;
   model_used: string | null;
   latency_ms: number | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  pet_id: string | null;
+  payload: Record<string, unknown> | null;
   created_at: string;
   user_email: string | null;
 };
@@ -109,6 +113,76 @@ export type AdminAiBreakdown = {
   by_model: AdminAiBreakdownByModel[];
   errors_by_category: Record<string, number>;
   recent_errors: AdminRecentError[];
+};
+
+// Detail RPC: get_admin_ai_error_detail(p_id) — invocação completa + diag_logs
+// correlatos (±10min na mesma EF) + estatística de recorrência.
+export type AdminAiErrorDetail = {
+  invocation: {
+    id: string;
+    function_name: string;
+    status: string;
+    error_category: string | null;
+    error_message: string | null;
+    user_message: string | null;
+    model_used: string | null;
+    provider: string | null;
+    tokens_in: number | null;
+    tokens_out: number | null;
+    cache_read_tokens: number | null;
+    cache_write_tokens: number | null;
+    image_count: number | null;
+    audio_seconds: number | null;
+    latency_ms: number | null;
+    pet_id: string | null;
+    pet_name: string | null;
+    user_id: string | null;
+    user_email: string | null;
+    payload: Record<string, unknown> | null;
+    created_at: string;
+  };
+  recurrence: {
+    count_24h: number;
+    count_7d: number;
+    users_24h: number;
+    first_seen: string | null;
+  };
+  diag_logs: Array<{
+    id: string;
+    request_id: string | null;
+    level: string;
+    message: string;
+    payload: Record<string, unknown> | null;
+    created_at: string;
+  }>;
+};
+
+// Diagnóstico IA estruturado retornado pela EF diagnose-ai-error.
+export type AiDiagnosis = {
+  summary: string;
+  root_cause: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  confidence: 'low' | 'medium' | 'high';
+  evidence: string[];
+  fix_actions: Array<{
+    type: 'deploy' | 'migration' | 'secret' | 'app_code' | 'external' | 'observe';
+    description: string;
+    command_or_sql?: string | null;
+  }>;
+  references?: string[];
+};
+
+export type AiDiagnosisResponse = {
+  from_cache: boolean;
+  signature: string;
+  id: string | null;
+  diagnosis: AiDiagnosis;
+  model_used: string;
+  tokens_in: number;
+  tokens_out: number;
+  latency_ms: number;
+  occurrences_when_diagnosed: number;
+  generated_at: string;
 };
 
 // ───── Labels traduzidos ───────────────────────────────────────────────────

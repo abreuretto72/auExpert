@@ -114,6 +114,11 @@ export interface CardapioHistoryItem {
   data: Cardapio;
   is_fallback: boolean;
   generated_at: string;
+  /** Snapshot da foto da ração ATIVA do pet no momento da geração. Pode ser
+   *  null se a ração nunca teve foto. Pegado de nutrition_records.photo_url
+   *  via JOIN client-side (a EF generate-cardapio popula prospectivamente
+   *  quando a ração tiver foto). */
+  food_photo_url: string | null;
 }
 
 // ── Keys ───────────────────────────────────────────────────────────────────────
@@ -181,15 +186,35 @@ export function useNutricao(petId: string) {
   const cardapioHistoryQuery = useQuery({
     queryKey: cardapioHistoryKey(petId),
     queryFn: async (): Promise<CardapioHistoryItem[]> => {
+      // 1) Histórico — agora com food_photo_url (snapshot do momento da geração).
       const { data, error } = await supabase
         .from('nutrition_cardapio_history')
-        .select('id, modalidade, data, is_fallback, generated_at')
+        .select('id, modalidade, data, is_fallback, generated_at, food_photo_url')
         .eq('pet_id', petId)
         .eq('is_active', true)
         .order('generated_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data ?? []) as CardapioHistoryItem[];
+
+      // 2) Fallback pra registros antigos sem snapshot: foto da ração ATIVA
+      //    do pet. Se ela continua a mesma, faz sentido visualmente. Se mudou,
+      //    o snapshot dos cardápios novos já captura a nova foto.
+      const { data: currentFood } = await supabase
+        .from('nutrition_records')
+        .select('photo_url')
+        .eq('pet_id', petId)
+        .eq('record_type', 'food')
+        .eq('is_current', true)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const fallbackPhoto = (currentFood as { photo_url?: string | null } | null)?.photo_url ?? null;
+
+      return (data ?? []).map((row) => ({
+        ...row,
+        food_photo_url: (row as { food_photo_url?: string | null }).food_photo_url ?? fallbackPhoto,
+      })) as CardapioHistoryItem[];
     },
     enabled: isAuthenticated && !!petId,
     staleTime: 5 * 60 * 1000,

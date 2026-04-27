@@ -21,6 +21,7 @@ import {
   Clock, Check, X,
 } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../constants/colors';
 import { rs, fs } from '../../hooks/useResponsive';
 import { radii, spacing } from '../../constants/spacing';
@@ -372,6 +373,12 @@ function ItemDetailModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  // Android com 3-button bar / iPhone com home indicator → respeitar bottom
+  // inset pra os botões "Confirmar / Reagendar / Concluído" não ficarem por
+  // baixo da barra de navegação. Mínimo spacing.xl pra não colar nos botões
+  // quando o device não tem inset (notchless landscape, alguns Androids).
+  const sheetPaddingBottom = Math.max(insets.bottom + rs(8), spacing.xl);
   const IconComp = getIconForItem(item);
   const catColor = CAT_COLORS[item.category];
 
@@ -403,7 +410,10 @@ function ItemDetailModal({
   return (
     <Modal transparent visible animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <Pressable style={styles.modalSheet} onPress={() => undefined}>
+        <Pressable
+          style={[styles.modalSheet, { paddingBottom: sheetPaddingBottom }]}
+          onPress={() => undefined}
+        >
           {/* Handle bar */}
           <View style={styles.sheetHandle} />
 
@@ -949,7 +959,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: rs(26),
     borderTopRightRadius: rs(26),
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
+    // paddingBottom é setado inline com Math.max(insets.bottom + 8, spacing.xl)
+    // pra que os botões de ação não fiquem sob a nav bar do Android / home
+    // indicator do iOS. Não deixar valor estático aqui.
   },
   sheetHandle: {
     width: rs(40),

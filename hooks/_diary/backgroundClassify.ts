@@ -196,27 +196,53 @@ export async function backgroundClassifyAndSave(opts: {
       const ocrBase64Size = (analysisFramesCapped[0]?.length ?? 0);
       console.log('[OCR] base64 size KB:', Math.round(ocrBase64Size / 1024 * 0.75));
     }
-    // Upload OCR scanner photo to Storage so it appears in the diary card
-    // AI already used the original base64 — compress here for Storage only
+    // Upload OCR scanner photo to Storage so it appears in the diary card.
+    // AI already used the original base64 — compress here for Storage only.
+    // Bug histórico: catch silenciava o erro e a entry ficava sem photos[].
+    // Agora cada etapa do upload é instrumentada e o erro vai pro console.error
+    // (não warn) com stack pra investigação. Em desenvolvimento, fica visível.
     if (inputType === 'ocr_scan' && analysisFramesCapped[0]) {
+      const _tOcrUp = Date.now();
+      const ocrBase64 = analysisFramesCapped[0];
+      const ocrSize = Math.round(ocrBase64.length / 1024 * 0.75);
+      console.log('[OCR-UP] start', { userId: userId.slice(0, 8), petId: petId.slice(0, 8), base64KB: ocrSize });
       try {
-        const ocrBase64 = analysisFramesCapped[0];
         const ext = ocrBase64.startsWith('/9j/') ? 'jpg' : 'png';
         const tmpUri = `${FileSystem.cacheDirectory}ocr_${Date.now()}.${ext}`;
+        console.log('[OCR-UP] writing tmpUri', { ext, tmpUri: tmpUri.slice(-50) });
         await FileSystem.writeAsStringAsync(tmpUri, ocrBase64, { encoding: 'base64' as any });
+
         const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
         const compressed = await manipulateAsync(
           tmpUri,
           [{ resize: { width: 1400 } }],
           { compress: 0.8, format: SaveFormat.JPEG, base64: false },
         );
+        console.log('[OCR-UP] compressed', { uri: compressed.uri.slice(-50) });
+
         const ocrPath = await uploadPetMedia(userId, petId, compressed.uri, 'photo');
         const ocrUrl = getPublicUrl('pet-photos', ocrPath);
-        uploadedPhotos = [ocrUrl];
-        console.log('[OCR] foto upada (comprimida):', ocrUrl?.slice(0, 60));
+        if (!ocrUrl) {
+          console.error('[OCR-UP] ❌ getPublicUrl returned empty', { ocrPath });
+        } else {
+          uploadedPhotos = [ocrUrl];
+          console.log('[OCR-UP] ✓ success', { ms: Date.now() - _tOcrUp, url: ocrUrl.slice(0, 80) });
+        }
       } catch (e) {
-        console.warn('[OCR] upload foto falhou:', String(e));
+        const err = e as { name?: string; message?: string; status?: number; stack?: string };
+        console.error('[OCR-UP] ❌ failed', {
+          ms: Date.now() - _tOcrUp,
+          name: err?.name ?? 'unknown',
+          message: err?.message ?? String(e),
+          status: err?.status,
+        });
+        console.error('[OCR-UP] stack:', err?.stack ?? '(no stack)');
       }
+    } else if (inputType === 'ocr_scan') {
+      console.warn('[OCR-UP] skipped — no analysisFramesCapped[0]', {
+        photosBase64Count: photosBase64?.length ?? 0,
+        analysisFramesCount: analysisFrames.length,
+      });
     }
     console.log('[S3-PRE] photosBase64:', photosBase64?.length ?? 0, 'fotos');
     console.log('[S3-PRE] inputType enviado ao classify:', inputType);

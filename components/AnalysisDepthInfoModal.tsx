@@ -8,10 +8,11 @@
 
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { X } from 'lucide-react-native';
+import { X, Image as ImageIcon, Video, Mic, FileText } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { rs, fs } from '../hooks/useResponsive';
 import { useTranslation } from 'react-i18next';
+import { MEDIA_LIMITS } from '../constants/media';
 
 interface Props {
   visible: boolean;
@@ -65,6 +66,46 @@ export function AnalysisDepthInfoModal({ visible, onClose }: Props) {
               ))}
             </View>
 
+            {/* Limites de mídia + lógica texto→narração / mídia→análise */}
+            <Text style={s.sectionTitle}>{t('diary.aiInfoMediaTitle')}</Text>
+            <Text style={s.mediaIntro}>{t('diary.aiInfoMediaIntro')}</Text>
+            <View style={s.mediaTable}>
+              <MediaRow
+                Icon={ImageIcon}
+                label={t('diary.aiInfoMediaPhoto')}
+                detail={t('diary.aiInfoMediaPhotoDetail', {
+                  size: MEDIA_LIMITS.photo.maxSizeMB,
+                  count: MEDIA_LIMITS.photo.maxCount,
+                })}
+              />
+              <MediaRow
+                Icon={Video}
+                label={t('diary.aiInfoMediaVideo')}
+                detail={t('diary.aiInfoMediaVideoDetail', {
+                  size: MEDIA_LIMITS.video.maxSizeMB,
+                  duration: MEDIA_LIMITS.video.maxDurationSec,
+                })}
+              />
+              <MediaRow
+                Icon={Mic}
+                label={t('diary.aiInfoMediaAudio')}
+                detail={t('diary.aiInfoMediaAudioDetail', {
+                  size: MEDIA_LIMITS.audio.maxSizeMB,
+                  duration: MEDIA_LIMITS.audio.maxDurationSec,
+                })}
+              />
+              <MediaRow
+                Icon={FileText}
+                label={t('diary.aiInfoMediaDoc')}
+                detail={t('diary.aiInfoMediaDocDetail', {
+                  size: MEDIA_LIMITS.document.maxSizeMB,
+                  pages: MEDIA_LIMITS.document.maxPages,
+                })}
+                isLast
+              />
+            </View>
+            <Text style={s.mediaNote}>{t('diary.aiInfoMediaNote')}</Text>
+
             {/* Rodapé */}
             <Text style={s.footer}>{t('diary.aiInfoFooter')}</Text>
 
@@ -76,6 +117,29 @@ export function AnalysisDepthInfoModal({ visible, onClose }: Props) {
         </View>
       </View>
     </Modal>
+  );
+}
+
+/**
+ * Linha da tabela de limites — ícone + label + detalhe (tamanho/duração/qtd).
+ * Mantém alinhamento consistente com a tabela das fases acima.
+ */
+function MediaRow({
+  Icon, label, detail, isLast,
+}: {
+  Icon: typeof ImageIcon;
+  label: string;
+  detail: string;
+  isLast?: boolean;
+}) {
+  return (
+    <View style={[s.mediaRow, isLast && s.rowLast]}>
+      <View style={s.mediaIcon}>
+        <Icon size={rs(14)} color={colors.click} strokeWidth={1.8} />
+      </View>
+      <Text style={s.mediaLabel}>{label}</Text>
+      <Text style={s.mediaDetail}>{detail}</Text>
+    </View>
   );
 }
 
@@ -145,6 +209,67 @@ const s = StyleSheet.create({
   cellPhase: { width: rs(85), fontFamily: 'Sora_600SemiBold', color: colors.text },
   cellTime:  { width: rs(70), fontFamily: 'JetBrainsMono_400Regular', color: colors.textSec },
   cellResult: { flex: 1, color: colors.textSec, paddingLeft: rs(4) },
+
+  // Section: limites de mídia
+  sectionTitle: {
+    fontFamily: 'Sora_700Bold',
+    fontSize: fs(11),
+    color: colors.click,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: rs(8),
+    marginTop: rs(2),
+  },
+  mediaIntro: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(13),
+    color: colors.textSec,
+    lineHeight: fs(19),
+    marginBottom: rs(10),
+  },
+  mediaTable: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: rs(10),
+    overflow: 'hidden',
+    marginBottom: rs(8),
+  },
+  mediaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: rs(10),
+    paddingHorizontal: rs(10),
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: rs(8),
+  },
+  mediaIcon: {
+    width: rs(28), height: rs(28),
+    borderRadius: rs(8),
+    backgroundColor: colors.click + '15',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  mediaLabel: {
+    fontFamily: 'Sora_600SemiBold',
+    fontSize: fs(12),
+    color: colors.text,
+    width: rs(60),
+  },
+  mediaDetail: {
+    flex: 1,
+    fontFamily: 'JetBrainsMono_400Regular',
+    fontSize: fs(11),
+    color: colors.textSec,
+    lineHeight: fs(16),
+  },
+  mediaNote: {
+    fontFamily: 'Sora_400Regular',
+    fontSize: fs(11),
+    color: colors.textDim,
+    fontStyle: 'italic',
+    lineHeight: fs(16),
+    marginBottom: rs(14),
+  },
   footer: {
     fontFamily: 'Sora_400Regular',
     fontSize: fs(11),

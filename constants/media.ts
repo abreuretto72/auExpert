@@ -2,7 +2,7 @@ export const MEDIA_LIMITS = {
   photo: {
     maxSizeBytes:  5  * 1024 * 1024,  // 5 MB
     maxSizeMB:     5,
-    maxCount:      5,
+    maxCount:      4,
     quality:       0.7,
   },
   video: {

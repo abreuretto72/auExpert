@@ -309,12 +309,39 @@ if (!token) {
 
 const inviterName = search.get('from') || 'Alguém';
 const petName     = search.get('pet')  || 'seu pet';
-const role        = search.get('role') || 'co_parent';
+// Default mudou de 'co_parent' pra '' — antes, link sem ?role= mostrava "Co-tutor"
+// pra TODO mundo (incluindo veterinários), o que era enganoso.
+const role        = search.get('role') || '';
 const lang        = navigator.language?.startsWith('en') ? 'en' : 'pt';
 
 const ROLE_LABELS = {
-  pt: { co_parent: 'Co-tutor', caregiver: 'Cuidador', viewer: 'Visualizador', tutor_owner: 'Tutor' },
-  en: { co_parent: 'Co-parent', caregiver: 'Caregiver', viewer: 'Viewer', tutor_owner: 'Tutor' },
+  pt: {
+    // Tutoria/cuidado (sistema legado pet_members)
+    co_parent: 'Co-tutor',
+    caregiver: 'Cuidador',
+    viewer: 'Visualizador',
+    tutor_owner: 'Tutor',
+    owner: 'Tutor',
+    // Profissional veterinário (sistema novo access_invites). Sem detalhar
+    // permissões aqui — granularidade vai na ficha do paciente, não no convite.
+    // Decisão Elite 2026-04-27 (Belisario).
+    vet_full: 'Veterinário(a)',
+    vet_read: 'Veterinário(a)',
+    vet_tech: 'Técnico(a) veterinário(a)',
+    // Fallback genérico quando role vier vazio
+    '': 'Convidado',
+  },
+  en: {
+    co_parent: 'Co-parent',
+    caregiver: 'Caregiver',
+    viewer: 'Viewer',
+    tutor_owner: 'Tutor',
+    owner: 'Owner',
+    vet_full: 'Veterinarian',
+    vet_read: 'Veterinarian',
+    vet_tech: 'Vet technician',
+    '': 'Invited',
+  },
 };
 
 const TEXTS = {

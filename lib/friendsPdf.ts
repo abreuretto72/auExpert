@@ -11,6 +11,10 @@ import i18n from '../i18n';
 import { colors } from '../constants/colors';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+// pet_connections persiste 1 row por menção no diário. O PDF consolida
+// mostrando 1 card por amigo com meet_count agregado client-side. A tabela
+// NÃO tem `meet_count` nem `photo_url` — não pedir esses campos no SELECT
+// (PostgREST 42703 zera o painel).
 interface FriendRow {
   id: string;
   friend_name: string;
@@ -20,18 +24,55 @@ interface FriendRow {
   connection_type: string | null;
   first_met_at: string | null;
   last_seen_at: string | null;
-  meet_count: number | null;
-  photo_url: string | null;
   notes: string | null;
   created_at: string;
 }
 
+interface FriendAggregate extends FriendRow {
+  meet_count: number;
+}
+
+function maxDate(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a >= b ? a : b;
+}
+
+function minDate(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a <= b ? a : b;
+}
+
+function aggregateByFriend(rows: FriendRow[]): FriendAggregate[] {
+  const byFriend = new Map<string, FriendAggregate>();
+  for (const r of rows) {
+    const key = r.friend_name.trim().toLowerCase();
+    const existing = byFriend.get(key);
+    if (!existing) {
+      byFriend.set(key, { ...r, meet_count: 1 });
+    } else {
+      existing.meet_count += 1;
+      existing.first_met_at = minDate(existing.first_met_at, r.first_met_at);
+      existing.last_seen_at = maxDate(existing.last_seen_at, r.last_seen_at);
+      existing.friend_breed = existing.friend_breed ?? r.friend_breed;
+      existing.friend_owner = existing.friend_owner ?? r.friend_owner;
+      existing.notes = existing.notes ?? r.notes;
+    }
+  }
+  return [...byFriend.values()].sort((a, b) => {
+    const da = a.last_seen_at ?? a.created_at;
+    const db = b.last_seen_at ?? b.created_at;
+    return db.localeCompare(da);
+  });
+}
+
 // ── Data fetch ────────────────────────────────────────────────────────────────
-async function fetchFriends(petId: string): Promise<FriendRow[]> {
+async function fetchFriends(petId: string): Promise<FriendAggregate[]> {
   const { data, error } = await supabase
     .from('pet_connections')
     .select(
-      'id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, meet_count, photo_url, notes, created_at',
+      'id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, notes, created_at',
     )
     .eq('pet_id', petId)
     .eq('is_active', true)
@@ -39,7 +80,7 @@ async function fetchFriends(petId: string): Promise<FriendRow[]> {
     .limit(500);
 
   if (error) throw error;
-  return (data ?? []) as FriendRow[];
+  return aggregateByFriend((data ?? []) as FriendRow[]);
 }
 
 // ── HTML helpers ──────────────────────────────────────────────────────────────
@@ -60,7 +101,7 @@ function formatDate(value: string | null, lang: string): string {
 }
 
 // ── Body builder ──────────────────────────────────────────────────────────────
-function buildBody(rows: FriendRow[], lang: string): string {
+function buildBody(rows: FriendAggregate[], lang: string): string {
   const t = i18n.t.bind(i18n);
 
   if (rows.length === 0) {
@@ -69,7 +110,7 @@ function buildBody(rows: FriendRow[], lang: string): string {
 
   const cards = rows
     .map((r) => {
-      const meets = Number(r.meet_count ?? 0);
+      const meets = r.meet_count;
       const meetLabel = t('friendsPdf.meetCount', { count: meets });
       const speciesLine = [r.friend_species, r.friend_breed].filter(Boolean).join(' · ');
       const ownerLine = r.friend_owner ? `<div style="font-size:10px;color:#888;margin-top:2px;">${escHtml(r.friend_owner)}</div>` : '';

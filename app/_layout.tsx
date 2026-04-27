@@ -85,6 +85,9 @@ function InviteLinkHandler() {
   const userEmail = useAuthStore((s) => s.user?.email);
 
   const [pendingInvite, setPendingInvite] = useState<InviteInfo | null>(null);
+  // Flag pra evitar redirecionar mais de uma vez pra /invite/[token] na mesma
+  // sessão. Cada login fresco recomeça com false (state local do componente).
+  const [vetInviteRedirected, setVetInviteRedirected] = useState(false);
 
   // Busca os detalhes do convite pelo token e exibe o modal.
   // urlParams é fallback quando o SELECT falha (e.g. race condition ou RLS residual).
@@ -213,6 +216,36 @@ function InviteLinkHandler() {
       }
 
       if (accepted > 0) qc.invalidateQueries({ queryKey: ['pets'] });
+
+      // ── Convites profissionais (access_invites) ─────────────────────────────
+      // Bug histórico (corrigido 2026-04-27): vet recebia email, fazia signup,
+      // entrava no app e via hub vazio porque o auto-accept acima só cobria
+      // pet_members (co-tutor). access_invites é uma tabela separada com fluxo
+      // diferente — exige perfil profissional ANTES de criar grant. Aqui só
+      // detectamos e redirecionamos pra tela /invite/[token], que já cuida do
+      // preview + onboarding profissional + accept.
+      // Só roda 1x por sessão (vetInviteRedirected guard) pra não criar loop
+      // de navegação a cada AppState change.
+      if (!vetInviteRedirected) {
+        const { data: vetInvites } = await supabase
+          .from('access_invites')
+          .select('token')
+          .eq('invite_email', userEmail.toLowerCase())
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (vetInvites && vetInvites.length > 0) {
+          const tok = vetInvites[0].token;
+          console.log('[invite:professional] pending invite detected — opening preview', tok.slice(0, 8));
+          setVetInviteRedirected(true);
+          // push (não replace) pra preservar o hub na stack — assim o vet pode
+          // voltar pro hub sem ficar preso na tela de invite. Era replace antes,
+          // o que causava "GO_BACK was not handled" quando o vet tocava ←.
+          router.push(`/invite/${tok}` as never);
+        }
+      }
     };
 
     check();
@@ -221,7 +254,7 @@ function InviteLinkHandler() {
       if (state === 'active') check();
     });
     return () => sub.remove();
-  }, [isAuthenticated, userId, userEmail]);
+  }, [isAuthenticated, userId, userEmail, vetInviteRedirected]);
 
   // Deep link recebido enquanto o app está aberto ou ao abrir
   useEffect(() => {

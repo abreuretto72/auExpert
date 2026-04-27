@@ -68,6 +68,22 @@ export function AcceptInviteForm({ token }: { token: string }) {
       const json = await resp.json();
 
       if (!resp.ok) {
+        // 'wrong account' = JWT atual é de outra pessoa; oferecer logout claro.
+        if (json.error === 'wrong account' || resp.status === 403) {
+          setSubmitError(
+            json.message ??
+              'O convite é para outro e-mail. Saia da conta atual e abra este link novamente.',
+          );
+          return;
+        }
+        // 'auth required' = email já tem conta, precisa logar primeiro.
+        if (json.error === 'auth required' || resp.status === 401) {
+          setSubmitError(
+            json.message ??
+              'Esse e-mail já tem conta. Faça login pelo app antes de aceitar.',
+          );
+          return;
+        }
         setSubmitError(json.error ?? json.message ?? `HTTP ${resp.status}`);
         return;
       }

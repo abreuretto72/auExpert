@@ -78,8 +78,11 @@ async function fetchPainel(petId: string): Promise<PainelData> {
       .eq('is_active', true)
       .order('date', { ascending: false }),
     supabase
+      // pet_connections não tem meet_count/photo_url — agregação é client-side
+      // (1 row = 1 menção no diário). Pedir essas colunas inexistentes faz
+      // PostgREST devolver 42703 e o painel inteiro fica vazio.
       .from('pet_connections')
-      .select('id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, meet_count, photo_url, notes, created_at')
+      .select('id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, notes, created_at')
       .eq('pet_id', petId)
       .eq('is_active', true)
       .order('last_seen_at', { ascending: false }),
@@ -152,11 +155,55 @@ async function fetchPainel(petId: string): Promise<PainelData> {
     .map(([category, total]) => ({ category, total }))
     .sort((a, b) => b.total - a.total);
 
-  // Friends
-  const friends = (friRes.data ?? []).map((r) => ({
-    ...r,
-    meet_count: Number(r.meet_count),
-  })) as PetConnection[];
+  // Friends — agregação client-side (1 row = 1 menção; agrupa por friend_name).
+  const friendRows = (friRes.data ?? []) as Array<{
+    id: string;
+    friend_name: string;
+    friend_species: string | null;
+    friend_breed: string | null;
+    friend_owner: string | null;
+    connection_type: string | null;
+    first_met_at: string | null;
+    last_seen_at: string | null;
+    notes: string | null;
+    created_at: string;
+  }>;
+  const friendMap = new Map<string, PetConnection>();
+  for (const r of friendRows) {
+    const key = r.friend_name.trim().toLowerCase();
+    const existing = friendMap.get(key);
+    if (!existing) {
+      friendMap.set(key, {
+        id: r.id,
+        friend_name: r.friend_name,
+        friend_species: r.friend_species ?? 'unknown',
+        friend_breed: r.friend_breed,
+        friend_owner: r.friend_owner,
+        connection_type: r.connection_type ?? 'friend',
+        first_met_at: r.first_met_at,
+        last_seen_at: r.last_seen_at,
+        meet_count: 1,
+        notes: r.notes,
+        created_at: r.created_at,
+      });
+    } else {
+      existing.meet_count += 1;
+      if (!existing.first_met_at || (r.first_met_at && r.first_met_at < existing.first_met_at)) {
+        existing.first_met_at = r.first_met_at ?? existing.first_met_at;
+      }
+      if (!existing.last_seen_at || (r.last_seen_at && r.last_seen_at > existing.last_seen_at)) {
+        existing.last_seen_at = r.last_seen_at ?? existing.last_seen_at;
+      }
+      existing.friend_breed = existing.friend_breed ?? r.friend_breed;
+      existing.friend_owner = existing.friend_owner ?? r.friend_owner;
+      existing.notes = existing.notes ?? r.notes;
+    }
+  }
+  const friends = [...friendMap.values()].sort((a, b) => {
+    const da = a.last_seen_at ?? a.created_at;
+    const db = b.last_seen_at ?? b.created_at;
+    return db.localeCompare(da);
+  });
 
   // Achievements (replicate useLens logic)
   const achievementsRaw = (achRes.data ?? []) as unknown as Achievement[];

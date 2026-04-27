@@ -64,6 +64,10 @@ interface TutorProfile {
    * 'tutor_owner' e 'admin' podem cadastrar pets; profissionais não.
    */
   role: string | null;
+  /** Tem row ativa em professionals? Sinal de que é vet/groomer/etc real. */
+  has_professional_profile: boolean;
+  /** Tem invite profissional ainda pending? Sinal de que está virando profissional. */
+  has_pending_professional_invite: boolean;
 }
 
 /** Roles autorizados a criar pets (regra de negócio 2026-04-25). */
@@ -122,14 +126,38 @@ export default function HubScreen() {
       if (!session?.user?.id) return;
       const userId = session.user.id;
 
-      // Perfil
-      const { data } = await supabase
-        .from('users')
-        .select('full_name, avatar_url, city, state, xp, level, created_at, role')
-        .eq('id', userId)
-        .single();
+      // Perfil + sinais profissionais (defesa em profundidade pra regra
+      // de ouro: profissional NUNCA cadastra pet). Buscamos os 3 sinais
+      // em paralelo e mergeamos no TutorProfile.
+      const [profileResp, proResp, inviteResp] = await Promise.all([
+        supabase
+          .from('users')
+          .select('full_name, avatar_url, city, state, xp, level, created_at, role, email')
+          .eq('id', userId)
+          .single(),
+        supabase
+          .from('professionals')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .maybeSingle(),
+        supabase
+          .from('access_invites')
+          .select('id')
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
+          .limit(1),
+      ]);
+
+      const data = profileResp.data;
       if (data) {
-        setTutorProfile(data as TutorProfile);
+        const merged: TutorProfile = {
+          ...data,
+          has_professional_profile: !!proResp.data?.id,
+          // access_invites tem RLS por email do JWT, então o limit(1) já filtra pelo user
+          has_pending_professional_invite: (inviteResp.data?.length ?? 0) > 0,
+        } as TutorProfile;
+        setTutorProfile(merged);
         // Primeiro login: redirecionar para completar o perfil se nome estiver vazio
         // Só redireciona se a conta foi criada há menos de 2 minutos (primeiro login real)
         if (!data.full_name?.trim() && data.created_at) {
@@ -397,6 +425,27 @@ export default function HubScreen() {
     [addPet, user?.id, toast, t, i18n.language],
   );
 
+  // ── Permissão pra cadastrar pet (regra de ouro) ────────────────────────────
+  // Profissional NUNCA pode cadastrar pet — só tutor_owner / admin. Defesa em
+  // profundidade: bloqueia se QUALQUER um dos 3 sinais indicar profissional:
+  //   1. users.role NÃO está em ROLES_CAN_ADD_PET (catch-all canônico)
+  //   2. há row ativa em professionals (vet já completou onboarding)
+  //   3. há access_invite pendente pelo email (vet acabou de fazer signup)
+  //
+  // O sinal #3 cobre o caso histórico onde o trigger trg_fn_handle_new_auth_user
+  // criava users.role='tutor_owner' por default mesmo pra quem chegou via convite
+  // vet. Sem esse check, o vet via "Cadastrar primeiro pet" no EmptyState até
+  // completar o onboarding profissional. Esse gate cobre TODOS os CTAs: "+" do
+  // header, EmptyState, atalho do drawer, qualquer link futuro.
+  //
+  // Default = true APENAS enquanto tutorProfile === null (loading inicial), pra
+  // não piscar o botão escondido pra tutor durante o fetch.
+  const canAddPet = tutorProfile === null
+    ? true
+    : ROLES_CAN_ADD_PET.has(tutorProfile.role ?? 'tutor_owner')
+      && !tutorProfile.has_professional_profile
+      && !tutorProfile.has_pending_professional_invite;
+
   // ── Header da lista ──────────────────────────────
 
   const renderHeader = useCallback(
@@ -411,7 +460,7 @@ export default function HubScreen() {
           onToggleDensity={handleToggleDensity}
           onAddPet={handleAddPet}
           // Profissionais não podem cadastrar pets — só veem os delegados
-          canAddPet={ROLES_CAN_ADD_PET.has(tutorProfile?.role ?? 'tutor_owner')}
+          canAddPet={canAddPet}
           query={query}
           onChangeQuery={setQuery}
           recent={recent}
@@ -476,23 +525,26 @@ export default function HubScreen() {
   const renderFooter = useCallback(
     () => (
       <>
-        {/* AI insight card */}
-        <View style={styles.insightCard}>
-          <View style={styles.insightHeader}>
-            <Sparkles size={rs(18)} color={colors.ai} strokeWidth={1.8} />
-            <Text style={styles.insightLabel}>{t('pets.insightLabel')}</Text>
+        {/* AI insight card — escondido pra profissional sem pets delegados,
+            já que a copy "Cadastre seu primeiro pet" não se aplica a vet. */}
+        {(pets.length > 0 || canAddPet) && (
+          <View style={styles.insightCard}>
+            <View style={styles.insightHeader}>
+              <Sparkles size={rs(18)} color={colors.ai} strokeWidth={1.8} />
+              <Text style={styles.insightLabel}>{t('pets.insightLabel')}</Text>
+            </View>
+            <Text style={styles.insightText}>
+              {pets.length > 0
+                ? t('pets.insightWithPets')
+                : t('pets.insightNoPets')}
+            </Text>
           </View>
-          <Text style={styles.insightText}>
-            {pets.length > 0
-              ? t('pets.insightWithPets')
-              : t('pets.insightNoPets')}
-          </Text>
-        </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </>
     ),
-    [pets.length, t, handleAddPet],
+    [pets.length, canAddPet, t, handleAddPet],
   );
 
   // ── Render item ──────────────────────────────────
@@ -544,6 +596,20 @@ export default function HubScreen() {
         );
       }
       if (!isLoading) {
+        // Profissional sem pets delegados — copy diferente, SEM CTA pra
+        // cadastrar pet (regra de ouro: só tutor cadastra pet).
+        if (!canAddPet) {
+          return (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconRow}>
+                <Dog size={rs(40)} color={colors.click + '50'} strokeWidth={1.5} />
+                <Cat size={rs(40)} color={colors.click + '50'} strokeWidth={1.5} />
+              </View>
+              <Text style={styles.emptyTitle}>{t('pets.professionalNoPets')}</Text>
+              <Text style={styles.emptyText}>{t('pets.professionalNoPetsHint')}</Text>
+            </View>
+          );
+        }
         return (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconRow}>
@@ -567,7 +633,7 @@ export default function HubScreen() {
       }
       return null;
     },
-    [isSearching, query, setQuery, isLoading, handleAddPet, t],
+    [isSearching, query, setQuery, isLoading, handleAddPet, canAddPet, t],
   );
 
   // ── Loading skeleton ─────────────────────────────

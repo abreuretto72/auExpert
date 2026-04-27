@@ -44,7 +44,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, onlineManager } from '@tanstack/react-query';
 import {
-  ChevronLeft, Dog, Cat, Mail, Clock, DollarSign, FileText,
+  ChevronLeft, Dog, Cat, Mail, Clock, FileText,
   AlertCircle, UserCheck, WifiOff,
 } from 'lucide-react-native';
 
@@ -182,8 +182,10 @@ export default function InviteLandingScreen() {
 
     // Guard: se ainda não tem perfil profissional, redireciona pro onboarding.
     // O onboarding lê returnTo e manda de volta pra /invite/<token> quando cria.
+    // Push (não replace) pra preservar /invite/[token] na stack — assim, se o
+    // vet apertar ← na tela de onboarding, volta pra cá em vez de quebrar a nav.
     if (preview.data.needs_onboarding) {
-      router.replace({
+      router.push({
         pathname: '/pro/onboarding',
         params: { returnTo: `/invite/${rawToken}` },
       } as never);
@@ -207,7 +209,7 @@ export default function InviteLandingScreen() {
         const code = await extractEfErrorCode(error);
         // NEEDS_ONBOARDING pode aparecer aqui se preview estava stale — redireciona.
         if (code === 'NEEDS_ONBOARDING') {
-          router.replace({
+          router.push({
             pathname: '/pro/onboarding',
             params: { returnTo: `/invite/${rawToken}` },
           } as never);
@@ -265,7 +267,10 @@ export default function InviteLandingScreen() {
         return;
       }
       toast(t('invite.declined'), 'info');
-      router.back();
+      // Fallback seguro: se a stack está vazia (caso comum quando o user chega
+      // direto via redirect do _layout), volta pro hub.
+      if (router.canGoBack()) router.back();
+      else router.replace('/' as never);
     } catch (err) {
       console.error('[invite-decline] exception', err);
       toast(t('invite.errors.generic'), 'error');
@@ -365,11 +370,10 @@ export default function InviteLandingScreen() {
             label={t('invite.roleLabel')}
             value={roleLabel}
           />
-          <DetailRow
-            icon={<DollarSign size={rs(18)} color={p.can_see_finances ? colors.success : colors.textDim} strokeWidth={1.8} />}
-            label={p.can_see_finances ? t('invite.canSeeFinances') : t('invite.cannotSeeFinances')}
-            value=""
-          />
+          {/* Linha de finanças removida 2026-04-27: a tela de aceite não é o
+              lugar pra falar sobre permissões granulares. O profissional vê na
+              ficha do paciente o que pode ou não acessar. Decisão Elite: tela
+              limpa, sem expor granularidade ao convidado. */}
           {expires && (
             <DetailRow
               icon={<Clock size={rs(18)} color={colors.textDim} strokeWidth={1.8} />}
@@ -439,9 +443,16 @@ export default function InviteLandingScreen() {
 // ── Subcomponentes ───────────────────────────────────────────────────────────
 
 function Header({ router, title }: { router: ReturnType<typeof useRouter>; title: string }) {
+  // Fallback seguro: se a stack está vazia (ex: cheguei aqui via push depois de
+  // um redirect inicial pelo _layout), router.back() lança "GO_BACK was not
+  // handled". Caímos no hub silenciosamente em vez de quebrar a nav.
+  const handleBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/' as never);
+  };
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+      <TouchableOpacity onPress={handleBack} hitSlop={12}>
         <ChevronLeft size={rs(26)} color={colors.click} strokeWidth={1.8} />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>{title}</Text>

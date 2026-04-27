@@ -113,6 +113,13 @@ export function useLensNutrition(petId: string) {
 }
 
 // ── useLensFriends — pet_connections per pet ─────────────────────────────
+//
+// Persistência cria UMA linha por menção no diário (cada encontro = 1 row).
+// O painel mostra UM card por amigo agregado: meet_count = count das linhas,
+// last_seen_at = MAX, first_met_at = MIN. A tabela NÃO tem `meet_count` nem
+// `photo_url` — agregação é feita client-side. Bug histórico (2026-04-27):
+// SELECT pedia esses dois campos, PostgREST retornava 42703, painel ficava
+// vazio mesmo com rows persistidas.
 
 export interface PetConnection {
   id: string;
@@ -124,9 +131,37 @@ export interface PetConnection {
   first_met_at: string | null;
   last_seen_at: string | null;
   meet_count: number;
-  photo_url: string | null;
   notes: string | null;
   created_at: string;
+}
+
+interface PetConnectionRow {
+  id: string;
+  friend_name: string;
+  friend_species: string | null;
+  friend_breed: string | null;
+  friend_owner: string | null;
+  connection_type: string | null;
+  first_met_at: string | null;
+  last_seen_at: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+function normalizeFriendKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function maxDate(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a >= b ? a : b;
+}
+
+function minDate(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a <= b ? a : b;
 }
 
 export function useLensFriends(petId: string) {
@@ -135,12 +170,54 @@ export function useLensFriends(petId: string) {
     queryFn: async (): Promise<PetConnection[]> => {
       const { data, error } = await supabase
         .from('pet_connections')
-        .select('id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, meet_count, photo_url, notes, created_at')
+        .select('id, friend_name, friend_species, friend_breed, friend_owner, connection_type, first_met_at, last_seen_at, notes, created_at')
         .eq('pet_id', petId)
         .eq('is_active', true)
         .order('last_seen_at', { ascending: false });
+
+      console.log('[LENS] friends rows:', data?.length ?? 0, '| erro:', error?.message ?? 'ok');
       if (error) throw error;
-      return (data ?? []).map((r) => ({ ...r, meet_count: Number(r.meet_count) }));
+
+      const rows = (data ?? []) as PetConnectionRow[];
+
+      // Agrega por nome do amigo (case-insensitive). 1 row = 1 encontro;
+      // múltiplas rows com mesmo friend_name viram 1 card com meet_count = N.
+      const byFriend = new Map<string, PetConnection>();
+      for (const r of rows) {
+        const key = normalizeFriendKey(r.friend_name);
+        const existing = byFriend.get(key);
+        if (!existing) {
+          byFriend.set(key, {
+            id: r.id,
+            friend_name: r.friend_name,
+            friend_species: r.friend_species ?? 'unknown',
+            friend_breed: r.friend_breed,
+            friend_owner: r.friend_owner,
+            connection_type: r.connection_type ?? 'friend',
+            first_met_at: r.first_met_at,
+            last_seen_at: r.last_seen_at,
+            meet_count: 1,
+            notes: r.notes,
+            created_at: r.created_at,
+          });
+        } else {
+          existing.meet_count += 1;
+          existing.first_met_at = minDate(existing.first_met_at, r.first_met_at);
+          existing.last_seen_at = maxDate(existing.last_seen_at, r.last_seen_at);
+          // Preserva o primeiro valor não-nulo pra owner/breed/notes (rows
+          // antigas podem ter NULL onde rows mais novas trazem o dado).
+          existing.friend_breed = existing.friend_breed ?? r.friend_breed;
+          existing.friend_owner = existing.friend_owner ?? r.friend_owner;
+          existing.notes = existing.notes ?? r.notes;
+        }
+      }
+
+      // Ordem: amigo visto mais recentemente primeiro.
+      return [...byFriend.values()].sort((a, b) => {
+        const da = a.last_seen_at ?? a.created_at;
+        const db = b.last_seen_at ?? b.created_at;
+        return db.localeCompare(da);
+      });
     },
     staleTime: 30 * 60 * 1000,
   });

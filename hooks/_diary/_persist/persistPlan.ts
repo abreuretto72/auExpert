@@ -38,21 +38,29 @@ import type { Persister } from './types';
 const VALID_PLAN_TYPES = ['health', 'insurance', 'funeral', 'assistance', 'emergency'];
 
 export const persistPlan: Persister = async (extracted, ctx) => {
+  // Bug histórico (corrigido 2026-04-27): persister só inseria se `provider`
+  // existisse, mas o classifier frequentemente extrai só `plan_name` (ex:
+  // "Saúde Pet" — sem dizer qual operadora). Relaxa: aceita qualquer identidade
+  // (provider OU plan_name) como suficiente. Skip só se ambos faltam.
   const provider = (extracted.provider as string) ?? null;
-  if (!provider) return;
+  const planName = (extracted.plan_name as string) ?? null;
+  if (!provider && !planName) {
+    console.log('[persistPlan] skip: no provider nor plan_name', { entry: ctx.diaryEntryId?.slice(-8) });
+    return;
+  }
 
   const rawPlanType = ctx.moduleType === 'insurance'
     ? 'insurance'
     : (extracted.plan_type as string) ?? 'health';
   const planType = VALID_PLAN_TYPES.includes(rawPlanType) ? rawPlanType : 'health';
 
-  const { data } = await supabase.from('pet_plans').insert({
+  const payload = {
     pet_id:         ctx.petId,
     user_id:        ctx.userId,
     diary_entry_id: ctx.diaryEntryId,
     plan_type:      planType,
     provider,
-    plan_name:      (extracted.plan_name as string) ?? null,
+    plan_name:      planName,
     plan_code:      (extracted.plan_code as string) ?? null,
     monthly_cost:   extracted.monthly_cost != null ? Number(extracted.monthly_cost) : null,
     annual_cost:    extracted.annual_cost != null ? Number(extracted.annual_cost) : null,
@@ -64,8 +72,28 @@ export const persistPlan: Persister = async (extracted, ctx) => {
     status:         'active',
     extracted_data: extracted,
     source:         'ai',
-  }).select('id').single();
+  };
+
+  console.log('[persistPlan] insert', {
+    entry: ctx.diaryEntryId?.slice(-8),
+    type: planType, provider, plan_name: planName,
+  });
+
+  const { data, error } = await supabase
+    .from('pet_plans')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('[persistPlan] ❌ insert failed', {
+      entry: ctx.diaryEntryId?.slice(-8),
+      code: error.code, message: error.message, details: error.details,
+    });
+    return;
+  }
   if (!data?.id) return;
 
+  console.log('[persistPlan] ✓ saved', { planId: data.id });
   return { linkedField: { linked_plan_id: data.id } };
 };

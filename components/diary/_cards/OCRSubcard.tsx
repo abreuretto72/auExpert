@@ -238,18 +238,22 @@ export function OCRSubcard({
       {/* Barra de ação — editar / salvar / cancelar */}
       {isEditing ? (
         <>
-          {/* Correção rápida: ÷100 ou ×100 em todos os valores monetários */}
-          <View style={styles.ocrScaleBar}>
-            <TouchableOpacity onPress={handleDivideBy100} style={styles.ocrScaleBtn}>
-              <Divide size={rs(13)} color={colors.warning} strokeWidth={2} />
-              <Text style={styles.ocrScaleBtnText}>{t('diary.ocrDivideBy100')}</Text>
-            </TouchableOpacity>
-            <View style={styles.ocrScaleSep} />
-            <TouchableOpacity onPress={handleMultiplyBy100} style={styles.ocrScaleBtn}>
-              <Text style={styles.ocrScaleMultiplyIcon}>×</Text>
-              <Text style={styles.ocrScaleBtnText}>{t('diary.ocrMultiplyBy100')}</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Correção rápida ÷100 / ×100 — só em documentos financeiros (nota
+              fiscal, invoice, receipt). Em carteira de vacina, receita e
+              outros, valor monetário não existe, então a barra fica fora. */}
+          {isFinancial && (
+            <View style={styles.ocrScaleBar}>
+              <TouchableOpacity onPress={handleDivideBy100} style={styles.ocrScaleBtn}>
+                <Divide size={rs(13)} color={colors.warning} strokeWidth={2} />
+                <Text style={styles.ocrScaleBtnText}>{t('diary.ocrDivideBy100')}</Text>
+              </TouchableOpacity>
+              <View style={styles.ocrScaleSep} />
+              <TouchableOpacity onPress={handleMultiplyBy100} style={styles.ocrScaleBtn}>
+                <Text style={styles.ocrScaleMultiplyIcon}>×</Text>
+                <Text style={styles.ocrScaleBtnText}>{t('diary.ocrMultiplyBy100')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={styles.ocrActionBar}>
             <TouchableOpacity onPress={handleCancel} disabled={isSaving} style={styles.ocrCancelBtn}>
               <X size={rs(14)} color={colors.textDim} strokeWidth={2} />

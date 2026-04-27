@@ -1,20 +1,32 @@
 /**
- * nutrition/cardapio-detail.tsx — Visualização de um cardápio do histórico
+ * nutrition/cardapio-detail.tsx — Visualização de um cardápio do histórico.
+ *
+ * Recebe `historyId` por params (NUNCA o JSON completo — ver bug histórico em
+ * cardapio-history.tsx:handleViewCardapio). Busca o cardápio em duas etapas:
+ *   1. Cache do React Query (`useNutricao(petId).cardapioHistory`) — instant
+ *   2. Fallback: query direta `nutrition_cardapio_history` por id
+ *
+ * Garante que a tela funciona mesmo num deep-link cold start, sem cache.
  */
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   ChevronLeft, ChevronRight, FileText, Utensils,
 } from 'lucide-react-native';
 import { rs, fs } from '../../../../../hooks/useResponsive';
 import { colors } from '../../../../../constants/colors';
+import { supabase } from '../../../../../lib/supabase';
 import { usePets } from '../../../../../hooks/usePets';
-import type { Cardapio, CardapioDia } from '../../../../../hooks/useNutricao';
+import { useNutricao } from '../../../../../hooks/useNutricao';
+import type {
+  Cardapio, CardapioDia, CardapioHistoryItem,
+} from '../../../../../hooks/useNutricao';
 
 const WEEKDAY_COLORS = [
   colors.click, colors.petrol, colors.click, colors.success,
@@ -24,31 +36,51 @@ const WEEKDAY_COLORS = [
 export default function CardapioDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { id: petId, historyData, petName, generatedAt } = useLocalSearchParams<{
+  const { id: petId, historyId, petName } = useLocalSearchParams<{
     id: string;
-    historyData: string;
+    historyId: string;
     petName: string;
-    generatedAt: string;
   }>();
   const { pets } = usePets();
 
-  let cardapio: Cardapio | null = null;
-  try {
-    cardapio = historyData ? (JSON.parse(historyData) as Cardapio) : null;
-  } catch (e) {
-    console.warn('[cardapio-detail] JSON.parse failed', { err: String(e), len: historyData?.length });
-    cardapio = null;
-  }
+  // 1ª linha de busca: cache em memória do React Query (carregado pela tela
+  // anterior). Match instantâneo no caminho normal — usuário entra no histórico,
+  // toca o card, abre detail.
+  const { cardapioHistory } = useNutricao(petId ?? '');
+  const cachedItem = cardapioHistory.find((h) => h.id === historyId) ?? null;
 
-  // Data de geração formatada — fix do bug onde `generatedDate` era usada
-  // sem ter sido declarada. Renderizava ReferenceError e a tela ficava em branco.
-  const generatedDate = generatedAt
-    ? new Date(generatedAt).toLocaleDateString()
+  // 2ª linha: fallback DB. Cobre cold start (deep link direto pra detail sem
+  // ter passado pela history) e cache invalidado. Disabled quando já temos
+  // cache pra não fazer round-trip à toa.
+  const dbQuery = useQuery({
+    queryKey: ['cardapio-history-item', historyId] as const,
+    queryFn: async (): Promise<CardapioHistoryItem | null> => {
+      if (!historyId) return null;
+      const { data, error } = await supabase
+        .from('nutrition_cardapio_history')
+        .select('id, modalidade, data, is_fallback, generated_at')
+        .eq('id', historyId)
+        .maybeSingle();
+      if (error) {
+        console.warn('[cardapio-detail] db fetch failed:', error.message);
+        return null;
+      }
+      return data as CardapioHistoryItem | null;
+    },
+    enabled: !!historyId && !cachedItem,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const item: CardapioHistoryItem | null = cachedItem ?? dbQuery.data ?? null;
+  const cardapio: Cardapio | null = item?.data ?? null;
+  const generatedDate = item?.generated_at
+    ? new Date(item.generated_at).toLocaleDateString()
     : null;
+  const isLoadingDb = !cachedItem && dbQuery.isLoading;
 
   console.log('[cardapio-detail] render', {
-    petId, hasData: !!historyData, hasCardapio: !!cardapio,
-    days: cardapio?.days?.length ?? 0, generatedDate,
+    petId, historyId, source: cachedItem ? 'cache' : (dbQuery.data ? 'db' : 'none'),
+    days: cardapio?.days?.length ?? 0,
   });
 
   const handleViewRecipe = (day: CardapioDia, recipeName: string) => {
@@ -72,6 +104,21 @@ export default function CardapioDetailScreen() {
     });
   };
 
+  if (isLoadingDb) {
+    return (
+      <SafeAreaView style={s.safeArea}>
+        <Header
+          onBack={() => router.back()}
+          title={t('nutrition.cardapioTitle')}
+          onPdf={handleOpenPdf}
+          canExport={false}
+        />
+        <View style={s.centered}>
+          <ActivityIndicator size="large" color={colors.click} />
+        </View>
+      </SafeAreaView>
+    );
+  }
   if (!cardapio) {
     return (
       <SafeAreaView style={s.safeArea}>

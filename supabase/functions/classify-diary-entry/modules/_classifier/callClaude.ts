@@ -93,7 +93,20 @@ export async function callClaude(
     } catch (diagErr) {
       console.error('[callClaude] error diag insert failed:', diagErr);
     }
-    throw new Error(`Claude API error: ${err.status ?? 'network'}`);
+
+    // Enriquecer Error.message — quem captura no recordAiInvocation precisa de
+    // contexto pra triagem sem precisar abrir diag_logs. Antes era só status,
+    // agora inclui type+message do body Anthropic + modelo + request_id.
+    const parsedErr = (err.parsed as { error?: { type?: string; message?: string } } | null)?.error;
+    const lastAttempt = err.attempts?.[err.attempts.length - 1];
+    const detail =
+      parsedErr?.message ??
+      (typeof err.body === 'string' && err.body.length > 0 ? err.body.slice(0, 300) : 'no body');
+    const detailType = parsedErr?.type ?? 'unknown_type';
+    const modelTried = lastAttempt?.model ?? chain[0] ?? 'unknown_model';
+    throw new Error(
+      `Claude API ${err.status ?? 'network'} [${detailType}] model=${modelTried} req=${reqId}: ${detail}`,
+    );
   }
 
   // Aplicar extraHeaders não é mais possível via helper, mas nenhum caller

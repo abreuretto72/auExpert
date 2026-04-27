@@ -313,6 +313,8 @@ export default function NewDiaryEntryScreen() {
     capturedAudioDuration,
     docType,
     capturedDocBase64,
+    petName: pet?.name ?? null,
+    petBreed: pet?.breed ?? null,
     submitEntry,
     showAnalyzingAndBack,
   });

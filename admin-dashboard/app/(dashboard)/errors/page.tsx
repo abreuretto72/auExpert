@@ -9,11 +9,13 @@ import {
   APP_ERROR_CATEGORY_LABELS,
   APP_ERROR_STATUS_LABELS,
   type AdminAiBreakdown,
+  type AdminRecentError,
   type AdminAppErrorsList,
   type AppErrorSeverity,
   type AppErrorCategory,
   type AppErrorStatus,
 } from '@/lib/types';
+import { AiErrorDetailPanel } from './_components/AiErrorDetailPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +41,10 @@ interface SearchParams {
   category?: string;
   status?: string;
   page?: string;
+  // Tab IA — filtros de função/categoria + ID do incidente aberto no painel
+  fn?: string;
+  ai_cat?: string;
+  ai?: string;
 }
 
 export default async function ErrorsPage({
@@ -51,7 +57,6 @@ export default async function ErrorsPage({
 
   const supabase = await createSupabaseServerClient();
 
-  // Sempre busca os totais resumidos das duas fontes pra mostrar contadores
   const [aiRpc, appRpc] = await Promise.all([
     supabase.rpc('get_admin_ai_breakdown'),
     supabase.rpc('get_admin_app_errors_list', {
@@ -101,7 +106,7 @@ export default async function ErrorsPage({
         <TabLink href="/errors?tab=manual" active={tab === 'manual'} label="Relatos" count={Number(app.by_category.manual_report ?? 0)} />
       </div>
 
-      {tab === 'ai' && <AiErrorsTab data={ai} totalErrors={totalAiErrors} />}
+      {tab === 'ai' && <AiErrorsTab data={ai} totalErrors={totalAiErrors} sp={sp} />}
       {tab === 'app' && <AppErrorsTab data={app} sp={sp} />}
       {tab === 'manual' && <ManualReportsTab data={app} />}
     </div>
@@ -149,67 +154,220 @@ function TabLink({ href, active, label, count }: { href: string; active: boolean
   );
 }
 
-// ─── Tab IA (legado preservado) ──────────────────────────────────────────────
+// ─── Tab IA ──────────────────────────────────────────────────────────────────
 
-function AiErrorsTab({ data: d, totalErrors }: { data: AdminAiBreakdown; totalErrors: number }) {
+interface ErrorGroup {
+  /** Hash deterministico baseado em function + category + prefixo do error_message */
+  key: string;
+  /** Linha mais recente do grupo (= a que o admin clica pra abrir) */
+  representative: AdminRecentError;
+  /** Todas as ocorrências */
+  occurrences: AdminRecentError[];
+}
+
+function groupErrors(rows: AdminRecentError[]): ErrorGroup[] {
+  const map = new Map<string, ErrorGroup>();
+  for (const r of rows) {
+    // 200 chars do error_message captura "raiz" sem variar com timestamp/req_id
+    const sigMessage = (r.error_message ?? '').slice(0, 200);
+    const key = `${r.function_name}|${r.error_category ?? '_'}|${sigMessage}`;
+    const existing = map.get(key);
+    if (!existing) {
+      map.set(key, { key, representative: r, occurrences: [r] });
+    } else {
+      existing.occurrences.push(r);
+      // Manter o mais recente como representante (rows já vêm desc por created_at, mas garantimos)
+      if (r.created_at > existing.representative.created_at) {
+        existing.representative = r;
+      }
+    }
+  }
+  return [...map.values()].sort(
+    (a, b) => b.representative.created_at.localeCompare(a.representative.created_at),
+  );
+}
+
+function AiErrorsTab({
+  data: d,
+  totalErrors,
+  sp,
+}: {
+  data: AdminAiBreakdown;
+  totalErrors: number;
+  sp: SearchParams;
+}) {
+  // Aplicar filtros antes de agrupar
+  const filtered = d.recent_errors.filter(e => {
+    if (sp.fn && e.function_name !== sp.fn) return false;
+    if (sp.ai_cat && (e.error_category ?? '_') !== sp.ai_cat) return false;
+    return true;
+  });
+  const groups = groupErrors(filtered);
+
+  // Funções únicas presentes nos erros recentes pra montar o filtro
+  const fnCounts = new Map<string, number>();
+  for (const e of d.recent_errors) {
+    fnCounts.set(e.function_name, (fnCounts.get(e.function_name) ?? 0) + 1);
+  }
+  const fnList = [...fnCounts.entries()].sort((a, b) => b[1] - a[1]);
+
   return (
-    <div className="space-y-6">
-      {totalErrors > 0 && (
-        <section>
-          <h2 className="text-ametista text-xs uppercase tracking-wider font-medium mb-3">Por categoria</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(d.errors_by_category).map(([cat, count]) => (
-              <div key={cat} className="bg-bg-card border border-border rounded-xl p-5">
-                <div className="text-text-muted text-[11px] uppercase tracking-wider font-medium mb-2">
-                  {ERROR_LABELS[cat] ?? cat}
-                </div>
-                <div className="font-display text-3xl text-warning">{fmtNum(count)}</div>
-              </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Coluna esquerda: filtros + tabela */}
+      <div className={sp.ai ? 'lg:col-span-2 space-y-6' : 'lg:col-span-3 space-y-6'}>
+        {totalErrors > 0 && (
+          <section>
+            <h2 className="text-ametista text-xs uppercase tracking-wider font-medium mb-3">
+              Por categoria — clique pra filtrar
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(d.errors_by_category).map(([cat, count]) => {
+                const isActive = sp.ai_cat === cat;
+                return (
+                  <Link
+                    key={cat}
+                    href={buildAiHref({ ...sp, ai_cat: isActive ? undefined : cat })}
+                    className={
+                      'bg-bg-card border rounded-xl p-5 transition hover:border-warning/50 ' +
+                      (isActive ? 'border-warning' : 'border-border')
+                    }
+                  >
+                    <div className="text-text-muted text-[11px] uppercase tracking-wider font-medium mb-2">
+                      {ERROR_LABELS[cat] ?? cat}
+                    </div>
+                    <div className="font-display text-3xl text-warning">{fmtNum(count)}</div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Filtros por função */}
+        {fnList.length > 1 && (
+          <section className="flex flex-wrap gap-2">
+            <FilterChip
+              label="Todas as funções"
+              active={!sp.fn}
+              href={buildAiHref({ ...sp, fn: undefined })}
+            />
+            {fnList.map(([fn, count]) => (
+              <FilterChip
+                key={fn}
+                label={`${FUNCTION_LABELS[fn] ?? fn} (${count})`}
+                active={sp.fn === fn}
+                href={buildAiHref({ ...sp, fn: sp.fn === fn ? undefined : fn })}
+              />
             ))}
+          </section>
+        )}
+
+        <section>
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-ametista text-xs uppercase tracking-wider font-medium">
+              {groups.length === 0
+                ? 'Nenhum incidente IA neste filtro'
+                : `${groups.length} grupo${groups.length === 1 ? '' : 's'} de incidentes (${filtered.length} total)`}
+            </h2>
+            {(sp.fn || sp.ai_cat) && (
+              <Link
+                href={buildAiHref({ ...sp, fn: undefined, ai_cat: undefined })}
+                className="text-text-muted hover:text-text text-xs"
+              >
+                Limpar filtros
+              </Link>
+            )}
+          </div>
+          <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-bg-deep text-text-muted text-xs uppercase tracking-wider">
+                <tr>
+                  <th className="text-left p-3 font-medium">Quando</th>
+                  <th className="text-left p-3 font-medium">Função</th>
+                  <th className="text-left p-3 font-medium">Categoria</th>
+                  <th className="text-left p-3 font-medium">Mensagem técnica</th>
+                  <th className="text-right p-3 font-medium">Ocorr.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {groups.map(g => {
+                  const isOpen = sp.ai === g.representative.id;
+                  return (
+                    <tr
+                      key={g.key}
+                      className={
+                        'hover:bg-bg-deep/40 transition ' + (isOpen ? 'bg-jade/5' : '')
+                      }
+                    >
+                      <td className="p-3 text-text-dim text-xs whitespace-nowrap align-top">
+                        {fmtDate(g.representative.created_at)}
+                        {g.occurrences.length > 1 && (
+                          <div className="text-text-dim text-[10px] mt-1">
+                            +{g.occurrences.length - 1} antes
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3 align-top">
+                        <div className="font-medium">
+                          {FUNCTION_LABELS[g.representative.function_name] ?? g.representative.function_name}
+                        </div>
+                        {g.representative.model_used && (
+                          <div className="text-text-dim text-xs font-mono">{g.representative.model_used}</div>
+                        )}
+                        {g.representative.latency_ms != null && (
+                          <div className="text-text-dim text-xs">{fmtLatency(g.representative.latency_ms)}</div>
+                        )}
+                      </td>
+                      <td className="p-3 align-top">
+                        <span className="inline-block text-[10px] px-2 py-1 rounded-md font-mono uppercase bg-warning/10 text-warning border border-warning/30">
+                          {ERROR_LABELS[g.representative.error_category ?? 'unknown'] ?? g.representative.error_category}
+                        </span>
+                      </td>
+                      <td className="p-3 align-top max-w-md">
+                        <div className="text-text-muted text-xs font-mono line-clamp-2 break-words">
+                          {g.representative.error_message ?? g.representative.user_message ?? '—'}
+                        </div>
+                        <Link
+                          href={buildAiHref({ ...sp, ai: isOpen ? undefined : g.representative.id })}
+                          className="inline-block mt-2 text-jade hover:underline text-xs font-medium"
+                        >
+                          {isOpen ? 'Fechar detalhe' : 'Abrir detalhe →'}
+                        </Link>
+                      </td>
+                      <td className="p-3 text-right font-mono text-xs align-top">
+                        {g.occurrences.length > 1 ? (
+                          <span className="text-warning">×{g.occurrences.length}</span>
+                        ) : (
+                          '1'
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {groups.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-success italic">
+                      Tudo funcionando sem erros neste filtro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
+      </div>
+
+      {/* Coluna direita: painel de detalhe (renderiza só se ?ai presente) */}
+      {sp.ai && (
+        <aside className="lg:col-span-1">
+          <div className="lg:sticky lg:top-4">
+            <AiErrorDetailPanel
+              invocationId={sp.ai}
+              closeHref={buildAiHref({ ...sp, ai: undefined })}
+            />
+          </div>
+        </aside>
       )}
-      <section>
-        <h2 className="text-ametista text-xs uppercase tracking-wider font-medium mb-3">Últimos incidentes IA</h2>
-        <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-bg-deep text-text-muted text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left p-4 font-medium">Quando</th>
-                <th className="text-left p-4 font-medium">Usuário</th>
-                <th className="text-left p-4 font-medium">Função</th>
-                <th className="text-left p-4 font-medium">Modelo</th>
-                <th className="text-left p-4 font-medium">Categoria</th>
-                <th className="text-left p-4 font-medium">Mensagem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {d.recent_errors.map(err => (
-                <tr key={err.id} className="hover:bg-bg-deep/40">
-                  <td className="p-4 text-text-dim text-xs whitespace-nowrap">{fmtDate(err.created_at)}</td>
-                  <td className="p-4 font-mono text-xs">{err.user_email ?? '—'}</td>
-                  <td className="p-4">
-                    <div className="font-medium">{FUNCTION_LABELS[err.function_name] ?? err.function_name}</div>
-                    {err.latency_ms && <div className="text-text-dim text-xs">{fmtLatency(err.latency_ms)}</div>}
-                  </td>
-                  <td className="p-4 font-mono text-xs text-text-muted">{err.model_used ?? '—'}</td>
-                  <td className="p-4">
-                    <span className="inline-block text-xs px-2 py-1 rounded-md font-mono uppercase bg-warning/10 text-warning border border-warning/30">
-                      {ERROR_LABELS[err.error_category ?? 'unknown'] ?? err.error_category}
-                    </span>
-                  </td>
-                  <td className="p-4 text-text-muted text-xs max-w-md truncate">
-                    {err.user_message || err.error_message || '—'}
-                  </td>
-                </tr>
-              ))}
-              {d.recent_errors.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-success italic">Tudo funcionando sem erros este mês.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </div>
   );
 }
@@ -219,7 +377,6 @@ function AiErrorsTab({ data: d, totalErrors }: { data: AdminAiBreakdown; totalEr
 function AppErrorsTab({ data, sp }: { data: AdminAppErrorsList; sp: SearchParams }) {
   return (
     <div className="space-y-6">
-      {/* Filtros (linkáveis via querystring) */}
       <section className="flex flex-wrap gap-2">
         <FilterChip label="Todos" active={!sp.severity} href={buildHref({ ...sp, severity: undefined, tab: 'app' })} />
         {(['critical', 'error', 'warning', 'info'] as AppErrorSeverity[]).map(sev => (
@@ -233,7 +390,6 @@ function AppErrorsTab({ data, sp }: { data: AdminAppErrorsList; sp: SearchParams
         ))}
       </section>
 
-      {/* Tabela */}
       <section>
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-ametista text-xs uppercase tracking-wider font-medium">
@@ -355,4 +511,14 @@ function buildHref(params: Record<string, string | undefined>): string {
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v as string)}`)
     .join('&');
   return `/errors${qs ? `?${qs}` : ''}`;
+}
+
+/** Versão restrita aos params da tab IA — preserva tab, fn, ai_cat, ai */
+function buildAiHref(params: SearchParams): string {
+  return buildHref({
+    tab: 'ai',
+    fn: params.fn,
+    ai_cat: params.ai_cat,
+    ai: params.ai,
+  });
 }
