@@ -121,6 +121,7 @@ export default async function UsersPage({ searchParams }: Props) {
               <th className="text-right p-4 font-medium">IA mês</th>
               <th className="text-right p-4 font-medium">Custo mês</th>
               <th className="text-right p-4 font-medium">Último login</th>
+              <th className="w-10 p-4"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -148,7 +149,11 @@ export default async function UsersPage({ searchParams }: Props) {
               const hasGps = u.install_location_source === 'gps';
 
               return (
-                <tr key={u.id} className={`hover:bg-bg-deep/40 transition align-top ${openUserId === u.id ? 'bg-jade/5' : ''}`}>
+                <tr
+                  key={u.id}
+                  className={`hover:bg-bg-deep/40 transition align-top cursor-pointer ${openUserId === u.id ? 'bg-jade/5 border-l-2 border-l-jade' : ''}`}
+                  onClick={undefined}
+                >
                   <td className="p-4">
                     <Link
                       href={buildHref({ q: search ?? undefined, page: String(page), u: openUserId === u.id ? undefined : u.id })}
@@ -156,6 +161,9 @@ export default async function UsersPage({ searchParams }: Props) {
                     >
                       <div className="font-medium text-text">{u.full_name || '—'}</div>
                       <div className="text-text-dim text-xs font-mono">{u.email}</div>
+                      <div className="text-jade text-[10px] mt-1 font-medium">
+                        {openUserId === u.id ? '← fechar detalhe' : 'ver detalhes →'}
+                      </div>
                     </Link>
                   </td>
                   <td className="p-4">
@@ -255,12 +263,21 @@ export default async function UsersPage({ searchParams }: Props) {
                       ? fmtDate(u.last_login_at)
                       : 'nunca'}
                   </td>
+                  <td className="p-4 text-right">
+                    <Link
+                      href={buildHref({ q: search ?? undefined, page: String(page), u: openUserId === u.id ? undefined : u.id })}
+                      className="inline-block text-jade hover:text-jade/80 text-lg leading-none"
+                      aria-label={openUserId === u.id ? 'Fechar detalhe' : 'Abrir detalhe'}
+                    >
+                      {openUserId === u.id ? '×' : '→'}
+                    </Link>
+                  </td>
                 </tr>
               );
             })}
             {d.items.length === 0 && (
               <tr>
-                <td colSpan={10} className="p-8 text-center text-text-dim italic">
+                <td colSpan={11} className="p-8 text-center text-text-dim italic">
                   Nenhum usuário encontrado.
                 </td>
               </tr>
