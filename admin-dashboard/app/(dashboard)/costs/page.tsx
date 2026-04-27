@@ -261,6 +261,145 @@ export default async function CostsPage() {
         </section>
       )}
 
+      {/* Metodologia — explicação completa do cálculo de break-even */}
+      <section className="bg-bg-card border border-border rounded-xl p-6 mt-4">
+        <h2 className="text-ametista text-xs uppercase tracking-wider font-medium mb-4">
+          Como o cálculo de break-even funciona
+        </h2>
+
+        <div className="space-y-5 text-sm text-text-muted leading-relaxed">
+
+          {/* 1. Fórmula */}
+          <div>
+            <h3 className="text-text font-semibold mb-2">A fórmula</h3>
+            <p className="mb-2">
+              O preço de cada plano precisa cobrir três coisas:
+              <strong className="text-text"> custo fixo</strong>,{' '}
+              <strong className="text-text">custo variável</strong> (IA por assinante) e{' '}
+              <strong className="text-text">lucro</strong>. Em equação:
+            </p>
+            <pre className="bg-bg-deep border border-border rounded-lg p-3 text-xs font-mono text-text overflow-x-auto">
+N × preço  =  Fixo  +  (Var/user × N)  +  Lucro
+            </pre>
+            <p className="mt-2">Resolvendo para break-even (Lucro = 0):</p>
+            <pre className="bg-bg-deep border border-border rounded-lg p-3 text-xs font-mono text-jade overflow-x-auto">
+N = ⌈ Fixo ÷ (preço − Var/user) ⌉
+            </pre>
+            <p className="mt-2 text-text-dim">
+              Cada assinante paga <em>preço</em>, mas <em>Var/user</em> desse pagamento já é
+              consumido pelo IA dele. Sobra <em>(preço − Var/user)</em> por assinante para
+              amortizar o custo fixo.
+            </p>
+          </div>
+
+          {/* 2. Por que a fórmula simples (custo total ÷ preço) está errada */}
+          <div>
+            <h3 className="text-text font-semibold mb-2">Por que NÃO é só "custo total ÷ preço"</h3>
+            <p>
+              Dividir o custo total mensal pelo preço da assinatura trata todo o custo como fixo —
+              ignora que mais assinantes geram mais custo de IA. Se 187 tutores geram um certo
+              consumo de IA, 318 tutores geram <strong>mais</strong> consumo. A fórmula simples
+              dá uma falsa sensação de break-even porque os 131 tutores extras (de 187 para 318)
+              também trazem custo variável que precisa ser coberto.
+            </p>
+          </div>
+
+          {/* 3. Estado atual vs cenário escalado */}
+          <div>
+            <h3 className="text-text font-semibold mb-2">Estado atual vs escala saudável</h3>
+            <p className="mb-3">
+              Hoje temos <strong className="text-text">{activeTutors} tutor{activeTutors === 1 ? '' : 'es'} ativo{activeTutors === 1 ? '' : 's'}</strong>{' '}
+              consumindo <strong className="text-text">{fmtUSD(variableAiUsd)}/mês</strong> de IA, ou seja{' '}
+              <strong className="text-jade">{fmtUSD(aiPerUser)}/user</strong>. Esse número é alto
+              porque a base é pequena (beta-testers concentrando uso). Conforme escalar, ele cai —
+              o custo de IA se dilui em mais usuários e o uso médio por tutor tende a ser
+              razoavelmente esparso (cache de prompt, períodos sem ativar nenhum agente).
+            </p>
+            <div className="bg-bg-deep border border-border rounded-lg p-4 space-y-3">
+              <div>
+                <div className="text-text-dim text-[10px] uppercase tracking-widest font-medium mb-1">
+                  Cenário 1 — hoje ({activeTutors} tutor{activeTutors === 1 ? '' : 'es'})
+                </div>
+                <div className="text-xs">
+                  Plano Premium $50: margem unitária = $50 − {fmtUSD(aiPerUser)} ={' '}
+                  {aiPerUser >= 50
+                    ? <span className="text-danger font-mono">NEGATIVA → Inviável</span>
+                    : <span className="text-jade font-mono">{fmtUSD(50 - aiPerUser)}</span>}
+                </div>
+                {aiPerUser >= 50 && (
+                  <div className="text-text-dim text-xs italic mt-1">
+                    Custo IA por assinante excede o preço — qualquer aumento de base agrava o prejuízo.
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-border pt-3">
+                <div className="text-text-dim text-[10px] uppercase tracking-widest font-medium mb-1">
+                  Cenário 2 — com escala saudável (Var/user = $5)
+                </div>
+                <div className="text-xs space-y-0.5 font-mono">
+                  <div>margem unitária = $50 − $5 = <span className="text-jade">$45</span></div>
+                  <div>N break-even = ⌈ {fmtUSD(fixedTotalUsd)} ÷ $45 ⌉ = <span className="text-jade">{Math.ceil(fixedTotalUsd / 45)} assinantes</span></div>
+                  <div>Receita = {Math.ceil(fixedTotalUsd / 45)} × $50 = {fmtUSD(Math.ceil(fixedTotalUsd / 45) * 50)}</div>
+                  <div>Custo total = {fmtUSD(fixedTotalUsd)} + ({Math.ceil(fixedTotalUsd / 45)} × $5) = {fmtUSD(fixedTotalUsd + Math.ceil(fixedTotalUsd / 45) * 5)} <span className="text-jade">✓</span></div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3">
+                <div className="text-text-dim text-[10px] uppercase tracking-widest font-medium mb-1">
+                  Margem Elite 1,7× sobre o cenário 2
+                </div>
+                {(() => {
+                  const breakevenAt5 = Math.ceil(fixedTotalUsd / 45);
+                  const elite = Math.ceil(breakevenAt5 * 1.7);
+                  const eliteRev = elite * 50;
+                  const eliteCost = fixedTotalUsd + elite * 5;
+                  const eliteProfit = eliteRev - eliteCost;
+                  return (
+                    <div className="text-xs space-y-0.5 font-mono">
+                      <div>N Elite = ⌈ {breakevenAt5} × 1,7 ⌉ = <span className="text-jade">{elite} assinantes</span></div>
+                      <div>Receita = {elite} × $50 = {fmtUSD(eliteRev)}</div>
+                      <div>Custo total = {fmtUSD(fixedTotalUsd)} + ({elite} × $5) = {fmtUSD(eliteCost)}</div>
+                      <div>Lucro líquido = {fmtUSD(eliteRev)} − {fmtUSD(eliteCost)} = <span className="text-jade font-bold">{fmtUSD(eliteProfit)}/mês</span></div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Quando o cenário é "Inviável" */}
+          <div>
+            <h3 className="text-text font-semibold mb-2">Quando aparece "Inviável"</h3>
+            <p>
+              Se <em>Var/user ≥ preço</em>, a margem unitária é zero ou negativa — cada novo assinante
+              piora o prejuízo. Com a base pequena de hoje isso pode acontecer nos planos baixos
+              (Massa $10, Acessível $20). É o sinal econômico correto de que a tabela de preços
+              precisa ser ajustada <strong>ou</strong> que o custo de IA por usuário precisa cair antes
+              do plano fazer sentido. Caminhos pra reduzir <em>Var/user</em>: substituir Opus por
+              Sonnet/Haiku onde possível, ampliar prompt caching, mover trabalho síncrono para CRONs
+              em lote, esperar a base crescer (diluição natural).
+            </p>
+          </div>
+
+          {/* 5. Limites da estimativa */}
+          <div>
+            <h3 className="text-text font-semibold mb-2">Limites desta estimativa</h3>
+            <p>
+              <em>Var/user</em> é calculado como{' '}
+              <code className="bg-bg-deep px-1.5 py-0.5 rounded font-mono text-[11px]">
+                IA mensal ÷ tutores ativos
+              </code>
+              . Com poucos tutores, beta-testers ativos puxam a média para cima. Em produção com
+              ~10k assinantes, esse número converge para o uso médio real (provavelmente bem
+              menor). Os cenários acima usam $5/user como aproximação de regime de escala —
+              ajuste mentalmente conforme suas projeções.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
       <p className="text-text-dim text-xs italic text-center pt-4">
         Edição inline: clique no lápis ao lado de cada item, ou em "Adicionar custo" pra incluir um novo.
         Para BRL/EUR/etc., informe o valor na moeda original e a cotação — o USD é calculado automaticamente.
