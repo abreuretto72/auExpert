@@ -27,6 +27,7 @@ import {
   ChevronRight,
   BarChart3,
   MessageCircle,
+  Info,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -180,6 +181,12 @@ const DrawerMenu: React.FC<DrawerMenuProps> = ({
       sublabel: t('menu.backupDesc'),
       badge: t('menu.auto'),
       onPress: () => toast(t('menu.backupToast'), 'info'),
+    },
+    {
+      icon: <Info size={rs(20)} color={colors.click} strokeWidth={1.8} />,
+      label: t('menu.about'),
+      sublabel: t('menu.aboutDesc', { version: Constants.expoConfig?.version ?? '1.0.0' }),
+      route: '/about',
     },
   ];
 

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { User } from '../types/database';
 import * as auth from '../lib/auth';
 import { recordUserLogin } from '../lib/recordUserLogin';
+import { identifyRevenueCatUser, logoutRevenueCat } from '../lib/revenuecat';
 
 // SecureStore — criptografado pelo hardware (Keychain/Keystore)
 export const getSecureStore = () => {
@@ -61,6 +62,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     // no mês" da tela de estatísticas. Não bloqueia nem lança em caso de falha.
     await recordUserLogin('password');
 
+    // Vincula o usuário ao customer da RevenueCat. Sem isso, RC trata cada
+    // dispositivo como anônimo e perde histórico quando o tutor reinstala.
+    if (data.user?.id) {
+      identifyRevenueCatUser(data.user.id).catch(() => {});
+    }
+
     set({
       user: { id: data.user?.id, email: data.user?.email, ...data.user?.user_metadata } as User | null,
       session: data.session ? { access_token: data.session.access_token } : null,
@@ -72,6 +79,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await auth.signOut();
+    // RevenueCat volta a tratar como anônimo até próximo login.
+    logoutRevenueCat().catch(() => {});
     // NAO limpar credenciais — biometria precisa funcionar apos logout
     set({ user: null, session: null, isAuthenticated: false });
   },
@@ -113,6 +122,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Login biométrico bem-sucedido → registrar em audit_log. Best-effort,
     // alimenta o card "Dias ativos no mês". Não bloqueia, não lança.
     await recordUserLogin('biometric');
+
+    // RevenueCat — mesmo identify de senha. Idempotente.
+    if (data.user?.id) {
+      identifyRevenueCatUser(data.user.id).catch(() => {});
+    }
 
     // Atualizar credenciais salvas (caso o token tenha rotacionado)
     set({

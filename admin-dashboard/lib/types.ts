@@ -46,6 +46,156 @@ export type AdminOverview = {
   }>;
 };
 
+// ───── get_admin_user_detail (painel lateral) ─────────────────────────────
+
+export type AdminUserDetail = {
+  user: {
+    id: string;
+    email: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    phone: string | null;
+    cpf: string | null;
+    birth_date: string | null;
+    role: string;
+    is_active: boolean;
+    plan_id: string | null;
+    country: string | null;
+    city: string | null;
+    state: string | null;
+    address_street: string | null;
+    address_number: string | null;
+    address_complement: string | null;
+    address_neighborhood: string | null;
+    address_zip: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    social_network_type: string | null;
+    social_network_handle: string | null;
+    language: string | null;
+    preferred_language: string | null;
+    timezone: string | null;
+    privacy_profile_public: boolean | null;
+    privacy_show_location: boolean | null;
+    privacy_show_pets: boolean | null;
+    privacy_show_social: boolean | null;
+    biometric_enabled: boolean | null;
+    biometric_type: string | null;
+    failed_login_attempts: number | null;
+    locked_until: string | null;
+    xp: number | null;
+    level: number | null;
+    title: string | null;
+    proof_of_love_tier: string | null;
+    created_at: string;
+    updated_at: string | null;
+    last_app_version: string | null;
+    last_build_number: string | null;
+    last_platform: string | null;
+    last_device_model: string | null;
+    last_device_locale: string | null;
+    last_seen_at: string | null;
+    install_lat: number | null;
+    install_lng: number | null;
+    install_country: string | null;
+    install_country_code: string | null;
+    install_location_at: string | null;
+    install_location_source: 'gps' | 'manual' | 'ip' | null;
+    expo_push_token: 'configured' | null;
+    push_token_invalid_at: string | null;
+    app_status: 'active' | 'idle' | 'dormant' | 'uninstalled' | 'never_opened';
+  };
+  professional: {
+    id: string;
+    professional_type: string;
+    verification_status: string;
+    council_name: string | null;
+    council_number: string | null;
+    council_uf: string | null;
+    fiscal_id_type: string | null;
+    fiscal_id_value: string | null;
+    display_name: string | null;
+    bio: string | null;
+    languages: string[] | null;
+    specialties: string[] | null;
+    phone: string | null;
+    clinic_name: string | null;
+    clinic_cnpj: string | null;
+    clinic_address: string | null;
+    website: string | null;
+    profile_photo_url: string | null;
+    verified_at: string | null;
+    created_at: string;
+  } | null;
+  invite: {
+    inviter_email: string | null;
+    inviter_name: string | null;
+    invite_role: string | null;
+    accepted_at: string;
+    pet_id: string | null;
+    pet_name: string | null;
+  } | null;
+  subscription: {
+    plan_id: string | null;
+    plan_name: Record<string, string> | null;     // jsonb i18n
+    plan_price_brl: number | null;
+    plan_price_usd: number | null;
+    status: string | null;                         // active|trialing|cancelled|expired
+    is_paying: boolean;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    trial_end_at: string | null;
+    cancelled_at: string | null;
+    grace_period_end_at: string | null;
+    store: string | null;                          // ios|android|web|stripe|...
+    price_paid: number | null;
+    currency_paid: string | null;
+    subscribed_at: string | null;
+    total_payments: number;
+    first_paid_at: string | null;
+    last_paid_at: string | null;
+    last_paid_amount: number | null;
+    last_paid_currency: string | null;
+    last_paid_event: string | null;
+    last_paid_store: string | null;
+    lifetime_value_usd: number;
+    lifetime_value_brl: number;
+  } | null;
+  pets: Array<{
+    id: string;
+    name: string;
+    species: string;
+    breed: string | null;
+    birth_date: string | null;
+    weight_kg: number | null;
+    photo_url: string | null;
+    created_at: string;
+  }>;
+  stats_30d: {
+    ai_invocations: number;
+    ai_cost_usd: number;
+    errors: number;
+    logins: number;
+  };
+  recent_activity: Array<{
+    action: string;
+    table_name: string | null;
+    changes: Record<string, unknown> | null;
+    created_at: string;
+  }>;
+  recent_ai: Array<{
+    id: string;
+    function_name: string;
+    status: string;
+    error_category: string | null;
+    model_used: string | null;
+    latency_ms: number | null;
+    tokens_in: number | null;
+    tokens_out: number | null;
+    created_at: string;
+  }>;
+};
+
 // ───── get_admin_users_list ────────────────────────────────────────────────
 
 export type AdminUserRow = {
@@ -61,6 +211,34 @@ export type AdminUserRow = {
   ai_invocations_this_month: number;
   cost_this_month_usd: number;
   last_login_at: string | null;
+  // Snapshot do app no último login.
+  last_app_version: string | null;
+  last_build_number: string | null;
+  last_platform: string | null;          // 'ios' | 'android' | 'web' | null
+  last_seen_at: string | null;
+  last_device_model: string | null;      // ex: "iPhone 15 Pro"
+  last_device_locale: string | null;     // ex: "pt-BR"
+  // Localização capturada via GPS na 1ª vez (com permissão).
+  install_lat: number | null;
+  install_lng: number | null;
+  install_country: string | null;
+  install_country_code: string | null;
+  install_location_at: string | null;
+  install_location_source: 'gps' | 'manual' | 'ip' | null;
+  // Tipo profissional + status quando aplicável (LEFT JOIN com professionals).
+  professional_type: string | null;       // veterinarian, groomer, walker, ...
+  professional_status: string | null;     // pending, verified, rejected
+  // Status derivado do app: active/idle/dormant/uninstalled/never_opened.
+  app_status: 'active' | 'idle' | 'dormant' | 'uninstalled' | 'never_opened' | null;
+  push_token_invalid_at: string | null;
+  // Quem convidou esse profissional (via access_invites). Null se for tutor
+  // direto ou profissional que se cadastrou sem convite.
+  invited_by_email: string | null;
+  invited_by_name: string | null;
+  invited_at: string | null;
+  invited_via_pet_id: string | null;
+  invited_via_pet_name: string | null;
+  invite_role: string | null;             // vet, vet_full, vet_read, etc.
 };
 
 export type AdminUsersList = {
@@ -116,7 +294,8 @@ export type AdminAiBreakdown = {
 };
 
 // Detail RPC: get_admin_ai_error_detail(p_id) — invocação completa + diag_logs
-// correlatos (±10min na mesma EF) + estatística de recorrência.
+// correlatos (±10min na mesma EF) + estatística de recorrência + resolução
+// (quando admin já marcou esta classe de erro como tratada).
 export type AdminAiErrorDetail = {
   invocation: {
     id: string;
@@ -141,12 +320,20 @@ export type AdminAiErrorDetail = {
     payload: Record<string, unknown> | null;
     created_at: string;
   };
+  signature: string;
   recurrence: {
     count_24h: number;
     count_7d: number;
     users_24h: number;
     first_seen: string | null;
   };
+  resolution: {
+    is_resolved: boolean;
+    resolution_notes: string | null;
+    resolved_at: string;
+    resolved_by: string | null;
+    resolver_email: string | null;
+  } | null;
   diag_logs: Array<{
     id: string;
     request_id: string | null;

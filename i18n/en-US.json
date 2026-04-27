@@ -45,6 +45,7 @@
     "statusAi": "Assisted by AI",
     "statusHuman": "Human team handling",
     "statusQueued": "Waiting for human team",
+    "versionLine": "auExpert v{{version}}{{build}} · {{platform}}",
     "callHuman": "Talk to human",
     "inputPlaceholder": "Ask your question about the app…",
     "sendFailed": "Could not send right now. Check your connection and try again.",
@@ -2195,7 +2196,21 @@
     "comingSoon": "Soon",
     "auto": "Auto",
     "stats": "My Statistics",
-    "statsDesc": "Monthly summary: pets, AI, activity"
+    "statsDesc": "Monthly summary: pets, AI, activity",
+    "about": "About",
+    "aboutDesc": "Version {{version}} · Multiverso Digital"
+  },
+  "about": {
+    "title": "About",
+    "tagline": "A unique intelligence for your pet.",
+    "versionLabel": "Version",
+    "companyLabel": "Developed by",
+    "supportLabel": "Support",
+    "supportHint": "Tap to open an email.",
+    "privacy": "Privacy",
+    "terms": "Terms of use",
+    "allRightsReserved": "All rights reserved.",
+    "emailSubject": "auExpert support (v{{version}})"
   },
   "toast": {
     "cameraPermission": "Camera permission required. Enable it in settings.",
@@ -2216,7 +2231,8 @@
     "reconnected": "Connection restored.",
     "syncPartial": "{{synced}} synced. {{failed}} pending — we will retry shortly.",
     "editSaved": "Updated.",
-    "editFailed": "Could not save. Try again."
+    "editFailed": "Could not save. Try again.",
+    "entrySaved": "Saved."
   },
   "editPet": {
     "title": "Edit Pet",
@@ -3120,7 +3136,7 @@
     "aiHintRecords": "Tell the diary about {{name}}'s food or supplements and AI will register it here automatically!",
     "title": "Nutrition",
     "subtitle": "{{name}}'s diet",
-    "sectionCurrentFood": "CURRENT FOOD",
+    "sectionCurrentFood": "CURRENT DIET",
     "sectionWeight": "WEIGHT",
     "sectionRestrictions": "RESTRICTIONS",
     "sectionAlerts": "ALERTS",
@@ -3146,6 +3162,7 @@
     "sexMale": "Male",
     "sexFemale": "Female",
     "modalidadeLabelSoRacao": "Kibble only",
+    "modalidadeUnknown": "Diet not set",
     "modalidadeLabelRacaoNatural": "Kibble + natural",
     "modalidadeLabelSoNatural": "Natural only",
     "aiEvalScore": "{{score}}",
@@ -3207,7 +3224,15 @@
     "historicoHint": "Change food in the app or tell the diary",
     "historicoCurrent": "Current",
     "historicoMonths": "{{n}} months",
+    "historicoDaysShort": "{{n}}d",
     "historicoChanged": "Changed to",
+    "historicoStatChanges": "Changes",
+    "historicoStatAvg": "Average duration",
+    "historicoStatLongest": "Longest",
+    "historicoPortion": "Portion",
+    "historicoCalories": "Calories",
+    "historicoKcalDay": "{{n}} kcal/day",
+    "historicoDateUnknown": "Date not recorded",
     "trocarTitle": "Change Food",
     "trocarScanBtn": "Scan packaging",
     "trocarScanHint": "Point at the barcode or label",

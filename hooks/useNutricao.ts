@@ -24,6 +24,10 @@ export interface NutritionFood {
   started_at: string | null;
   ended_at?: string | null;
   notes: string | null;
+  /** Snapshot da foto da ração (capturada via análise IA da embalagem). */
+  photo_url?: string | null;
+  /** so_racao | racao_natural | so_natural — modalidade vigente quando registrada. */
+  modalidade?: string | null;
   extracted_data?: Record<string, unknown> | null;
 }
 
@@ -434,17 +438,38 @@ export function useNutricao(petId: string) {
   });
 
   // ── Mutation: regenerate cardapio (force refresh) ────────────────────────
+  // Histórico (2026-04-28): regenerar abortava silenciosamente sem chegar ao
+  // log DONE. Causa típica: supabase.functions.invoke fazendo fetch que
+  // demora mais que o timeout default do RN (~60s) e disparando exceção de
+  // rede que NÃO era pega pelo `if (error)` interno (porque o erro é throw,
+  // não retorno). Agora envolvemos tudo em try/catch e logamos cada estágio.
   const regenerarMutation = useMutation({
     mutationFn: async (): Promise<Cardapio> => {
       const t0 = Date.now();
       console.log('[cardapio] regenerar START petId:', petId, 'force:true lang:', language);
-      const { data, error } = await supabase.functions.invoke<{ cardapio: Cardapio; cached: boolean; fallback_reason: string | null }>(
-        'generate-cardapio',
-        { body: { pet_id: petId, force: true, language } },
-      );
+
+      let invokeResult: { data: { cardapio: Cardapio; cached: boolean; fallback_reason: string | null } | null; error: unknown } | null = null;
+      try {
+        console.log('[cardapio] regenerar invoke calling…');
+        invokeResult = await supabase.functions.invoke<{ cardapio: Cardapio; cached: boolean; fallback_reason: string | null }>(
+          'generate-cardapio',
+          { body: { pet_id: petId, force: true, language } },
+        );
+        const ms = Date.now() - t0;
+        console.log('[cardapio] regenerar invoke returned ms:', ms, 'hasData:', !!invokeResult?.data, 'hasError:', !!invokeResult?.error);
+      } catch (networkErr) {
+        const ms = Date.now() - t0;
+        console.error('[cardapio] regenerar invoke THREW after ms:', ms, 'err:', networkErr);
+        // Re-throw pra useMutation pegar no onError
+        throw networkErr instanceof Error
+          ? networkErr
+          : new Error(`Network error: ${String(networkErr)}`);
+      }
+
+      const { data, error } = invokeResult;
       const ms = Date.now() - t0;
       const fallbackReason = (data as Record<string, unknown> | null)?.fallback_reason ?? null;
-      console.log('[cardapio] regenerar DONE ms:', ms, 'error:', error?.message ?? null, 'cached:', data?.cached ?? null, 'days:', data?.cardapio?.days?.length ?? null, 'isFallback:', data?.cardapio?.is_fallback ?? null);
+      console.log('[cardapio] regenerar DONE ms:', ms, 'error:', (error as { message?: string })?.message ?? null, 'cached:', data?.cached ?? null, 'days:', data?.cardapio?.days?.length ?? null, 'isFallback:', data?.cardapio?.is_fallback ?? null);
       if (fallbackReason) console.error('[cardapio] *** FALLBACK_REASON ***', fallbackReason);
       if (error) {
         const status = (error as Record<string, unknown>)?.context
@@ -468,7 +493,7 @@ export function useNutricao(petId: string) {
       qc.invalidateQueries({ queryKey: cardapioHistoryKey(petId) });
     },
     onError: (err) => {
-      console.error('[cardapio] regenerar onError:', err);
+      console.error('[cardapio] regenerar onError:', err instanceof Error ? `${err.name}: ${err.message}` : String(err));
     },
   });
 

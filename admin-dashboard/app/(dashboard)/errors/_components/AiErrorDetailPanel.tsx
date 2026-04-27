@@ -15,6 +15,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { fmtDate, fmtLatency, fmtNum } from '@/lib/utils';
 import { ERROR_LABELS, FUNCTION_LABELS, type AdminAiErrorDetail } from '@/lib/types';
 import { AiDiagnosisCard } from './AiDiagnosisCard';
+import { ResolutionCard } from './ResolutionCard';
 
 interface AiErrorDetailPanelProps {
   invocationId: string;
@@ -51,7 +52,11 @@ export async function AiErrorDetailPanel({ invocationId, closeHref }: AiErrorDet
 
   const inv = detail.invocation;
   const rec = detail.recurrence;
+  const resolution = detail.resolution;
   const requestId = (inv.payload?.request_id as string | undefined) ?? null;
+  const appVersion = (inv.payload?.app_version as string | undefined)
+    ?? (inv.payload?.appVersion as string | undefined)
+    ?? null;
   const fnLabel = FUNCTION_LABELS[inv.function_name] ?? inv.function_name;
   const catLabel = inv.error_category ? (ERROR_LABELS[inv.error_category] ?? inv.error_category) : '—';
 
@@ -74,6 +79,23 @@ export async function AiErrorDetailPanel({ invocationId, closeHref }: AiErrorDet
         <AiDiagnosisCard invocationId={inv.id} />
       </div>
 
+      {/* Acompanhamento — checkbox concluído + textarea de observação */}
+      <div className="px-5 py-4 border-b border-border">
+        <ResolutionCard
+          invocationId={inv.id}
+          initialResolution={
+            resolution
+              ? {
+                  is_resolved:      resolution.is_resolved,
+                  resolution_notes: resolution.resolution_notes,
+                  resolved_at:      resolution.resolved_at,
+                  resolver_email:   resolution.resolver_email,
+                }
+              : null
+          }
+        />
+      </div>
+
       {/* Resumo: chips factuais */}
       <div className="px-5 py-4 border-b border-border grid grid-cols-2 md:grid-cols-4 gap-3">
         <Chip label="Categoria" value={catLabel} accent="warning" />
@@ -81,6 +103,7 @@ export async function AiErrorDetailPanel({ invocationId, closeHref }: AiErrorDet
         <Chip label="Latência" value={inv.latency_ms ? fmtLatency(inv.latency_ms) : '—'} accent="text" />
         <Chip label="Tokens (in/out)" value={`${fmtNum(inv.tokens_in ?? 0)} / ${fmtNum(inv.tokens_out ?? 0)}`} accent="text" />
         <Chip label="Provider" value={inv.provider ?? '—'} accent="text" />
+        <Chip label="Versão do app" value={appVersion ?? '—'} accent="text" mono />
         <Chip label="Tutor" value={inv.user_email ?? '—'} accent="text" mono />
         <Chip label="Pet" value={inv.pet_name ?? (inv.pet_id ? inv.pet_id.slice(0, 8) : '—')} accent="text" />
         <Chip label="Request ID" value={requestId ?? '—'} accent="text" mono />

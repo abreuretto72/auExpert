@@ -22,11 +22,16 @@ import { rs } from '../hooks/useResponsive';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initRemoteErrorReporting } from '../lib/initRemoteErrorReporting';
 import { ToastProvider, useToast } from '../components/Toast';
+import { initializeRevenueCat } from '../lib/revenuecat';
 
 // Conecta errorReporter ao backend report-app-error já no carregamento
 // do módulo — todo reportError() em qualquer lugar do app vai pra app_errors.
 // Idempotente: chamadas adicionais são no-op.
 initRemoteErrorReporting();
+
+// Inicializa RevenueCat assim que o módulo carrega. Idempotente. Se as keys
+// não estiverem no .env, o init faz log e segue (app não trava).
+initializeRevenueCat().catch((e) => console.warn('[boot] revenuecat init failed:', e));
 import { NetworkGuard } from '../components/NetworkGuard';
 import { supabase } from '../lib/supabase';
 import { restoreQueryCache } from '../lib/offlineCache';

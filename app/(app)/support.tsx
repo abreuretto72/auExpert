@@ -37,6 +37,12 @@ import { previewPdf, sharePdf } from '../../lib/pdf';
 let _Application: typeof import('expo-application') | null = null;
 try { _Application = require('expo-application'); } catch { /* opcional */ }
 
+// Versão exibida no header — visível em qualquer momento da conversa pra
+// equipe de suporte (ou o próprio tutor) saber em qual build a dúvida foi
+// enviada. Buscada uma vez no carregamento do módulo (não muda na sessão).
+const APP_VERSION = _Application?.nativeApplicationVersion ?? '—';
+const APP_BUILD = _Application?.nativeBuildVersion ?? null;
+
 interface SupportMessage {
   id: string;
   sender: 'user' | 'ai' | 'admin';
@@ -302,6 +308,14 @@ export default function SupportScreen() {
           <Text style={styles.headerSubtitle}>
             {escalated ? t('support.statusHuman') : iaActive ? t('support.statusAi') : t('support.statusQueued')}
           </Text>
+          <Text style={styles.headerVersion}>
+            {t('support.versionLine', {
+              version: APP_VERSION,
+              build: APP_BUILD ? ` · build ${APP_BUILD}` : '',
+              platform: Platform.OS,
+              defaultValue: 'auExpert v{{version}}{{build}} · {{platform}}',
+            })}
+          </Text>
         </View>
 
         {/* Botão PDF — sempre renderizado, padrão do app: ícone FileText.
@@ -511,6 +525,13 @@ const styles = StyleSheet.create({
     fontSize: fs(11),
     color: colors.textDim,
     marginTop: rs(2),
+  },
+  headerVersion: {
+    fontFamily: 'JetBrainsMono_400Regular',
+    fontSize: fs(10),
+    color: colors.textGhost,
+    marginTop: rs(2),
+    letterSpacing: 0.3,
   },
   humanBtn: {
     flexDirection: 'row',

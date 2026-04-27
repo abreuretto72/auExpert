@@ -66,6 +66,38 @@ function modalidadeLabel(t: (k: string) => string, mod: string): string {
   return map[mod] ?? mod;
 }
 
+/**
+ * Infere modalidade real quando nutrition_profiles.modalidade é null/undefined.
+ *
+ * Sem isso, o default `so_racao` mostrava "Só ração" mesmo pra pets em
+ * alimentação natural — lamentável visual de inconsistência. A inferência
+ * usa product_name (palavras-chave "natural", "barf", "caseira") + category
+ * (raw/homemade → natural; dry/wet → ração).
+ */
+function inferModalidade(
+  modalidade: string | null | undefined,
+  currentFood: { product_name?: string | null; category?: string | null } | null | undefined,
+): string {
+  if (modalidade) return modalidade;
+
+  const name = (currentFood?.product_name ?? '').toLowerCase();
+  const cat = (currentFood?.category ?? '').toLowerCase();
+
+  // Sinais explícitos de alimentação natural
+  if (name.includes('natural') || name.includes('barf') || name.includes('caseira')
+      || cat === 'raw' || cat === 'homemade') {
+    return 'so_natural';
+  }
+
+  // Ração de fato
+  if (cat === 'dry_food' || cat === 'wet_food' || name.includes('ração') || name.includes('racao')) {
+    return 'so_racao';
+  }
+
+  // Sem sinais — não chuta, retorna vazio pra UI mostrar fallback discreto
+  return '';
+}
+
 function categoryLabel(t: (k: string) => string, cat: string | null): string {
   if (!cat) return '';
   const map: Record<string, string> = {
@@ -241,12 +273,31 @@ export default function NutricaoScreen() {
 
         {/* Modalidade + life stage + weight pills */}
         <View style={styles.infoRow}>
-          <View style={styles.infoPill}>
-            <Leaf size={rs(14)} color={colors.success} />
-            <Text style={[styles.infoPillText, { color: colors.success }]}>
-              {modalidadeLabel(t, nutricao?.modalidade ?? 'so_racao')}
-            </Text>
-          </View>
+          {(() => {
+            // Infere modalidade real quando o backend não tem (current_food
+            // existe mas nutrition_profiles.modalidade é null). Evita mostrar
+            // "Só ração" pra quem está em alimentação natural.
+            const inferredMod = inferModalidade(nutricao?.modalidade, nutricao?.current_food);
+            if (!inferredMod) {
+              // Sem sinais — chip discreto neutro
+              return (
+                <View style={styles.infoPill}>
+                  <Leaf size={rs(14)} color={colors.textDim} />
+                  <Text style={[styles.infoPillText, { color: colors.textDim }]}>
+                    {t('nutrition.modalidadeUnknown')}
+                  </Text>
+                </View>
+              );
+            }
+            return (
+              <View style={styles.infoPill}>
+                <Leaf size={rs(14)} color={colors.success} />
+                <Text style={[styles.infoPillText, { color: colors.success }]}>
+                  {modalidadeLabel(t, inferredMod)}
+                </Text>
+              </View>
+            );
+          })()}
           <View style={styles.infoPill}>
             <TrendingUp size={rs(14)} color={colors.petrol} />
             <Text style={[styles.infoPillText, { color: colors.petrol }]}>
